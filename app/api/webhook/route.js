@@ -103,6 +103,14 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
 7. Mostre os agendamentos encontrados (data, hora e serviço) e pergunte qual deseja cancelar.
 8. Quando o cliente confirmar, USE 'cancel_appointment' com a DATA do agendamento no formato YYYY-MM-DD.
 9. Lembre o cliente que cancelamentos com menos de 24h de antecedência têm cobrança de 50%.
+
+--- REAGENDAMENTO ---
+10. Se o cliente pedir para REAGENDAR ou MUDAR HORÁRIO, USE 'list_my_appointments' para listar os agendamentos dele.
+11. Pergunte qual agendamento deseja alterar e para qual nova data/horário.
+12. USE 'cancel_appointment' para cancelar o agendamento antigo (com a data antiga no formato YYYY-MM-DD).
+13. USE 'check_calendar' para verificar se o novo horário está disponível.
+14. Se estiver livre, USE 'book_appointment' para agendar o novo horário.
+15. Confirme ao cliente a mudança e reforce o protocolo de atendimento.
 `},
             ...history
         ]
