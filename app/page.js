@@ -267,9 +267,25 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments }) {
     )
 }
 
-// ─── Day View ──────────────────────────────────────────────
+// ─── Day View (Absolute positioning for duration blocks) ───
 function DayView({ selectedDate, appointments, onAction, dayRevenue }) {
-    const getAptsAtSlot = (slot) => appointments.filter(a => toSPTime(a.starts_at) === slot)
+    const SLOT_HEIGHT = 48 // pixels per 30min slot
+    const GRID_START = 7 * 60 // 07:00 in minutes
+
+    // Calculate which slots are occupied
+    const occupiedSlots = new Set()
+    appointments.forEach(apt => {
+        const time = toSPTime(apt.starts_at)
+        const [h, m] = time.split(':').map(Number)
+        const startMin = h * 60 + m
+        const svcs = parseServices(apt.service_id)
+        const dur = calcDuration(svcs)
+        for (let t = startMin; t < startMin + dur; t += 30) {
+            const slotH = String(Math.floor(t / 60)).padStart(2, '0')
+            const slotM = String(t % 60).padStart(2, '0')
+            occupiedSlots.add(`${slotH}:${slotM}`)
+        }
+    })
 
     return (
         <div className="flex gap-4">
@@ -281,50 +297,63 @@ function DayView({ selectedDate, appointments, onAction, dayRevenue }) {
                     </h3>
                     <span className="text-xs font-bold text-slate-400">{appointments.length} agendamento{appointments.length !== 1 ? 's' : ''}</span>
                 </div>
-                <div className="relative">
+
+                {/* Time grid with absolute-positioned blocks */}
+                <div className="relative" style={{ height: `${TIME_SLOTS.length * SLOT_HEIGHT}px` }}>
+                    {/* Background grid lines */}
                     {TIME_SLOTS.map((slot, idx) => {
-                        const aptsAtSlot = getAptsAtSlot(slot)
                         const isHour = slot.endsWith(':00')
+                        const isOccupied = occupiedSlots.has(slot)
                         return (
-                            <div key={idx} className={`flex items-stretch min-h-[44px] ${isHour ? 'border-t border-slate-150' : 'border-t border-slate-50'}`}>
+                            <div key={idx} className="absolute w-full flex" style={{ top: `${idx * SLOT_HEIGHT}px`, height: `${SLOT_HEIGHT}px` }}>
                                 <div className="w-16 shrink-0 flex items-start justify-end pr-3 pt-1">
                                     {isHour && <span className="text-[11px] font-bold text-slate-400">{slot}</span>}
                                 </div>
-                                <div className="flex-1 relative border-l border-slate-100 px-2 py-0.5">
-                                    {aptsAtSlot.map(apt => {
-                                        const svcs = parseServices(apt.service_id)
-                                        const dur = calcDuration(svcs)
-                                        const blocks = Math.max(1, Math.round(dur / 30))
-                                        const total = calcTotal(svcs)
-                                        return (
-                                            <div key={apt.id}
-                                                onClick={() => onAction(apt, 'view')}
-                                                className="bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-all cursor-pointer group relative"
-                                                style={{ minHeight: `${blocks * 44 - 8}px` }}>
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-bold text-sm">{apt.customer_name}</p>
-                                                        <p className="text-white/80 text-xs flex items-center gap-1 mt-0.5"><Phone size={10} /> {apt.customer_phone}</p>
-                                                        <div className="flex flex-wrap gap-1 mt-1.5">
-                                                            {svcs.map((s, i) => <span key={i} className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>)}
-                                                        </div>
-                                                        <p className="text-white/70 text-[10px] mt-1">{toSPTime(apt.starts_at)} — {dur}min • R$ {total}</p>
-                                                    </div>
-                                                    {/* Action buttons - visible on hover */}
-                                                    <div className="opacity-0 group-hover:opacity-100 flex flex-col gap-1 transition-opacity ml-2">
-                                                        <button onClick={(e) => { e.stopPropagation(); onAction(apt, 'reschedule') }}
-                                                            className="p-1.5 rounded-lg bg-white/20 hover:bg-amber-500 transition-colors" title="Reagendar">
-                                                            <CalendarClock size={13} />
-                                                        </button>
-                                                        <button onClick={(e) => { e.stopPropagation(); onAction(apt, 'cancel') }}
-                                                            className="p-1.5 rounded-lg bg-white/20 hover:bg-red-500 transition-colors" title="Cancelar">
-                                                            <XCircle size={13} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
+                                <div className={`flex-1 border-l border-slate-100 ${isHour ? 'border-t border-t-slate-200' : 'border-t border-t-slate-50'} ${isOccupied ? 'bg-violet-50/50' : ''}`} />
+                            </div>
+                        )
+                    })}
+
+                    {/* Appointment blocks (absolute positioned, spanning full duration) */}
+                    {appointments.map(apt => {
+                        const time = toSPTime(apt.starts_at)
+                        const [h, m] = time.split(':').map(Number)
+                        const startMin = h * 60 + m
+                        const svcs = parseServices(apt.service_id)
+                        const dur = calcDuration(svcs)
+                        const total = calcTotal(svcs)
+
+                        const topPx = ((startMin - GRID_START) / 30) * SLOT_HEIGHT
+                        const heightPx = (dur / 30) * SLOT_HEIGHT - 4 // -4 for visual padding
+
+                        const endMin = startMin + dur
+                        const endH = String(Math.floor(endMin / 60)).padStart(2, '0')
+                        const endM = String(endMin % 60).padStart(2, '0')
+
+                        return (
+                            <div key={apt.id}
+                                onClick={() => onAction(apt, 'view')}
+                                className="absolute bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-all cursor-pointer group z-10 overflow-hidden"
+                                style={{ top: `${topPx + 2}px`, height: `${heightPx}px`, left: '68px', right: '8px' }}>
+                                <div className="flex items-start justify-between h-full">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-sm">{apt.customer_name}</p>
+                                        <p className="text-white/80 text-xs flex items-center gap-1 mt-0.5"><Phone size={10} /> {apt.customer_phone}</p>
+                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                            {svcs.map((s, i) => <span key={i} className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>)}
+                                        </div>
+                                        <p className="text-white/70 text-[10px] mt-1">{time} — {endH}:{endM} ({dur}min) • R$ {total}</p>
+                                    </div>
+                                    <div className="opacity-0 group-hover:opacity-100 flex flex-col gap-1 transition-opacity ml-2">
+                                        <button onClick={(e) => { e.stopPropagation(); onAction(apt, 'reschedule') }}
+                                            className="p-1.5 rounded-lg bg-white/20 hover:bg-amber-500 transition-colors" title="Reagendar">
+                                            <CalendarClock size={13} />
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); onAction(apt, 'cancel') }}
+                                            className="p-1.5 rounded-lg bg-white/20 hover:bg-red-500 transition-colors" title="Cancelar">
+                                            <XCircle size={13} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )
