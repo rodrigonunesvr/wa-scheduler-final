@@ -168,7 +168,7 @@ export default function AdminDashboard() {
                     {sidebarOpen && <span className="font-extrabold text-lg tracking-tight">Espaço C.A.</span>}
                 </div>
                 <nav className="flex-1 py-3 space-y-0.5 px-2">
-                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
+                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Horários' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
                         <button key={item.id} onClick={() => { setActivePage(item.id); setNewBadge(0) }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activePage === item.id ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}>
                             <item.icon size={18} />{sidebarOpen && item.label}
@@ -244,6 +244,7 @@ export default function AdminDashboard() {
                 {activePage === 'clientes' && <ClientsPage />}
                 {activePage === 'servicos' && <ServicesPage />}
                 {activePage === 'relatorios' && <ReportsPage appointments={confirmed} />}
+                {activePage === 'horarios' && <SchedulePage />}
             </main>
 
             {/* Modals */}
@@ -1279,6 +1280,226 @@ function ReportsPage({ appointments }) {
                             ))}
                         </div>
                     </div>
+                </div>
+            </div>
+        </>
+    )
+}
+
+// ─── Schedule Page ─────────────────────────────────────────
+function SchedulePage() {
+    const [overrides, setOverrides] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [currentMonth, setCurrentMonth] = useState(new Date())
+    const [saving, setSaving] = useState(null) // dateStr being saved
+
+    const DEFAULT_CLOSED = [0, 1] // Sunday, Monday
+
+    const loadOverrides = async () => {
+        setLoading(true)
+        try {
+            const res = await fetch('/api/admin?type=schedule')
+            const data = await res.json()
+            setOverrides(Array.isArray(data) ? data : [])
+        } catch (e) { console.error(e) }
+        setLoading(false)
+    }
+
+    useEffect(() => { loadOverrides() }, [])
+
+    const dates = getMonthDates(currentMonth.getFullYear(), currentMonth.getMonth())
+    const thisMonth = currentMonth.getMonth()
+
+    const isDefaultOpen = (date) => !DEFAULT_CLOSED.includes(date.getDay())
+
+    const getOverride = (dateStr) => overrides.find(o => o.date === dateStr)
+
+    const isDayOpen = (date) => {
+        const dateStr = fmt(date)
+        const override = getOverride(dateStr)
+        if (override) return override.is_open
+        return isDefaultOpen(date)
+    }
+
+    const toggleDay = async (date) => {
+        const dateStr = fmt(date)
+        setSaving(dateStr)
+
+        const override = getOverride(dateStr)
+        const currentlyOpen = isDayOpen(date)
+
+        if (override) {
+            // If toggling back to default, remove the override
+            const defaultState = isDefaultOpen(date)
+            if (currentlyOpen !== defaultState) {
+                // Currently overridden away from default — remove override to restore default
+                await fetch(`/api/admin?id=${override.id}&type=schedule`, { method: 'DELETE' })
+            } else {
+                // Currently at default but has override — flip it
+                await fetch('/api/admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'schedule', date: dateStr, is_open: !currentlyOpen, reason: '' })
+                })
+            }
+        } else {
+            // No override exists — create one (flip from default)
+            const reason = !currentlyOpen
+                ? 'Aberto por exceção'
+                : 'Fechado por exceção'
+            await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'schedule', date: dateStr, is_open: !currentlyOpen, reason })
+            })
+        }
+
+        await loadOverrides()
+        setSaving(null)
+    }
+
+    const navMonth = (dir) => {
+        const d = new Date(currentMonth)
+        d.setMonth(d.getMonth() + dir)
+        setCurrentMonth(d)
+    }
+
+    // Count overrides this month
+    const monthOverrides = overrides.filter(o => {
+        const d = new Date(o.date + 'T12:00:00')
+        return d.getMonth() === currentMonth.getMonth() && d.getFullYear() === currentMonth.getFullYear()
+    })
+
+    return (
+        <>
+            <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
+                <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Clock className="text-violet-500" size={20} /> Horários de Funcionamento</h2>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-medium">Clique no dia para alternar aberto/fechado</span>
+                </div>
+            </header>
+            <div className="flex-1 overflow-auto p-4 space-y-4">
+                {/* Legend */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                    <div className="flex items-center gap-6 flex-wrap">
+                        <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md bg-green-100 border-2 border-green-400" />
+                            <span className="text-xs font-semibold text-slate-600">Aberto (padrão)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md bg-red-100 border-2 border-red-400" />
+                            <span className="text-xs font-semibold text-slate-600">Fechado (padrão)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md bg-green-100 border-2 border-amber-400 ring-2 ring-amber-200" />
+                            <span className="text-xs font-semibold text-slate-600">Aberto (exceção) ⭐</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md bg-red-100 border-2 border-amber-400 ring-2 ring-amber-200" />
+                            <span className="text-xs font-semibold text-slate-600">Fechado (exceção) ⭐</span>
+                        </div>
+                        <div className="ml-auto flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-400">Padrão: Ter–Sáb aberto | Dom–Seg fechado</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Month Navigation */}
+                <div className="flex items-center justify-between">
+                    <button onClick={() => navMonth(-1)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400"><ChevronLeft size={20} /></button>
+                    <h3 className="text-lg font-extrabold text-slate-700">
+                        {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                        {monthOverrides.length > 0 && <span className="ml-2 text-xs font-bold text-amber-500">({monthOverrides.length} exceção{monthOverrides.length > 1 ? 'ões' : ''})</span>}
+                    </h3>
+                    <button onClick={() => navMonth(1)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400"><ChevronRight size={20} /></button>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    {/* Day Headers */}
+                    <div className="grid grid-cols-7 border-b border-slate-100">
+                        {DAY_NAMES.map(d => (
+                            <div key={d} className="text-center py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">{d}</div>
+                        ))}
+                    </div>
+                    {/* Date Grid */}
+                    <div className="grid grid-cols-7">
+                        {dates.map((date, i) => {
+                            const dateStr = fmt(date)
+                            const inMonth = date.getMonth() === thisMonth
+                            const open = isDayOpen(date)
+                            const override = getOverride(dateStr)
+                            const isException = !!override
+                            const isPast = date < new Date(fmt(new Date()) + 'T00:00:00')
+                            const isSaving = saving === dateStr
+
+                            return (
+                                <button key={i}
+                                    onClick={() => inMonth && !isPast && toggleDay(date)}
+                                    disabled={!inMonth || isPast || isSaving}
+                                    className={`
+                                        relative py-4 px-2 border-b border-r border-slate-50 text-center transition-all
+                                        ${!inMonth ? 'opacity-20 cursor-default' : isPast ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-105 active:scale-95'}
+                                        ${inMonth && open ? 'bg-green-50' : inMonth ? 'bg-red-50' : ''}
+                                        ${isException && inMonth ? 'ring-2 ring-amber-300 ring-inset' : ''}
+                                    `}>
+                                    <p className={`text-lg font-black ${inMonth ? (open ? 'text-green-700' : 'text-red-500') : 'text-slate-300'}`}>
+                                        {date.getDate()}
+                                    </p>
+                                    <p className={`text-[10px] font-bold mt-0.5 ${open ? 'text-green-500' : 'text-red-400'}`}>
+                                        {inMonth ? (open ? 'Aberto' : 'Fechado') : ''}
+                                    </p>
+                                    {isException && inMonth && (
+                                        <span className="absolute top-1 right-1 text-[9px]">⭐</span>
+                                    )}
+                                    {isSaving && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-white/60">
+                                            <RefreshCw size={14} className="animate-spin text-violet-500" />
+                                        </div>
+                                    )}
+                                    {isToday(date) && (
+                                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-violet-500" />
+                                    )}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* Overrides List */}
+                {monthOverrides.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                        <h3 className="font-bold text-sm text-slate-700 mb-3 flex items-center gap-2">⭐ Exceções neste mês</h3>
+                        <div className="space-y-2">
+                            {monthOverrides.map(o => {
+                                const d = new Date(o.date + 'T12:00:00')
+                                return (
+                                    <div key={o.id} className="flex items-center justify-between py-2 px-3 rounded-xl bg-amber-50 border border-amber-100">
+                                        <div className="flex items-center gap-3">
+                                            <span className={`w-3 h-3 rounded-full ${o.is_open ? 'bg-green-400' : 'bg-red-400'}`} />
+                                            <span className="text-sm font-bold text-slate-700">
+                                                {d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                            </span>
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${o.is_open ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                                                {o.is_open ? 'ABERTO' : 'FECHADO'}
+                                            </span>
+                                            {o.reason && <span className="text-xs text-slate-400 italic">{o.reason}</span>}
+                                        </div>
+                                        <button onClick={() => toggleDay(d)} className="text-xs font-bold text-red-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">
+                                            Remover
+                                        </button>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Info */}
+                <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 text-center">
+                    <p className="text-sm text-violet-700 font-medium">
+                        💡 As mudanças feitas aqui são aplicadas instantaneamente. O bot já saberá quais dias estão abertos ou fechados.
+                    </p>
                 </div>
             </div>
         </>

@@ -44,6 +44,16 @@ export async function GET(request) {
             return NextResponse.json(allApts || [])
         }
 
+        // --- Schedule overrides ---
+        if (type === 'schedule') {
+            const { data, error } = await supabase
+                .from('schedule_overrides')
+                .select('*')
+                .order('date', { ascending: true })
+            if (error) throw error
+            return NextResponse.json(data || [])
+        }
+
         // --- Default: appointments (includes all statuses for visual display) ---
         let query = supabase
             .from('appointments')
@@ -73,6 +83,18 @@ export async function POST(request) {
             const { data, error } = await supabase
                 .from('blocks')
                 .insert({ title: title || 'Bloqueado', starts_at, ends_at })
+                .select()
+                .single()
+            if (error) throw error
+            return NextResponse.json(data)
+        }
+
+        // --- Create/Update Schedule Override ---
+        if (body.type === 'schedule') {
+            const { date, is_open, reason } = body
+            const { data, error } = await supabase
+                .from('schedule_overrides')
+                .upsert({ date, is_open, reason: reason || '' }, { onConflict: 'date' })
                 .select()
                 .single()
             if (error) throw error
@@ -192,6 +214,15 @@ export async function DELETE(request) {
         if (type === 'block') {
             const { error } = await supabase
                 .from('blocks')
+                .delete()
+                .eq('id', id)
+            if (error) throw error
+            return NextResponse.json({ status: 'deleted' })
+        }
+
+        if (type === 'schedule') {
+            const { error } = await supabase
+                .from('schedule_overrides')
                 .delete()
                 .eq('id', id)
             if (error) throw error

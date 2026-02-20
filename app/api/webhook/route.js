@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
-import { findAvailableSlots, bookAppointment, getAppointmentsByPhone, cancelAppointment } from '@/lib/calendar'
+import { findAvailableSlots, bookAppointment, getAppointmentsByPhone, cancelAppointment, isDayOpen, fetchScheduleOverrides } from '@/lib/calendar'
 
 // 1. Validate Z-API Token
 function validateToken(request) {
@@ -83,14 +83,19 @@ export async function POST(request) {
         const now = moment().tz('America/Sao_Paulo')
         const todayLabel = now.format('dddd, DD [de] MMMM [de] YYYY')
 
+        // Fetch schedule overrides to determine open/closed days dynamically
+        const scheduleOverrides = await fetchScheduleOverrides()
+
         let calendarLines = ''
         for (let i = 0; i < 7; i++) {
             const day = now.clone().add(i, 'days')
             const dayName = day.format('dddd')
             const dateLabel = day.format('DD/MM/YYYY')
             const isoDate = day.format('YYYY-MM-DD')
-            const isOpen = day.day() !== 0 && day.day() !== 1
-            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? '✅ aberto' : '❌ fechado'}\n`
+            const isOpen = isDayOpen(isoDate, scheduleOverrides)
+            const isOverride = scheduleOverrides.some(o => o.date === isoDate)
+            const suffix = isOverride ? ' (exceção)' : ''
+            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? '✅ aberto' + suffix : '❌ fechado' + suffix}\n`
         }
 
         // 7. AI Brain (GPT-4o-mini)
@@ -103,7 +108,7 @@ Hoje é ${todayLabel}.
 
 --- CALENDÁRIO DOS PRÓXIMOS DIAS ---
 ${calendarLines}
-Funcionamos de terça a sábado. Domingo e segunda estamos fechados.
+Normalmente funcionamos de terça a sábado, mas pode haver exceções (domingos ou segundas abertos, ou dias extras fechados). Consulte SEMPRE o calendário acima para saber se um dia está aberto ou fechado.
 ${customerName ? `
 --- CLIENTE IDENTIFICADA ---
 Essa cliente já é cadastrada! O nome dela é: ${customerName}.
