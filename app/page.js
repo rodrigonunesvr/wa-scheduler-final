@@ -71,7 +71,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true)
     const [showNewModal, setShowNewModal] = useState(false)
     const [showBlockModal, setShowBlockModal] = useState(false)
-    const [viewMode, setViewMode] = useState('month')
+    const [viewMode, setViewMode] = useState('week')
     const [refreshKey, setRefreshKey] = useState(0)
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [activePage, setActivePage] = useState('agenda')

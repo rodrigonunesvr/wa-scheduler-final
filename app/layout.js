@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
                 <link rel="apple-touch-icon" href="/icon-192.png" />
                 <meta name="mobile-web-app-capable" content="yes" />
             </head>
-            <body className="bg-gray-100 min-h-screen">{children}</body>
+            <body className="bg-gray-100 min-h-screen p-4">{children}</body>
         </html>
     )
 }
