@@ -62,13 +62,34 @@ export async function POST(request) {
             history = history.slice(-20)
         }
 
-        // 6. AI Brain (GPT-4o-mini)
+        // 6. Build calendar context for AI
+        const moment = (await import('moment-timezone')).default
+        await import('moment/locale/pt-br')
+        moment.locale('pt-br')
+        const now = moment().tz('America/Sao_Paulo')
+        const todayLabel = now.format('dddd, DD [de] MMMM [de] YYYY')
+
+        let calendarLines = ''
+        for (let i = 0; i < 7; i++) {
+            const day = now.clone().add(i, 'days')
+            const dayName = day.format('dddd')
+            const dateLabel = day.format('DD/MM/YYYY')
+            const isoDate = day.format('YYYY-MM-DD')
+            const isOpen = day.day() !== 0 && day.day() !== 1
+            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? '✅ aberto' : '❌ fechado'}\n`
+        }
+
+        // 7. AI Brain (GPT-4o-mini)
         const messages = [
             {
                 role: "system", content: `
 Você é a Clara, secretária virtual do Espaço Camille Almeida (Espaço C.A.), um estúdio especializado em unhas de gel e esmaltação em gel.
 Seu objetivo é agendar serviços, tirar dúvidas sobre preços e informar o protocolo de atendimento.
-Hoje é ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
+Hoje é ${todayLabel}.
+
+--- CALENDÁRIO DOS PRÓXIMOS DIAS ---
+${calendarLines}
+Funcionamos de terça a sábado. Domingo e segunda estamos fechados.
 
 REGRAS DE COMPORTAMENTO:
 1. Seja sempre simpática, acolhedora e profissional. Nunca use menus numerados.
