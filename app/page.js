@@ -308,10 +308,10 @@ export default function AdminDashboard() {
                         </div>
                     </>
                 )}
-                {activePage === 'clientes' && <ClientsPage />}
-                {activePage === 'servicos' && <ServicesPage />}
-                {activePage === 'relatorios' && <ReportsPage appointments={confirmed} />}
-                {activePage === 'horarios' && <SchedulePage />}
+                {activePage === 'clientes' && <ClientsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
+                {activePage === 'servicos' && <ServicesPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
+                {activePage === 'relatorios' && <ReportsPage appointments={confirmed} isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
+                {activePage === 'horarios' && <SchedulePage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
             </main>
 
             {/* Modals */}
@@ -976,7 +976,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
 }
 
 // ─── Clients Page ──────────────────────────────────────────
-function ClientsPage() {
+function ClientsPage({ isMobile, onOpenMenu }) {
     const [customers, setCustomers] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -1024,7 +1024,14 @@ function ClientsPage() {
     return (
         <>
             <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
-                <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Users className="text-violet-500" size={20} /> Clientes</h2>
+                <div className="flex items-center gap-2">
+                    {isMobile && (
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500">
+                            <LayoutGrid size={20} />
+                        </button>
+                    )}
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Users className="text-violet-500" size={20} /> Clientes</h2>
+                </div>
                 <div className="relative w-full md:w-64">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input type="text" placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
@@ -1148,7 +1155,7 @@ function ClientsPage() {
 }
 
 // ─── Services Page ─────────────────────────────────────────
-function ServicesPage() {
+function ServicesPage({ isMobile, onOpenMenu }) {
     const loadServices = () => {
         try {
             const saved = JSON.parse(localStorage.getItem('services_overrides') || '{}')
@@ -1205,8 +1212,15 @@ function ServicesPage() {
 
     return (
         <>
-            <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
-                <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Scissors className="text-violet-500" size={20} /> Serviços</h2>
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                    {isMobile && (
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500">
+                            <LayoutGrid size={20} />
+                        </button>
+                    )}
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Scissors className="text-violet-500" size={20} /> Serviços</h2>
+                </div>
                 <div className="flex items-center gap-3">
                     {saved && <span className="text-xs font-bold text-green-600 animate-pulse">✅ Salvo!</span>}
                     {hasOverrides && (
@@ -1359,7 +1373,7 @@ function BlockModal({ selectedDate, onClose, onSave }) {
 }
 
 // ─── Reports Page ──────────────────────────────────────────
-function ReportsPage({ appointments }) {
+function ReportsPage({ appointments, isMobile, onOpenMenu }) {
     const today = new Date()
     const todayStr = fmt(today)
 
@@ -1412,7 +1426,14 @@ function ReportsPage({ appointments }) {
     return (
         <>
             <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
-                <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-500" size={20} /> Relatórios</h2>
+                <div className="flex items-center gap-2">
+                    {isMobile && (
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500">
+                            <LayoutGrid size={20} />
+                        </button>
+                    )}
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-500" size={20} /> Relatórios</h2>
+                </div>
                 <button onClick={() => {
                     const rows = [['Data', 'Cliente', 'Telefone', 'Serviço', 'Status', 'Valor']]
                     appointments.forEach(a => {
@@ -1511,7 +1532,7 @@ function ReportsPage({ appointments }) {
 }
 
 // ─── Schedule Page ─────────────────────────────────────────
-function SchedulePage() {
+function SchedulePage({ isMobile, onOpenMenu }) {
     const [overrides, setOverrides] = useState([])
     const [loading, setLoading] = useState(true)
     const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -1596,8 +1617,15 @@ function SchedulePage() {
 
     return (
         <>
-            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 shrink-0">
-                <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Clock className="text-violet-500" size={20} /> Horários</h2>
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2">
+                    {isMobile && (
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500">
+                            <LayoutGrid size={20} />
+                        </button>
+                    )}
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Clock className="text-violet-500" size={20} /> Horários</h2>
+                </div>
                 <span className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap">Clique no dia para alternar aberto/fechado</span>
             </header>
             <div className="flex-1 overflow-auto p-2 md:p-4 space-y-4">
