@@ -55,9 +55,12 @@ export async function POST(request) {
             return NextResponse.json({ status: 'empty-message' })
         }
 
-        // 5. Update History
-        const history = session.context_json || []
+        // 5. Update History (keep last 20 messages to avoid context overflow)
+        let history = session.context_json || []
         history.push({ role: 'user', content: userMessage })
+        if (history.length > 20) {
+            history = history.slice(-20)
+        }
 
         // 6. AI Brain (GPT-4o-mini)
         const messages = [
@@ -69,9 +72,9 @@ Hoje é ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numer
 
 REGRAS DE COMPORTAMENTO:
 1. Seja sempre simpática, acolhedora e profissional. Nunca use menus numerados.
-2. Se o cliente perguntar sobre horários disponíveis, USE a ferramenta 'check_calendar'.
-3. Se o cliente ESCOLHER um horário e informar o NOME, USE 'book_appointment' para confirmar.
-4. Após confirmar um agendamento, reforce o protocolo de atendimento de forma gentil.
+2. Se o cliente perguntar sobre horários disponíveis, USE OBRIGATORIAMENTE a ferramenta 'check_calendar'.
+3. Se o cliente ESCOLHER um horário e informar o NOME, USE OBRIGATORIAMENTE 'book_appointment' para confirmar. NUNCA diga que agendou sem usar a ferramenta.
+4. Após confirmar um agendamento, SEMPRE informe a data completa (dia da semana + data + horário) e reforce o protocolo de atendimento.
 5. Se não souber algo, pergunte educadamente.
 
 --- TABELA DE PREÇOS ---
