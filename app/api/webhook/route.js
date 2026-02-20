@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
-import { findAvailableSlots } from '@/lib/calendar'
+import { findAvailableSlots, bookAppointment } from '@/lib/calendar'
 
 // 1. Validate Z-API Token
 function validateToken(request) {
@@ -12,18 +12,9 @@ function validateToken(request) {
 // 2. Main Webhook Handler
 export async function POST(request) {
     try {
-        // Security Check
-        // if (!validateToken(request)) {
-        //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        // }
-
         const body = await request.json()
-
-        // Z-API sends many events. We only care about: 'on-message-received'
-        // but the structure varies. Let's assume standard structure.
         console.log('Webhook received:', JSON.stringify(body, null, 2))
 
-        // Validations: Ignore groups, ignore self
         const isGroup = body.isGroup
         const fromMe = body.fromMe
         if (isGroup || fromMe) {
@@ -31,7 +22,7 @@ export async function POST(request) {
         }
 
         const phone = body.phone
-        const text = body.message?.text?.message || body.text?.message || '' // Handle both structures
+        const text = body.message?.text?.message || body.text?.message || ''
         const audioUrl = body.message?.audio?.audioUrl
 
         if (!phone) {
@@ -57,9 +48,6 @@ export async function POST(request) {
         // 4. Process Content (Text or Audio)
         let userMessage = text
         if (audioUrl) {
-            // TODO: Whisper Transcription
-            // const transcription = await transcribeAudio(audioUrl)
-            // userMessage = transcription
             userMessage = "[ÁUDIO RECEBIDO - Transcrição pendente na v1]"
         }
 
@@ -72,25 +60,50 @@ export async function POST(request) {
         history.push({ role: 'user', content: userMessage })
 
         // 6. AI Brain (GPT-4o-mini)
-        // We provide tools to the LLM so it can "look" at the calendar
+        const messages = [
+            {
+                role: "system", content: `
+Você é a Clara, secretária virtual do Espaço Camille Almeida (Espaço C.A.), um estúdio especializado em unhas de gel e esmaltação em gel.
+Seu objetivo é agendar serviços, tirar dúvidas sobre preços e informar o protocolo de atendimento.
+Hoje é ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
+
+REGRAS DE COMPORTAMENTO:
+1. Seja sempre simpática, acolhedora e profissional. Nunca use menus numerados.
+2. Se o cliente perguntar sobre horários disponíveis, USE a ferramenta 'check_calendar'.
+3. Se o cliente ESCOLHER um horário e informar o NOME, USE 'book_appointment' para confirmar.
+4. Após confirmar um agendamento, reforce o protocolo de atendimento de forma gentil.
+5. Se não souber algo, pergunte educadamente.
+
+--- TABELA DE PREÇOS ---
+
+🔹 UNHAS DE GEL:
+- Fibra ou Molde F1: R$ 190,00
+- Banho de Gel: R$ 150,00
+- Manutenção: R$ 150,00
+- Manutenção (outra profissional): R$ 170,00
+- Remoção: R$ 45,00
+
+🔹 ESMALTAÇÃO EM GEL:
+- Esmaltação Básica: R$ 20,00 (esmalte liso, com glitter, magnético ou refletivo)
+- Esmaltação Premium: R$ 25,00 (francesinha lisa sem esmalte embaixo, pó cromado, linhas e formas orgânicas básicas, efeito baby...)
+- Esmaltação ou Pó + Francesinha: R$ 35,00
+- Esmaltação + Francesinha + Pó: R$ 45,00
+
+--- PROTOCOLO DE ATENDIMENTO ---
+Sempre que marcar um horário, informe educadamente as regras abaixo:
+- ✅ Enviamos confirmação 1 dia antes. Não esqueça de confirmar!
+- ⚠️ Cancelamentos com menos de 24h de antecedência serão cobrados 50% do valor do procedimento.
+- ⏰ Tolerância de 20 minutos para atrasos. Após isso, a esmaltação não será realizada.
+- 💅 Não faça a cutícula até 3 dias antes do atendimento.
+- 📅 Manutenções devem ser feitas em até 25/30 dias.
+- ⏳ Cada procedimento leva em média 1h30min a 2h.
+`},
+            ...history
+        ]
+
         const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
-            messages: [
-                {
-                    role: "system", content: `
-          Você é a Clara, secretária virtual do Espaço C.A.
-          Seu objetivo é agendar serviços de manicure/estética.
-          
-          Regras:
-          1. Seja simpática e humana. Nada de menus (Digite 1).
-          2. Se o cliente pedir horário, USE a ferramenta 'check_calendar'.
-          3. Se o cliente confirmar um horário, USE 'book_appointment'.
-          4. Se não souber, pergunte.
-          
-          Serviços: Fibra, Gel, Manutenção.
-        `},
-                ...history
-            ],
+            messages: messages,
             tools: [
                 {
                     type: "function",
@@ -100,42 +113,72 @@ export async function POST(request) {
                         parameters: {
                             type: "object",
                             properties: {
-                                date: { type: "string", description: "Data no formato YYYY-MM-DD. Se for hoje/amanhã, converta." }
+                                date: { type: "string", description: "Data no formato YYYY-MM-DD. Se o usuário falar 'amanhã', calcule a data correta." }
                             }
+                        }
+                    }
+                },
+                {
+                    type: "function",
+                    function: {
+                        name: "book_appointment",
+                        description: "Realiza o agendamento oficial no sistema.",
+                        parameters: {
+                            type: "object",
+                            properties: {
+                                name: { type: "string", description: "Nome completo do cliente." },
+                                service: { type: "string", description: "O serviço escolhido (Fibra, Gel, Manutenção, etc)." },
+                                startsAt: { type: "string", description: "Data e hora ISO. Ex: 2024-05-20T14:00:00" }
+                            },
+                            required: ["name", "service", "startsAt"]
                         }
                     }
                 }
             ]
         })
 
-        const aiMsg = completion.choices[0].message
+        let aiMsg = completion.choices[0].message
         let responseText = aiMsg.content
 
         // 7. Handle Tool Calls
         if (aiMsg.tool_calls) {
+            const toolMessages = [...messages, aiMsg]
+
             for (const toolCall of aiMsg.tool_calls) {
+                let result = ""
+                const args = JSON.parse(toolCall.function.arguments)
+
                 if (toolCall.function.name === 'check_calendar') {
-                    const args = JSON.parse(toolCall.function.arguments)
-                    // Call our lib
-                    const slots = await findAvailableSlots({ requestedDate: args.date, appointments: [], blocks: [] })
-                    // Note: appointments/blocks should be fetched from DB real-time here.
-                    // For MVP, we simulated empty arrays in findAvailableSlots call, but valid implementation needs DB fetch.
-
-                    // Feed back to AI
-                    const functionResult = {
-                        role: "tool",
-                        tool_call_id: toolCall.id,
-                        content: JSON.stringify(slots)
-                    }
-
-                    // Second call to generate text based on slots
-                    const verification = await openai.chat.completions.create({
-                        model: "gpt-4o-mini",
-                        messages: [...history, aiMsg, functionResult]
-                    })
-                    responseText = verification.choices[0].message.content
+                    const slots = await findAvailableSlots({ requestedDate: args.date })
+                    result = JSON.stringify(slots)
                 }
+                else if (toolCall.function.name === 'book_appointment') {
+                    try {
+                        const appointment = await bookAppointment({
+                            phone: phone,
+                            name: args.name,
+                            service: args.service,
+                            startsAt: args.startsAt
+                        })
+                        result = JSON.stringify({ status: "success", appointment })
+                    } catch (err) {
+                        result = JSON.stringify({ status: "error", message: err.message })
+                    }
+                }
+
+                toolMessages.push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    content: result
+                })
             }
+
+            // Second call to finalize AI response
+            const finalCompletion = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: toolMessages
+            })
+            responseText = finalCompletion.choices[0].message.content
         }
 
         // 8. Update History with AI Reply
