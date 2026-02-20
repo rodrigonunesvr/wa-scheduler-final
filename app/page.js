@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban } from 'lucide-react'
+import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History } from 'lucide-react'
+
+const whatsappLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '')}`
 
 const SERVICES = [
     { id: 'Fibra ou Molde F1', name: 'Fibra ou Molde F1', price: 190, duration: 120 },
@@ -75,6 +77,8 @@ export default function AdminDashboard() {
     const [activePage, setActivePage] = useState('agenda')
     const [lastCount, setLastCount] = useState(0)
     const [newBadge, setNewBadge] = useState(0)
+    const [showCancelled, setShowCancelled] = useState(true)
+    const [searchQuery, setSearchQuery] = useState('')
 
     // Action modals
     const [actionApt, setActionApt] = useState(null) // appointment being acted on
@@ -143,6 +147,11 @@ export default function AdminDashboard() {
 
     const confirmed = appointments.filter(a => a.status === 'CONFIRMED')
     const allDayApts = appointments.filter(a => toSPDate(a.starts_at) === selectedDate).sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+    const filteredDayApts = allDayApts.filter(a => {
+        if (!showCancelled && a.status === 'CANCELLED') return false
+        if (searchQuery && !a.customer_name?.toLowerCase().includes(searchQuery.toLowerCase())) return false
+        return true
+    })
     const dayApts = confirmed.filter(a => toSPDate(a.starts_at) === selectedDate).sort((a, b) => a.starts_at.localeCompare(b.starts_at))
     const dayBlocks = blocks.filter(b => toSPDate(b.starts_at) === selectedDate)
     const getCount = (d) => confirmed.filter(a => toSPDate(a.starts_at) === d).length
@@ -203,6 +212,21 @@ export default function AdminDashboard() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <button onClick={() => setRefreshKey(k => k + 1)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
+                                {viewMode === 'day' && (
+                                    <>
+                                        <div className="relative">
+                                            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input type="text" placeholder="Buscar cliente..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                                                className="pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs w-40 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none" />
+                                        </div>
+                                        <button onClick={() => setShowCancelled(!showCancelled)}
+                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border-2 ${showCancelled ? 'border-slate-200 text-slate-500 hover:bg-slate-50' : 'border-red-200 bg-red-50 text-red-600'}`}
+                                            title={showCancelled ? 'Ocultar cancelados' : 'Mostrar cancelados'}>
+                                            {showCancelled ? <EyeOff size={13} /> : <Eye size={13} />}
+                                            {showCancelled ? 'Ocultar ✕' : 'Mostrar ✕'}
+                                        </button>
+                                    </>
+                                )}
                                 <button onClick={() => setShowBlockModal(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition active:scale-95">
                                     <Lock size={13} /> Bloquear
                                 </button>
@@ -237,7 +261,7 @@ export default function AdminDashboard() {
                         <div className="flex-1 overflow-auto p-4">
                             {viewMode === 'month' && <MonthView currentDate={currentDate} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} />}
                             {viewMode === 'week' && <WeekView weekDates={weekDates} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} />}
-                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={allDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} />}
+                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={filteredDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} />}
                         </div>
                     </>
                 )}
@@ -472,7 +496,10 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                                         {isCancelled && <span className="bg-white/30 text-[9px] font-bold px-1.5 py-0.5 rounded-full">CANCELADO</span>}
                                         {apt.notes && <FileText size={12} className="text-white/70" title={apt.notes} />}
                                     </div>
-                                    <p className="text-white/80 text-xs flex items-center gap-1 mt-0.5"><Phone size={10} /> {apt.customer_phone}</p>
+                                    <p className="text-white/80 text-xs flex items-center gap-1 mt-0.5">
+                                        <Phone size={10} />
+                                        <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="hover:underline">{apt.customer_phone}</a>
+                                    </p>
                                     <div className="flex flex-wrap gap-1 mt-1.5">
                                         {svcs.map((s, i) => <span key={i} className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>)}
                                     </div>
@@ -535,7 +562,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                         </div>
                         <div>
                             <p className="font-bold text-slate-800">{apt.customer_name}</p>
-                            <p className="text-sm text-slate-500 flex items-center gap-1"><Phone size={12} /> {apt.customer_phone}</p>
+                            <p className="text-sm text-slate-500 flex items-center gap-1"><Phone size={12} /> <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="hover:text-green-600 hover:underline transition-colors">{apt.customer_phone}</a> <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full hover:bg-green-100 transition-colors">WhatsApp <ExternalLink size={9} /></a></p>
                         </div>
                     </div>
 
@@ -683,7 +710,7 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
                     <div className="p-6 space-y-4">
                         <div className="bg-slate-50 rounded-xl p-4 space-y-3">
                             <p className="font-bold text-slate-800 text-sm">{apt.customer_name}</p>
-                            <p className="text-sm text-slate-500 flex items-center gap-1"><Phone size={12} /> {apt.customer_phone}</p>
+                            <p className="text-sm text-slate-500 flex items-center gap-1"><Phone size={12} /> <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="hover:text-green-600 hover:underline transition-colors">{apt.customer_phone}</a> <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full hover:bg-green-100 transition-colors">WhatsApp <ExternalLink size={9} /></a></p>
                             <p className="text-sm text-slate-500">{svcs.join(' + ')} — R$ {total}</p>
 
                             <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
@@ -874,6 +901,7 @@ function ClientsPage() {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [appointments, setAppointments] = useState([])
+    const [historyPhone, setHistoryPhone] = useState(null) // phone to show history for
 
     useEffect(() => {
         async function load() {
@@ -903,10 +931,15 @@ function ClientsPage() {
         return { total: myApts.length, totalSpent, lastVisit, upcoming }
     }
 
+    const getHistory = (phone) => appointments.filter(a => a.customer_phone === phone).sort((a, b) => b.starts_at.localeCompare(a.starts_at))
+
     const filtered = customers.filter(c =>
         c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.phone?.includes(searchTerm)
     )
+
+    const historyCustomer = historyPhone ? customers.find(c => c.phone === historyPhone) : null
+    const historyApts = historyPhone ? getHistory(historyPhone) : []
 
     return (
         <>
@@ -939,6 +972,7 @@ function ClientsPage() {
                                     <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-5 py-3">Próximos</th>
                                     <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-5 py-3">Total Gasto</th>
                                     <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-5 py-3">Última Visita</th>
+                                    <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-5 py-3">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -954,7 +988,9 @@ function ClientsPage() {
                                                     <span className="font-semibold text-sm text-slate-800">{c.name || 'Sem nome'}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-3 text-sm text-slate-600 font-mono">{c.phone}</td>
+                                            <td className="px-5 py-3">
+                                                <a href={whatsappLink(c.phone)} target="_blank" rel="noopener" className="text-sm text-slate-600 font-mono hover:text-green-600 hover:underline transition-colors">{c.phone}</a>
+                                            </td>
                                             <td className="px-5 py-3 text-center">
                                                 <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-lg">{stats.total}</span>
                                             </td>
@@ -969,6 +1005,11 @@ function ClientsPage() {
                                             <td className="px-5 py-3 text-right text-sm text-slate-500">
                                                 {stats.lastVisit ? toSPDate(stats.lastVisit.starts_at).split('-').reverse().join('/') : '—'}
                                             </td>
+                                            <td className="px-5 py-3 text-center">
+                                                <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1 text-xs font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-2.5 py-1 rounded-lg hover:bg-violet-100 transition-colors">
+                                                    <History size={12} /> Histórico
+                                                </button>
+                                            </td>
                                         </tr>
                                     )
                                 })}
@@ -980,15 +1021,67 @@ function ClientsPage() {
                     {filtered.length} cliente{filtered.length !== 1 ? 's' : ''}
                 </div>
             </div>
+
+            {/* History Modal */}
+            {historyPhone && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setHistoryPhone(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+                            <div>
+                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><History className="text-violet-500" size={18} /> Histórico</h3>
+                                <p className="text-sm text-slate-500">{historyCustomer?.name || 'Cliente'} • {historyPhone}</p>
+                            </div>
+                            <button onClick={() => setHistoryPhone(null)} className="p-2 rounded-lg hover:bg-slate-100"><X size={18} /></button>
+                        </div>
+                        <div className="overflow-auto max-h-[60vh] p-4 space-y-2">
+                            {historyApts.length === 0 ? (
+                                <p className="text-center text-sm text-slate-400 py-8">Nenhum agendamento encontrado</p>
+                            ) : historyApts.map(a => {
+                                const svcs = parseServices(a.service_id)
+                                const total = calcTotal(svcs)
+                                const date = toSPDate(a.starts_at).split('-').reverse().join('/')
+                                const time = new Date(a.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+                                return (
+                                    <div key={a.id} className={`flex items-center justify-between p-3 rounded-xl border ${a.status === 'CANCELLED' ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'
+                                        }`}>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-slate-700">{date}</span>
+                                                <span className="text-xs text-slate-400">{time}</span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${a.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : a.status === 'CANCELLED' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'
+                                                    }`}>{a.status === 'CONFIRMED' ? 'Confirmado' : a.status === 'CANCELLED' ? 'Cancelado' : a.status}</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-0.5">{svcs.join(' + ')}</p>
+                                        </div>
+                                        <span className="text-sm font-bold text-green-600 ml-3">R$ {total}</span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 }
 
 // ─── Services Page ─────────────────────────────────────────
 function ServicesPage() {
-    const [services, setServices] = useState(SERVICES.map(s => ({ ...s })))
+    const loadServices = () => {
+        try {
+            const saved = JSON.parse(localStorage.getItem('services_overrides') || '{}')
+            return SERVICES.map(s => ({
+                ...s,
+                price: saved[s.id]?.price ?? s.price,
+                duration: saved[s.id]?.duration ?? s.duration
+            }))
+        } catch { return SERVICES.map(s => ({ ...s })) }
+    }
+
+    const [services, setServices] = useState(loadServices)
     const [editing, setEditing] = useState(null)
     const [editForm, setEditForm] = useState({})
+    const [saved, setSaved] = useState(false)
 
     const startEdit = (svc) => {
         setEditing(svc.id)
@@ -996,11 +1089,32 @@ function ServicesPage() {
     }
 
     const saveEdit = (id) => {
-        setServices(prev => prev.map(s =>
+        const updated = services.map(s =>
             s.id === id ? { ...s, price: Number(editForm.price), duration: Number(editForm.duration) } : s
-        ))
+        )
+        setServices(updated)
+        // Save to localStorage
+        const overrides = {}
+        updated.forEach(s => {
+            const original = SERVICES.find(o => o.id === s.id)
+            if (s.price !== original.price || s.duration !== original.duration) {
+                overrides[s.id] = { price: s.price, duration: s.duration }
+            }
+        })
+        localStorage.setItem('services_overrides', JSON.stringify(overrides))
         setEditing(null)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
     }
+
+    const resetAll = () => {
+        localStorage.removeItem('services_overrides')
+        setServices(SERVICES.map(s => ({ ...s })))
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+    }
+
+    const hasOverrides = services.some((s, i) => s.price !== SERVICES[i].price || s.duration !== SERVICES[i].duration)
 
     const categories = [
         { name: 'Unhas de Gel', emoji: '💎', ids: ['Fibra ou Molde F1', 'Banho de Gel', 'Manutenção', 'Manutenção (outra prof.)', 'Remoção'] },
@@ -1011,8 +1125,14 @@ function ServicesPage() {
         <>
             <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
                 <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Scissors className="text-violet-500" size={20} /> Serviços</h2>
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400 font-medium">{services.length} serviços cadastrados</span>
+                <div className="flex items-center gap-3">
+                    {saved && <span className="text-xs font-bold text-green-600 animate-pulse">✅ Salvo!</span>}
+                    {hasOverrides && (
+                        <button onClick={resetAll} className="text-xs font-bold text-red-500 hover:text-red-600 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition-colors">
+                            Resetar Padrão
+                        </button>
+                    )}
+                    <span className="text-xs text-slate-400 font-medium">{services.length} serviços</span>
                 </div>
             </header>
             <div className="flex-1 overflow-auto p-4 space-y-4">
@@ -1024,53 +1144,58 @@ function ServicesPage() {
                             </h3>
                         </div>
                         <div className="divide-y divide-slate-50">
-                            {services.filter(s => cat.ids.includes(s.id)).map(svc => (
-                                <div key={svc.id} className="flex items-center justify-between px-5 py-3 hover:bg-violet-50/30 transition-colors">
-                                    <div className="flex-1">
-                                        <p className="font-semibold text-sm text-slate-800">{svc.name}</p>
+                            {services.filter(s => cat.ids.includes(s.id)).map(svc => {
+                                const original = SERVICES.find(o => o.id === svc.id)
+                                const isModified = svc.price !== original.price || svc.duration !== original.duration
+                                return (
+                                    <div key={svc.id} className={`flex items-center justify-between px-5 py-3 hover:bg-violet-50/30 transition-colors ${isModified ? 'bg-amber-50/30' : ''}`}>
+                                        <div className="flex-1 flex items-center gap-2">
+                                            <p className="font-semibold text-sm text-slate-800">{svc.name}</p>
+                                            {isModified && <span className="text-[9px] font-bold text-amber-500 bg-amber-100 px-1.5 py-0.5 rounded-full">editado</span>}
+                                        </div>
+                                        {editing === svc.id ? (
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-xs text-slate-400 font-bold">R$</span>
+                                                    <input type="number" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })}
+                                                        className="w-20 px-2 py-1.5 rounded-lg border border-violet-300 text-sm font-bold text-center focus:ring-2 focus:ring-violet-100 outline-none" />
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <Clock size={12} className="text-slate-400" />
+                                                    <input type="number" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })}
+                                                        className="w-16 px-2 py-1.5 rounded-lg border border-violet-300 text-sm font-medium text-center focus:ring-2 focus:ring-violet-100 outline-none" />
+                                                    <span className="text-xs text-slate-400">min</span>
+                                                </div>
+                                                <button onClick={() => saveEdit(svc.id)}
+                                                    className="p-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors" title="Salvar">
+                                                    <Save size={14} />
+                                                </button>
+                                                <button onClick={() => setEditing(null)}
+                                                    className="p-1.5 rounded-lg bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors" title="Cancelar">
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-right">
+                                                    <p className="text-sm font-bold text-violet-600">R$ {svc.price}</p>
+                                                    <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 justify-end"><Clock size={10} /> {svc.duration}min</p>
+                                                </div>
+                                                <button onClick={() => startEdit(svc)}
+                                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-violet-600 transition-colors" title="Editar">
+                                                    <Edit2 size={14} />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
-                                    {editing === svc.id ? (
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-xs text-slate-400 font-bold">R$</span>
-                                                <input type="number" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })}
-                                                    className="w-20 px-2 py-1.5 rounded-lg border border-violet-300 text-sm font-bold text-center focus:ring-2 focus:ring-violet-100 outline-none" />
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Clock size={12} className="text-slate-400" />
-                                                <input type="number" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })}
-                                                    className="w-16 px-2 py-1.5 rounded-lg border border-violet-300 text-sm font-medium text-center focus:ring-2 focus:ring-violet-100 outline-none" />
-                                                <span className="text-xs text-slate-400">min</span>
-                                            </div>
-                                            <button onClick={() => saveEdit(svc.id)}
-                                                className="p-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors" title="Salvar">
-                                                <Save size={14} />
-                                            </button>
-                                            <button onClick={() => setEditing(null)}
-                                                className="p-1.5 rounded-lg bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors" title="Cancelar">
-                                                <X size={14} />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-4">
-                                            <div className="text-right">
-                                                <p className="text-sm font-bold text-violet-600">R$ {svc.price}</p>
-                                                <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 justify-end"><Clock size={10} /> {svc.duration}min</p>
-                                            </div>
-                                            <button onClick={() => startEdit(svc)}
-                                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-violet-600 transition-colors" title="Editar">
-                                                <Edit2 size={14} />
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     </div>
                 ))}
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-                    <p className="text-sm text-amber-700 font-medium">
-                        💡 Os preços editados aqui são apenas visuais por enquanto. Para alterar permanentemente, atualize o código fonte.
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                    <p className="text-sm text-green-700 font-medium">
+                        💾 As alterações de preço e duração são salvas automaticamente e persistem entre sessões.
                     </p>
                 </div>
             </div>
@@ -1202,8 +1327,24 @@ function ReportsPage({ appointments }) {
 
     return (
         <>
-            <header className="bg-white border-b border-slate-200 px-6 py-4 shrink-0">
+            <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
                 <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-500" size={20} /> Relatórios</h2>
+                <button onClick={() => {
+                    const rows = [['Data', 'Cliente', 'Telefone', 'Serviço', 'Status', 'Valor']]
+                    appointments.forEach(a => {
+                        const svcs = parseServices(a.service_id)
+                        const total = calcTotal(svcs)
+                        rows.push([toSPDate(a.starts_at), a.customer_name, a.customer_phone, svcs.join(' + '), a.status, total])
+                    })
+                    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url; a.download = `relatorio_${fmt(new Date())}.csv`; a.click()
+                    URL.revokeObjectURL(url)
+                }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 shadow-lg shadow-green-200 transition active:scale-95">
+                    <Download size={14} /> Exportar CSV
+                </button>
             </header>
             <div className="flex-1 overflow-auto p-4 space-y-4">
                 {/* Top Stats */}
