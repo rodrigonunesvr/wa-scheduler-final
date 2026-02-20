@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical } from 'lucide-react'
+import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save } from 'lucide-react'
 
 const SERVICES = [
     { id: 'Fibra ou Molde F1', name: 'Fibra ou Molde F1', price: 190, duration: 120 },
@@ -156,32 +156,37 @@ export default function AdminDashboard() {
 
             {/* Main */}
             <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
-                <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2">
-                        <div className="flex bg-slate-100 rounded-xl p-0.5">
-                            {['dia', 'semana', 'mês'].map((v, i) => {
-                                const mode = ['day', 'week', 'month'][i]
-                                return <button key={mode} onClick={() => setViewMode(mode)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === mode ? 'bg-white shadow text-violet-700' : 'text-slate-500'}`}>{v.charAt(0).toUpperCase() + v.slice(1)}</button>
-                            })}
+                {activePage === 'agenda' && (
+                    <>
+                        <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-2">
+                                <div className="flex bg-slate-100 rounded-xl p-0.5">
+                                    {['dia', 'semana', 'mês'].map((v, i) => {
+                                        const mode = ['day', 'week', 'month'][i]
+                                        return <button key={mode} onClick={() => setViewMode(mode)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === mode ? 'bg-white shadow text-violet-700' : 'text-slate-500'}`}>{v.charAt(0).toUpperCase() + v.slice(1)}</button>
+                                    })}
+                                </div>
+                                <button onClick={() => nav(-1)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"><ChevronLeft size={18} /></button>
+                                <button onClick={goToday} className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition">HOJE</button>
+                                <button onClick={() => nav(1)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"><ChevronRight size={18} /></button>
+                                <span className="text-sm font-bold text-slate-700 ml-1">{headerLabel}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setRefreshKey(k => k + 1)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
+                                <button onClick={() => setShowNewModal(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 shadow-lg shadow-violet-200 transition active:scale-95">
+                                    <Plus size={14} /> Novo
+                                </button>
+                            </div>
+                        </header>
+                        <div className="flex-1 overflow-auto p-4">
+                            {viewMode === 'month' && <MonthView currentDate={currentDate} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} />}
+                            {viewMode === 'week' && <WeekView weekDates={weekDates} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} />}
+                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={dayApts} onAction={openAction} dayRevenue={dayRevenue} />}
                         </div>
-                        <button onClick={() => nav(-1)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"><ChevronLeft size={18} /></button>
-                        <button onClick={goToday} className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition">HOJE</button>
-                        <button onClick={() => nav(1)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"><ChevronRight size={18} /></button>
-                        <span className="text-sm font-bold text-slate-700 ml-1">{headerLabel}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setRefreshKey(k => k + 1)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
-                        <button onClick={() => setShowNewModal(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 shadow-lg shadow-violet-200 transition active:scale-95">
-                            <Plus size={14} /> Novo
-                        </button>
-                    </div>
-                </header>
-
-                <div className="flex-1 overflow-auto p-4">
-                    {viewMode === 'month' && <MonthView currentDate={currentDate} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} />}
-                    {viewMode === 'week' && <WeekView weekDates={weekDates} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} />}
-                    {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={dayApts} onAction={openAction} dayRevenue={dayRevenue} />}
-                </div>
+                    </>
+                )}
+                {activePage === 'clientes' && <ClientsPage />}
+                {activePage === 'servicos' && <ServicesPage />}
             </main>
 
             {/* Modals */}
@@ -718,5 +723,215 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
                 </form>
             </div>
         </div>
+    )
+}
+
+// ─── Clients Page ──────────────────────────────────────────
+function ClientsPage() {
+    const [customers, setCustomers] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [searchTerm, setSearchTerm] = useState('')
+    const [appointments, setAppointments] = useState([])
+
+    useEffect(() => {
+        async function load() {
+            setLoading(true)
+            try {
+                const [custRes, aptRes] = await Promise.all([
+                    fetch('/api/admin?type=customers'),
+                    fetch('/api/admin?start=2020-01-01&end=2030-12-31')
+                ])
+                const custData = await custRes.json()
+                const aptData = await aptRes.json()
+                setCustomers(Array.isArray(custData) ? custData : [])
+                setAppointments(Array.isArray(aptData) ? aptData : [])
+            } catch (e) { console.error(e) }
+            setLoading(false)
+        }
+        load()
+    }, [])
+
+    const getStats = (phone) => {
+        const myApts = appointments.filter(a => a.customer_phone === phone && a.status === 'CONFIRMED')
+        const totalSpent = myApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0)
+        const lastVisit = myApts.length > 0
+            ? myApts.sort((a, b) => b.starts_at.localeCompare(a.starts_at))[0]
+            : null
+        const upcoming = myApts.filter(a => new Date(a.starts_at) > new Date()).length
+        return { total: myApts.length, totalSpent, lastVisit, upcoming }
+    }
+
+    const filtered = customers.filter(c =>
+        c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.phone?.includes(searchTerm)
+    )
+
+    return (
+        <>
+            <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
+                <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Users className="text-violet-500" size={20} /> Clientes</h2>
+                <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="text" placeholder="Buscar por nome ou telefone..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                        className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm w-64 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none" />
+                </div>
+            </header>
+            <div className="flex-1 overflow-auto p-4">
+                {loading ? (
+                    <div className="flex items-center justify-center h-40">
+                        <RefreshCw className="animate-spin text-violet-400" size={24} />
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <div className="text-center py-16">
+                        <Users className="mx-auto text-slate-300 mb-3" size={48} />
+                        <p className="text-slate-400 font-medium">Nenhum cliente encontrado</p>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-slate-100">
+                                    <th className="text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 px-5 py-3">Cliente</th>
+                                    <th className="text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 px-5 py-3">Telefone</th>
+                                    <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-5 py-3">Agendamentos</th>
+                                    <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-5 py-3">Próximos</th>
+                                    <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-5 py-3">Total Gasto</th>
+                                    <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-5 py-3">Última Visita</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.map((c, i) => {
+                                    const stats = getStats(c.phone)
+                                    return (
+                                        <tr key={i} className="border-b border-slate-50 hover:bg-violet-50/30 transition-colors">
+                                            <td className="px-5 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-sm">
+                                                        {c.name?.charAt(0)?.toUpperCase() || '?'}
+                                                    </div>
+                                                    <span className="font-semibold text-sm text-slate-800">{c.name || 'Sem nome'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-3 text-sm text-slate-600 font-mono">{c.phone}</td>
+                                            <td className="px-5 py-3 text-center">
+                                                <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-lg">{stats.total}</span>
+                                            </td>
+                                            <td className="px-5 py-3 text-center">
+                                                {stats.upcoming > 0
+                                                    ? <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg">{stats.upcoming}</span>
+                                                    : <span className="text-xs text-slate-400">—</span>}
+                                            </td>
+                                            <td className="px-5 py-3 text-right">
+                                                <span className="text-sm font-bold text-green-600">R$ {stats.totalSpent.toFixed(0)}</span>
+                                            </td>
+                                            <td className="px-5 py-3 text-right text-sm text-slate-500">
+                                                {stats.lastVisit ? toSPDate(stats.lastVisit.starts_at).split('-').reverse().join('/') : '—'}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                <div className="mt-4 text-center text-xs text-slate-400 font-medium">
+                    {filtered.length} cliente{filtered.length !== 1 ? 's' : ''}
+                </div>
+            </div>
+        </>
+    )
+}
+
+// ─── Services Page ─────────────────────────────────────────
+function ServicesPage() {
+    const [services, setServices] = useState(SERVICES.map(s => ({ ...s })))
+    const [editing, setEditing] = useState(null)
+    const [editForm, setEditForm] = useState({})
+
+    const startEdit = (svc) => {
+        setEditing(svc.id)
+        setEditForm({ price: svc.price, duration: svc.duration })
+    }
+
+    const saveEdit = (id) => {
+        setServices(prev => prev.map(s =>
+            s.id === id ? { ...s, price: Number(editForm.price), duration: Number(editForm.duration) } : s
+        ))
+        setEditing(null)
+    }
+
+    const categories = [
+        { name: 'Unhas de Gel', emoji: '💎', ids: ['Fibra ou Molde F1', 'Banho de Gel', 'Manutenção', 'Manutenção (outra prof.)', 'Remoção'] },
+        { name: 'Esmaltação em Gel', emoji: '💅', ids: ['Esmaltação Básica', 'Esmaltação Premium', 'Esm. ou Pó + Francesinha', 'Esm. + Francesinha + Pó'] },
+    ]
+
+    return (
+        <>
+            <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
+                <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Scissors className="text-violet-500" size={20} /> Serviços</h2>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-medium">{services.length} serviços cadastrados</span>
+                </div>
+            </header>
+            <div className="flex-1 overflow-auto p-4 space-y-4">
+                {categories.map(cat => (
+                    <div key={cat.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
+                            <h3 className="font-bold text-sm text-slate-700 flex items-center gap-2">
+                                <span className="text-lg">{cat.emoji}</span> {cat.name}
+                            </h3>
+                        </div>
+                        <div className="divide-y divide-slate-50">
+                            {services.filter(s => cat.ids.includes(s.id)).map(svc => (
+                                <div key={svc.id} className="flex items-center justify-between px-5 py-3 hover:bg-violet-50/30 transition-colors">
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-sm text-slate-800">{svc.name}</p>
+                                    </div>
+                                    {editing === svc.id ? (
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-xs text-slate-400 font-bold">R$</span>
+                                                <input type="number" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })}
+                                                    className="w-20 px-2 py-1.5 rounded-lg border border-violet-300 text-sm font-bold text-center focus:ring-2 focus:ring-violet-100 outline-none" />
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Clock size={12} className="text-slate-400" />
+                                                <input type="number" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })}
+                                                    className="w-16 px-2 py-1.5 rounded-lg border border-violet-300 text-sm font-medium text-center focus:ring-2 focus:ring-violet-100 outline-none" />
+                                                <span className="text-xs text-slate-400">min</span>
+                                            </div>
+                                            <button onClick={() => saveEdit(svc.id)}
+                                                className="p-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors" title="Salvar">
+                                                <Save size={14} />
+                                            </button>
+                                            <button onClick={() => setEditing(null)}
+                                                className="p-1.5 rounded-lg bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors" title="Cancelar">
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-right">
+                                                <p className="text-sm font-bold text-violet-600">R$ {svc.price}</p>
+                                                <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 justify-end"><Clock size={10} /> {svc.duration}min</p>
+                                            </div>
+                                            <button onClick={() => startEdit(svc)}
+                                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-violet-600 transition-colors" title="Editar">
+                                                <Edit2 size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                    <p className="text-sm text-amber-700 font-medium">
+                        💡 Os preços editados aqui são apenas visuais por enquanto. Para alterar permanentemente, atualize o código fonte.
+                    </p>
+                </div>
+            </div>
+        </>
     )
 }

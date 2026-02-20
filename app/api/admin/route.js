@@ -41,11 +41,37 @@ export async function GET(request) {
     }
 }
 
-// POST: Create new appointment
+// POST: Create new appointment (with overlap check)
 export async function POST(request) {
     try {
         const body = await request.json()
         const { customer_name, customer_phone, service_id, starts_at, ends_at } = body
+
+        // Check for overlapping appointments
+        const newStart = new Date(starts_at).getTime()
+        const newEnd = new Date(ends_at).getTime()
+        const dayStart = starts_at.split('T')[0] + 'T00:00:00'
+        const dayEnd = starts_at.split('T')[0] + 'T23:59:59'
+
+        const { data: existing } = await supabase
+            .from('appointments')
+            .select('*')
+            .eq('status', 'CONFIRMED')
+            .gte('starts_at', dayStart)
+            .lte('starts_at', dayEnd)
+
+        if (existing) {
+            for (const apt of existing) {
+                const aptStart = new Date(apt.starts_at).getTime()
+                const aptEnd = new Date(apt.ends_at).getTime()
+                if (newStart < aptEnd && newEnd > aptStart) {
+                    const time = new Date(apt.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+                    return NextResponse.json({
+                        error: `Conflito de horário! Já existe agendamento de ${apt.customer_name} às ${time}.`
+                    }, { status: 409 })
+                }
+            }
+        }
 
         const { data, error } = await supabase
             .from('appointments')

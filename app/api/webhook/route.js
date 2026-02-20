@@ -116,20 +116,29 @@ REGRAS DE COMPORTAMENTO:
 4. Após confirmar um agendamento, SEMPRE informe a data completa (dia da semana + data + horário) e reforce o protocolo de atendimento.
 5. Se não souber algo, pergunte educadamente.
 
+--- MULTI-SERVIÇO ---
+6. Após o cliente escolher o primeiro serviço, pergunte: "Gostaria de adicionar mais algum serviço ao seu atendimento? 💅"
+7. Se a cliente quiser mais de um serviço, acumule todos antes de agendar.
+8. Ao usar 'book_appointment', passe TODOS os serviços escolhidos no campo 'services' como uma lista/array. Ex: ["Fibra ou Molde F1", "Esmaltação Premium"]
+9. Informe o valor total somado de todos os serviços.
+
+--- CONFLITO DE HORÁRIO ---
+10. Se o resultado de 'book_appointment' retornar erro de conflito, informe a cliente que o horário já está ocupado e USE 'check_calendar' para sugerir novos horários.
+
 --- TABELA DE PREÇOS ---
 
 🔹 UNHAS DE GEL:
-- Fibra ou Molde F1: R$ 190,00
-- Banho de Gel: R$ 150,00
-- Manutenção: R$ 150,00
-- Manutenção (outra profissional): R$ 170,00
-- Remoção: R$ 45,00
+- Fibra ou Molde F1: R$ 190,00 (120min)
+- Banho de Gel: R$ 150,00 (90min)
+- Manutenção: R$ 150,00 (90min)
+- Manutenção (outra profissional): R$ 170,00 (90min)
+- Remoção: R$ 45,00 (30min)
 
 🔹 ESMALTAÇÃO EM GEL:
-- Esmaltação Básica: R$ 20,00 (esmalte liso, com glitter, magnético ou refletivo)
-- Esmaltação Premium: R$ 25,00 (francesinha lisa sem esmalte embaixo, pó cromado, linhas e formas orgânicas básicas, efeito baby...)
-- Esmaltação ou Pó + Francesinha: R$ 35,00
-- Esmaltação + Francesinha + Pó: R$ 45,00
+- Esmaltação Básica: R$ 20,00 (30min)
+- Esmaltação Premium: R$ 25,00 (45min)
+- Esmaltação ou Pó + Francesinha: R$ 35,00 (45min)
+- Esmaltação + Francesinha + Pó: R$ 45,00 (60min)
 
 --- PROTOCOLO DE ATENDIMENTO ---
 Sempre que marcar um horário, informe educadamente as regras abaixo:
@@ -141,18 +150,18 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
 - ⏳ Cada procedimento leva em média 1h30min a 2h.
 
 --- CANCELAMENTO ---
-6. Se o cliente pedir para CANCELAR, USE 'list_my_appointments' para buscar os agendamentos dele.
-7. Mostre os agendamentos encontrados (data, hora e serviço) e pergunte qual deseja cancelar.
-8. Quando o cliente confirmar, USE 'cancel_appointment' com a DATA do agendamento no formato YYYY-MM-DD.
-9. Lembre o cliente que cancelamentos com menos de 24h de antecedência têm cobrança de 50%.
+11. Se o cliente pedir para CANCELAR, USE 'list_my_appointments' para buscar os agendamentos dele.
+12. Mostre os agendamentos encontrados (data, hora e serviço) e pergunte qual deseja cancelar.
+13. Quando o cliente confirmar, USE 'cancel_appointment' com a DATA do agendamento no formato YYYY-MM-DD.
+14. Lembre o cliente que cancelamentos com menos de 24h de antecedência têm cobrança de 50%.
 
 --- REAGENDAMENTO ---
-10. Se o cliente pedir para REAGENDAR ou MUDAR HORÁRIO, USE 'list_my_appointments' para listar os agendamentos dele.
-11. Pergunte qual agendamento deseja alterar e para qual nova data/horário.
-12. USE 'cancel_appointment' para cancelar o agendamento antigo (com a data antiga no formato YYYY-MM-DD).
-13. USE 'check_calendar' para verificar se o novo horário está disponível.
-14. Se estiver livre, USE 'book_appointment' para agendar o novo horário.
-15. Confirme ao cliente a mudança e reforce o protocolo de atendimento.
+15. Se o cliente pedir para REAGENDAR ou MUDAR HORÁRIO, USE 'list_my_appointments' para listar os agendamentos dele.
+16. Pergunte qual agendamento deseja alterar e para qual nova data/horário.
+17. USE 'cancel_appointment' para cancelar o agendamento antigo (com a data antiga no formato YYYY-MM-DD).
+18. USE 'check_calendar' para verificar se o novo horário está disponível.
+19. Se estiver livre, USE 'book_appointment' para agendar o novo horário.
+20. Confirme ao cliente a mudança e reforce o protocolo de atendimento.
 `},
             ...history
         ]
@@ -178,15 +187,16 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
                     type: "function",
                     function: {
                         name: "book_appointment",
-                        description: "Realiza o agendamento oficial no sistema.",
+                        description: "Realiza o agendamento oficial no sistema. Suporta múltiplos serviços.",
                         parameters: {
                             type: "object",
                             properties: {
                                 name: { type: "string", description: "Nome completo do cliente." },
-                                service: { type: "string", description: "O serviço escolhido (Fibra, Gel, Manutenção, etc)." },
+                                services: { type: "array", items: { type: "string" }, description: "Lista de serviços escolhidos. Ex: ['Fibra ou Molde F1', 'Esmaltação Premium']" },
+                                service: { type: "string", description: "Serviço único (usar 'services' para múltiplos)." },
                                 startsAt: { type: "string", description: "Data e hora ISO. Ex: 2024-05-20T14:00:00" }
                             },
-                            required: ["name", "service", "startsAt"]
+                            required: ["name", "startsAt"]
                         }
                     }
                 },
@@ -233,22 +243,38 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
                 else if (toolCall.function.name === 'book_appointment') {
                     try {
                         console.log('🔵 BOOK_APPOINTMENT args:', JSON.stringify(args))
+                        // Support both 'services' (array) and 'service' (string)
+                        const serviceList = args.services || (args.service ? [args.service] : [])
+                        const serviceStr = serviceList.length > 1 ? JSON.stringify(serviceList) : serviceList[0]
+
+                        // Calculate total duration based on services
+                        const DURATIONS = { 'Fibra ou Molde F1': 120, 'Banho de Gel': 90, 'Manutenção': 90, 'Manutenção (outra prof.)': 90, 'Remoção': 30, 'Esmaltação Básica': 30, 'Esmaltação Premium': 45, 'Esm. ou Pó + Francesinha': 45, 'Esm. + Francesinha + Pó': 60 }
+                        const totalDuration = serviceList.reduce((sum, s) => sum + (DURATIONS[s] || 60), 0)
+
                         const appointment = await bookAppointment({
                             phone: phone,
                             name: args.name,
-                            service: args.service,
-                            startsAt: args.startsAt
+                            service: serviceStr,
+                            startsAt: args.startsAt,
+                            duration: totalDuration
                         })
-                        console.log('✅ BOOK_APPOINTMENT success:', JSON.stringify(appointment))
-                        result = JSON.stringify({ status: "success", appointment })
 
-                        // Auto-register customer
-                        try {
-                            await supabase
-                                .from('customers')
-                                .upsert({ phone: phone, name: args.name }, { onConflict: 'phone' })
-                        } catch (e) {
-                            console.error('Customer upsert error:', e)
+                        // Check if overlap error was returned
+                        if (appointment?.error) {
+                            console.log('⚠️ BOOK_APPOINTMENT conflict:', appointment.message)
+                            result = JSON.stringify({ status: "error", message: appointment.message })
+                        } else {
+                            console.log('✅ BOOK_APPOINTMENT success:', JSON.stringify(appointment))
+                            result = JSON.stringify({ status: "success", appointment })
+
+                            // Auto-register customer
+                            try {
+                                await supabase
+                                    .from('customers')
+                                    .upsert({ phone: phone, name: args.name }, { onConflict: 'phone' })
+                            } catch (e) {
+                                console.error('Customer upsert error:', e)
+                            }
                         }
                     } catch (err) {
                         console.error('❌ BOOK_APPOINTMENT error:', err.message, JSON.stringify(err))
