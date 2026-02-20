@@ -100,8 +100,8 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
 
 --- CANCELAMENTO ---
 6. Se o cliente pedir para CANCELAR, USE 'list_my_appointments' para buscar os agendamentos dele.
-7. Mostre os agendamentos encontrados e pergunte qual deseja cancelar.
-8. Quando o cliente confirmar qual cancelar, USE 'cancel_appointment' com o ID correto.
+7. Mostre os agendamentos encontrados (data, hora e serviço) e pergunte qual deseja cancelar.
+8. Quando o cliente confirmar, USE 'cancel_appointment' com a DATA do agendamento no formato YYYY-MM-DD.
 9. Lembre o cliente que cancelamentos com menos de 24h de antecedência têm cobrança de 50%.
 `},
             ...history
@@ -152,13 +152,13 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
                     type: "function",
                     function: {
                         name: "cancel_appointment",
-                        description: "Cancela um agendamento pelo ID.",
+                        description: "Cancela o agendamento do cliente na data informada.",
                         parameters: {
                             type: "object",
                             properties: {
-                                appointmentId: { type: "string", description: "O UUID do agendamento a ser cancelado." }
+                                date: { type: "string", description: "Data do agendamento a cancelar no formato YYYY-MM-DD." }
                             },
-                            required: ["appointmentId"]
+                            required: ["date"]
                         }
                     }
                 }
@@ -206,9 +206,12 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
                 }
                 else if (toolCall.function.name === 'cancel_appointment') {
                     try {
-                        const cancelled = await cancelAppointment(args.appointmentId)
+                        console.log('🔴 CANCEL args:', JSON.stringify(args), 'phone:', phone)
+                        const cancelled = await cancelAppointment(phone, args.date)
+                        console.log('✅ CANCEL success:', JSON.stringify(cancelled))
                         result = JSON.stringify({ status: "success", cancelled })
                     } catch (err) {
+                        console.error('❌ CANCEL error:', err.message)
                         result = JSON.stringify({ status: "error", message: err.message })
                     }
                 }
