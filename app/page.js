@@ -1267,7 +1267,7 @@ function ServicesPage() {
                                                 </div>
                                                 <button onClick={() => startEdit(svc)}
                                                     className="p-2 md:p-1.5 rounded-lg bg-slate-50 md:bg-transparent border border-slate-100 md:border-0 hover:bg-slate-100 text-slate-400 hover:text-violet-600 transition-colors" title="Editar">
-                                                    <Edit2 size={16} md:size={14} />
+                                                    <Edit2 size={16} />
                                                 </button>
                                             </div>
                                         )}
