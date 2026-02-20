@@ -47,13 +47,16 @@ export async function POST(request) {
 
         // 3.5 Check if client is registered
         let customerName = null
-        const { data: customer } = await supabase
+        const { data: customer, error: customerError } = await supabase
             .from('customers')
             .select('name')
             .eq('phone', phone)
             .single()
         if (customer) {
             customerName = customer.name
+            console.log('👤 Cliente reconhecida:', customerName)
+        } else {
+            console.log('👤 Cliente nova. Phone:', phone, 'Error:', customerError?.message)
         }
 
         // 4. Process Content (Text or Audio)
@@ -101,7 +104,11 @@ Hoje é ${todayLabel}.
 --- CALENDÁRIO DOS PRÓXIMOS DIAS ---
 ${calendarLines}
 Funcionamos de terça a sábado. Domingo e segunda estamos fechados.
-${customerName ? `\n--- CLIENTE IDENTIFICADA ---\nEssa cliente já é cadastrada! O nome dela é: ${customerName}. Chame-a pelo nome de forma carinhosa.\n` : ''}
+${customerName ? `
+--- CLIENTE IDENTIFICADA ---
+Essa cliente já é cadastrada! O nome dela é: ${customerName}.
+SEMPRE chame-a pelo nome de forma carinhosa em TODAS as respostas.
+` : ''}
 REGRAS DE COMPORTAMENTO:
 1. Seja sempre simpática, acolhedora e profissional. Nunca use menus numerados.
 2. Se o cliente perguntar sobre horários disponíveis, USE OBRIGATORIAMENTE a ferramenta 'check_calendar'.
