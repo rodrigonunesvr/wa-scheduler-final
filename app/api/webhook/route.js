@@ -45,6 +45,17 @@ export async function POST(request) {
             session = newSession
         }
 
+        // 3.5 Check if client is registered
+        let customerName = null
+        const { data: customer } = await supabase
+            .from('customers')
+            .select('name')
+            .eq('phone', phone)
+            .single()
+        if (customer) {
+            customerName = customer.name
+        }
+
         // 4. Process Content (Text or Audio)
         let userMessage = text
         if (audioUrl) {
@@ -90,7 +101,7 @@ Hoje é ${todayLabel}.
 --- CALENDÁRIO DOS PRÓXIMOS DIAS ---
 ${calendarLines}
 Funcionamos de terça a sábado. Domingo e segunda estamos fechados.
-
+${customerName ? `\n--- CLIENTE IDENTIFICADA ---\nEssa cliente já é cadastrada! O nome dela é: ${customerName}. Chame-a pelo nome de forma carinhosa.\n` : ''}
 REGRAS DE COMPORTAMENTO:
 1. Seja sempre simpática, acolhedora e profissional. Nunca use menus numerados.
 2. Se o cliente perguntar sobre horários disponíveis, USE OBRIGATORIAMENTE a ferramenta 'check_calendar'.
@@ -223,6 +234,15 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
                         })
                         console.log('✅ BOOK_APPOINTMENT success:', JSON.stringify(appointment))
                         result = JSON.stringify({ status: "success", appointment })
+
+                        // Auto-register customer
+                        try {
+                            await supabase
+                                .from('customers')
+                                .upsert({ phone: phone, name: args.name }, { onConflict: 'phone' })
+                        } catch (e) {
+                            console.error('Customer upsert error:', e)
+                        }
                     } catch (err) {
                         console.error('❌ BOOK_APPOINTMENT error:', err.message, JSON.stringify(err))
                         result = JSON.stringify({ status: "error", message: err.message })
