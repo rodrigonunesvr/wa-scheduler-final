@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, User, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors } from 'lucide-react'
+import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical } from 'lucide-react'
 
 const SERVICES = [
     { id: 'Fibra ou Molde F1', name: 'Fibra ou Molde F1', price: 190, duration: 120 },
@@ -25,19 +25,10 @@ for (let h = 7; h <= 19; h++) {
 }
 
 // ─── Timezone-safe helpers (Brazil = UTC-3, no DST) ────────
-function toSPDate(isoStr) {
-    // Returns YYYY-MM-DD in São Paulo timezone
-    return new Date(isoStr).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-}
-
-function toSPTime(isoStr) {
-    return new Date(isoStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
-}
-
-function toISO_SP(dateStr, timeStr) {
-    // Convert local SP date + time to ISO with proper offset (Brazil = -03:00)
-    return `${dateStr}T${timeStr}:00-03:00`
-}
+function toSPDate(isoStr) { return new Date(isoStr).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) }
+function toSPTime(isoStr) { return new Date(isoStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }) }
+function toSPFull(isoStr) { return new Date(isoStr).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo' }) }
+function toISO_SP(dateStr, timeStr) { return `${dateStr}T${timeStr}:00-03:00` }
 
 function fmt(date) {
     const y = date.getFullYear()
@@ -66,11 +57,7 @@ function getMonthDates(year, month) {
     const first = new Date(year, month, 1)
     const startDay = first.getDay()
     const start = new Date(first); start.setDate(1 - startDay)
-    const dates = []
-    for (let i = 0; i < 42; i++) {
-        const d = new Date(start); d.setDate(start.getDate() + i); dates.push(d)
-    }
-    return dates
+    return Array.from({ length: 42 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d })
 }
 
 // ─── Main ──────────────────────────────────────────────────
@@ -85,9 +72,12 @@ export default function AdminDashboard() {
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [activePage, setActivePage] = useState('agenda')
 
+    // Action modals
+    const [actionApt, setActionApt] = useState(null) // appointment being acted on
+    const [actionType, setActionType] = useState(null) // 'cancel' | 'reschedule' | 'view'
+
     const weekDates = getWeekDates(currentDate)
 
-    // Fetch a wider range to cover month view too
     const fetchAppointments = useCallback(async () => {
         setLoading(true)
         const s = new Date(currentDate); s.setDate(1); s.setMonth(s.getMonth() - 1)
@@ -111,9 +101,21 @@ export default function AdminDashboard() {
     }
     const goToday = () => { setCurrentDate(new Date()); setSelectedDate(fmt(new Date())) }
 
-    const cancelAppointment = async (id) => {
-        if (!confirm('Cancelar este agendamento?')) return
+    const openAction = (apt, type) => { setActionApt(apt); setActionType(type) }
+    const closeAction = () => { setActionApt(null); setActionType(null) }
+
+    const doCancelAppointment = async (id) => {
         await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status: 'CANCELLED' }) })
+        closeAction()
+        setRefreshKey(k => k + 1)
+    }
+
+    const doReschedule = async (id, newDate, newTime, duration) => {
+        const startsAt = toISO_SP(newDate, newTime)
+        const endMs = new Date(startsAt).getTime() + duration * 60000
+        const endsAt = new Date(endMs).toISOString()
+        await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, starts_at: startsAt, ends_at: endsAt }) })
+        closeAction()
         setRefreshKey(k => k + 1)
     }
 
@@ -177,12 +179,16 @@ export default function AdminDashboard() {
 
                 <div className="flex-1 overflow-auto p-4">
                     {viewMode === 'month' && <MonthView currentDate={currentDate} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} />}
-                    {viewMode === 'week' && <WeekView weekDates={weekDates} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} />}
-                    {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={dayApts} onCancel={cancelAppointment} dayRevenue={dayRevenue} />}
+                    {viewMode === 'week' && <WeekView weekDates={weekDates} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} />}
+                    {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={dayApts} onAction={openAction} dayRevenue={dayRevenue} />}
                 </div>
             </main>
 
+            {/* Modals */}
             {showNewModal && <NewAppointmentModal selectedDate={selectedDate} onClose={() => setShowNewModal(false)} onSave={() => { setShowNewModal(false); setRefreshKey(k => k + 1) }} />}
+            {actionApt && actionType === 'view' && <AppointmentDetailModal apt={actionApt} onClose={closeAction} onCancel={() => setActionType('cancel')} onReschedule={() => setActionType('reschedule')} />}
+            {actionApt && actionType === 'cancel' && <CancelConfirmModal apt={actionApt} onClose={closeAction} onConfirm={() => doCancelAppointment(actionApt.id)} />}
+            {actionApt && actionType === 'reschedule' && <RescheduleModal apt={actionApt} onClose={closeAction} onConfirm={doReschedule} />}
         </div>
     )
 }
@@ -191,7 +197,6 @@ export default function AdminDashboard() {
 function MonthView({ currentDate, selectedDate, setSelectedDate, getCount }) {
     const dates = getMonthDates(currentDate.getFullYear(), currentDate.getMonth())
     const thisMonth = currentDate.getMonth()
-
     return (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="grid grid-cols-7">
@@ -201,21 +206,13 @@ function MonthView({ currentDate, selectedDate, setSelectedDate, getCount }) {
                 {dates.map((date, i) => {
                     const dateStr = fmt(date)
                     const isThisMonth = date.getMonth() === thisMonth
-                    const isTodayDate = isToday(date)
                     const isClosed = date.getDay() === 0 || date.getDay() === 1
                     const count = getCount(dateStr)
-
                     return (
                         <button key={i} onClick={() => !isClosed && isThisMonth && setSelectedDate(dateStr)} disabled={isClosed || !isThisMonth}
                             className={`relative h-24 p-2 border-b border-r border-slate-50 text-left transition-all ${!isThisMonth ? 'opacity-30' : isClosed ? 'bg-slate-50 opacity-40 cursor-not-allowed' : 'hover:bg-violet-50 cursor-pointer'}`}>
-                            <span className={`text-sm font-bold ${isTodayDate ? 'bg-violet-600 text-white w-7 h-7 rounded-full flex items-center justify-center' : 'text-slate-700'}`}>
-                                {date.getDate()}
-                            </span>
-                            {count > 0 && (
-                                <div className="mt-1">
-                                    <span className="bg-violet-100 text-violet-700 text-[10px] font-bold px-1.5 py-0.5 rounded">{count} agend.</span>
-                                </div>
-                            )}
+                            <span className={`text-sm font-bold ${isToday(date) ? 'bg-violet-600 text-white w-7 h-7 rounded-full flex items-center justify-center' : 'text-slate-700'}`}>{date.getDate()}</span>
+                            {count > 0 && <div className="mt-1"><span className="bg-violet-100 text-violet-700 text-[10px] font-bold px-1.5 py-0.5 rounded">{count} agend.</span></div>}
                         </button>
                     )
                 })}
@@ -225,7 +222,7 @@ function MonthView({ currentDate, selectedDate, setSelectedDate, getCount }) {
 }
 
 // ─── Week View ─────────────────────────────────────────────
-function WeekView({ weekDates, selectedDate, setSelectedDate, getCount, appointments }) {
+function WeekView({ weekDates, setSelectedDate, getCount, appointments }) {
     return (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             <div className="grid grid-cols-7 border-b border-slate-100">
@@ -271,7 +268,7 @@ function WeekView({ weekDates, selectedDate, setSelectedDate, getCount, appointm
 }
 
 // ─── Day View ──────────────────────────────────────────────
-function DayView({ selectedDate, appointments, onCancel, dayRevenue }) {
+function DayView({ selectedDate, appointments, onAction, dayRevenue }) {
     const getAptsAtSlot = (slot) => appointments.filter(a => toSPTime(a.starts_at) === slot)
 
     return (
@@ -300,10 +297,12 @@ function DayView({ selectedDate, appointments, onCancel, dayRevenue }) {
                                         const blocks = Math.max(1, Math.round(dur / 30))
                                         const total = calcTotal(svcs)
                                         return (
-                                            <div key={apt.id} className="bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-shadow group relative"
+                                            <div key={apt.id}
+                                                onClick={() => onAction(apt, 'view')}
+                                                className="bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-all cursor-pointer group relative"
                                                 style={{ minHeight: `${blocks * 44 - 8}px` }}>
                                                 <div className="flex items-start justify-between">
-                                                    <div>
+                                                    <div className="flex-1 min-w-0">
                                                         <p className="font-bold text-sm">{apt.customer_name}</p>
                                                         <p className="text-white/80 text-xs flex items-center gap-1 mt-0.5"><Phone size={10} /> {apt.customer_phone}</p>
                                                         <div className="flex flex-wrap gap-1 mt-1.5">
@@ -311,7 +310,17 @@ function DayView({ selectedDate, appointments, onCancel, dayRevenue }) {
                                                         </div>
                                                         <p className="text-white/70 text-[10px] mt-1">{toSPTime(apt.starts_at)} — {dur}min • R$ {total}</p>
                                                     </div>
-                                                    <button onClick={() => onCancel(apt.id)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-white/20 hover:bg-red-500 transition-all" title="Cancelar"><XCircle size={14} /></button>
+                                                    {/* Action buttons - visible on hover */}
+                                                    <div className="opacity-0 group-hover:opacity-100 flex flex-col gap-1 transition-opacity ml-2">
+                                                        <button onClick={(e) => { e.stopPropagation(); onAction(apt, 'reschedule') }}
+                                                            className="p-1.5 rounded-lg bg-white/20 hover:bg-amber-500 transition-colors" title="Reagendar">
+                                                            <CalendarClock size={13} />
+                                                        </button>
+                                                        <button onClick={(e) => { e.stopPropagation(); onAction(apt, 'cancel') }}
+                                                            className="p-1.5 rounded-lg bg-white/20 hover:bg-red-500 transition-colors" title="Cancelar">
+                                                            <XCircle size={13} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )
@@ -322,7 +331,7 @@ function DayView({ selectedDate, appointments, onCancel, dayRevenue }) {
                     })}
                 </div>
             </div>
-            {/* Stats Panel */}
+            {/* Stats */}
             <div className="w-64 shrink-0 space-y-3">
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Agendamentos</p>
@@ -336,13 +345,244 @@ function DayView({ selectedDate, appointments, onCancel, dayRevenue }) {
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Próximos</p>
                     <div className="space-y-2">
                         {appointments.slice(0, 4).map(apt => (
-                            <div key={apt.id} className="flex items-center gap-2">
+                            <div key={apt.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg p-1 -m-1 transition" onClick={() => onAction(apt, 'view')}>
                                 <span className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-1 rounded-lg">{toSPTime(apt.starts_at)}</span>
                                 <span className="text-xs font-medium text-slate-700 truncate">{apt.customer_name}</span>
                             </div>
                         ))}
                         {appointments.length === 0 && <p className="text-xs text-slate-400">Nenhum agendamento</p>}
                     </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─── Appointment Detail Modal ──────────────────────────────
+function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule }) {
+    const svcs = parseServices(apt.service_id)
+    const total = calcTotal(svcs)
+    const dur = calcDuration(svcs)
+
+    return (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="bg-gradient-to-r from-violet-600 to-purple-700 text-white px-6 py-5">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-extrabold">Detalhes do Agendamento</h3>
+                        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
+                    </div>
+                    <p className="text-white/80 text-sm">{toSPFull(apt.starts_at)}</p>
+                </div>
+
+                {/* Details */}
+                <div className="p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-lg">
+                            {apt.customer_name?.charAt(0)?.toUpperCase()}
+                        </div>
+                        <div>
+                            <p className="font-bold text-slate-800">{apt.customer_name}</p>
+                            <p className="text-sm text-slate-500 flex items-center gap-1"><Phone size={12} /> {apt.customer_phone}</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Horário</span>
+                            <span className="text-sm font-bold text-slate-800">{toSPTime(apt.starts_at)} — {dur}min</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Serviços</span>
+                            <div className="flex flex-wrap gap-1 justify-end">
+                                {svcs.map((s, i) => <span key={i} className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{s}</span>)}
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total</span>
+                            <span className="text-lg font-black text-green-600">R$ {total}</span>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <button onClick={onReschedule}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-50 border-2 border-amber-200 text-amber-700 font-bold text-sm hover:bg-amber-100 transition-all active:scale-[0.98]">
+                            <CalendarClock size={16} /> Reagendar
+                        </button>
+                        <button onClick={onCancel}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-50 border-2 border-red-200 text-red-600 font-bold text-sm hover:bg-red-100 transition-all active:scale-[0.98]">
+                            <XCircle size={16} /> Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─── Cancel Confirmation Modal ─────────────────────────────
+function CancelConfirmModal({ apt, onClose, onConfirm }) {
+    const [confirming, setConfirming] = useState(false)
+    const svcs = parseServices(apt.service_id)
+    const total = calcTotal(svcs)
+
+    const handleConfirm = async () => {
+        setConfirming(true)
+        await onConfirm()
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                {/* Warning Header */}
+                <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                            <AlertTriangle size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-extrabold">Confirmar Cancelamento</h3>
+                            <p className="text-white/80 text-sm">Esta ação não pode ser desfeita</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Appointment Summary */}
+                <div className="p-6 space-y-4">
+                    <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-2">
+                        <p className="text-sm text-slate-600">Você está prestes a cancelar:</p>
+                        <div className="bg-white rounded-lg p-3 border border-red-100">
+                            <p className="font-bold text-slate-800">{apt.customer_name}</p>
+                            <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} às {toSPTime(apt.starts_at)}</p>
+                            <p className="text-sm text-slate-500">{svcs.join(' + ')}</p>
+                            <p className="text-sm font-bold text-red-600 mt-1">Valor: R$ {total}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button onClick={onClose}
+                            className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all active:scale-[0.98]">
+                            Voltar
+                        </button>
+                        <button onClick={handleConfirm} disabled={confirming}
+                            className="flex-1 py-3 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 disabled:opacity-50 transition-all active:scale-[0.98] shadow-lg shadow-red-200">
+                            {confirming ? 'Cancelando...' : 'Sim, Cancelar'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─── Reschedule Modal ──────────────────────────────────────
+function RescheduleModal({ apt, onClose, onConfirm }) {
+    const svcs = parseServices(apt.service_id)
+    const total = calcTotal(svcs)
+    const dur = calcDuration(svcs)
+
+    const [newDate, setNewDate] = useState(toSPDate(apt.starts_at))
+    const [newTime, setNewTime] = useState(toSPTime(apt.starts_at))
+    const [step, setStep] = useState('select') // 'select' or 'confirm'
+    const [saving, setSaving] = useState(false)
+
+    const handleConfirm = async () => {
+        setSaving(true)
+        await onConfirm(apt.id, newDate, newTime, dur)
+    }
+
+    if (step === 'confirm') {
+        return (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+                <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                                <CalendarClock size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-extrabold">Confirmar Reagendamento</h3>
+                                <p className="text-white/80 text-sm">Revise os dados antes de confirmar</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-6 space-y-4">
+                        <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                            <p className="font-bold text-slate-800 text-sm">{apt.customer_name}</p>
+                            <p className="text-sm text-slate-500 flex items-center gap-1"><Phone size={12} /> {apt.customer_phone}</p>
+                            <p className="text-sm text-slate-500">{svcs.join(' + ')} — R$ {total}</p>
+
+                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-red-400 mb-1">De</p>
+                                    <p className="text-sm font-semibold text-red-600 line-through">{toSPFull(apt.starts_at)}</p>
+                                    <p className="text-sm font-semibold text-red-600 line-through">{toSPTime(apt.starts_at)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-green-500 mb-1">Para</p>
+                                    <p className="text-sm font-bold text-green-600">{new Date(newDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                                    <p className="text-sm font-bold text-green-600">{newTime}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep('select')}
+                                className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all active:scale-[0.98]">
+                                Voltar
+                            </button>
+                            <button onClick={handleConfirm} disabled={saving}
+                                className="flex-1 py-3 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 disabled:opacity-50 transition-all active:scale-[0.98] shadow-lg shadow-amber-200">
+                                {saving ? 'Salvando...' : 'Confirmar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                    <h3 className="text-base font-extrabold flex items-center gap-2"><CalendarClock size={18} /> Reagendar</h3>
+                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                    {/* Current info */}
+                    <div className="bg-slate-50 rounded-xl p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Agendamento atual</p>
+                        <p className="font-bold text-slate-800">{apt.customer_name}</p>
+                        <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} às {toSPTime(apt.starts_at)}</p>
+                        <p className="text-sm text-slate-500">{svcs.join(' + ')} — R$ {total}</p>
+                    </div>
+
+                    {/* New date/time */}
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Nova data e horário</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Data</label>
+                                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+                                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm font-medium" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Horário</label>
+                                <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
+                                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm font-medium" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onClick={() => setStep('confirm')}
+                        className="w-full py-3 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-all shadow-lg shadow-amber-200 active:scale-[0.99]">
+                        Revisar Reagendamento
+                    </button>
                 </div>
             </div>
         </div>
@@ -400,7 +640,6 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
                                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" placeholder="5511999999999" />
                         </div>
                     </div>
-
                     <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Serviços (selecione um ou mais)</label>
                         <div className="space-y-1.5">
@@ -424,14 +663,12 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
                             })}
                         </div>
                     </div>
-
                     {form.services.length > 0 && (
                         <div className="bg-violet-50 border border-violet-200 rounded-xl px-4 py-3 flex items-center justify-between">
                             <div><span className="text-xs font-bold text-violet-600">{form.services.length} serviço{form.services.length > 1 ? 's' : ''}</span><span className="text-xs text-violet-400 ml-2">• {totalDuration}min</span></div>
                             <span className="text-lg font-black text-violet-700">R$ {totalPrice}</span>
                         </div>
                     )}
-
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Data</label>
@@ -444,9 +681,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
                                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
                         </div>
                     </div>
-
                     {error && <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl border border-red-100">{error}</div>}
-
                     <button type="submit" disabled={saving}
                         className="w-full py-3 rounded-xl bg-violet-600 text-white font-bold hover:bg-violet-700 disabled:opacity-50 transition-all shadow-lg shadow-violet-200 active:scale-[0.99]">
                         {saving ? 'Salvando...' : `Confirmar — R$ ${totalPrice}`}

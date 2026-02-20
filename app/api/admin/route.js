@@ -73,15 +73,20 @@ export async function POST(request) {
     }
 }
 
-// PATCH: Cancel appointment
+// PATCH: Update appointment (cancel or reschedule)
 export async function PATCH(request) {
     try {
         const body = await request.json()
-        const { id, status } = body
+        const { id, status, starts_at, ends_at } = body
+
+        const update = {}
+        if (status) update.status = status
+        if (starts_at) update.starts_at = starts_at
+        if (ends_at) update.ends_at = ends_at
 
         const { data, error } = await supabase
             .from('appointments')
-            .update({ status: status || 'CANCELLED' })
+            .update(update)
             .eq('id', id)
             .select()
             .single()
