@@ -31,7 +31,7 @@ export async function POST(request) {
         }
 
         const phone = body.phone
-        const text = body.message?.text?.message || '' // Adjust based on Z-API payload
+        const text = body.message?.text?.message || body.text?.message || '' // Handle both structures
         const audioUrl = body.message?.audio?.audioUrl
 
         if (!phone) {
