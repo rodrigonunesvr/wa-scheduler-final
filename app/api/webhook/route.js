@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
-import { findAvailableSlots, bookAppointment } from '@/lib/calendar'
+import { findAvailableSlots, bookAppointment, getAppointmentsByPhone, cancelAppointment } from '@/lib/calendar'
 
 // 1. Validate Z-API Token
 function validateToken(request) {
@@ -97,6 +97,12 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
 - 💅 Não faça a cutícula até 3 dias antes do atendimento.
 - 📅 Manutenções devem ser feitas em até 25/30 dias.
 - ⏳ Cada procedimento leva em média 1h30min a 2h.
+
+--- CANCELAMENTO ---
+6. Se o cliente pedir para CANCELAR, USE 'list_my_appointments' para buscar os agendamentos dele.
+7. Mostre os agendamentos encontrados e pergunte qual deseja cancelar.
+8. Quando o cliente confirmar qual cancelar, USE 'cancel_appointment' com o ID correto.
+9. Lembre o cliente que cancelamentos com menos de 24h de antecedência têm cobrança de 50%.
 `},
             ...history
         ]
@@ -133,6 +139,28 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
                             required: ["name", "service", "startsAt"]
                         }
                     }
+                },
+                {
+                    type: "function",
+                    function: {
+                        name: "list_my_appointments",
+                        description: "Lista os agendamentos futuros confirmados do cliente que está conversando.",
+                        parameters: { type: "object", properties: {} }
+                    }
+                },
+                {
+                    type: "function",
+                    function: {
+                        name: "cancel_appointment",
+                        description: "Cancela um agendamento pelo ID.",
+                        parameters: {
+                            type: "object",
+                            properties: {
+                                appointmentId: { type: "string", description: "O UUID do agendamento a ser cancelado." }
+                            },
+                            required: ["appointmentId"]
+                        }
+                    }
                 }
             ]
         })
@@ -154,13 +182,32 @@ Sempre que marcar um horário, informe educadamente as regras abaixo:
                 }
                 else if (toolCall.function.name === 'book_appointment') {
                     try {
+                        console.log('🔵 BOOK_APPOINTMENT args:', JSON.stringify(args))
                         const appointment = await bookAppointment({
                             phone: phone,
                             name: args.name,
                             service: args.service,
                             startsAt: args.startsAt
                         })
+                        console.log('✅ BOOK_APPOINTMENT success:', JSON.stringify(appointment))
                         result = JSON.stringify({ status: "success", appointment })
+                    } catch (err) {
+                        console.error('❌ BOOK_APPOINTMENT error:', err.message, JSON.stringify(err))
+                        result = JSON.stringify({ status: "error", message: err.message })
+                    }
+                }
+                else if (toolCall.function.name === 'list_my_appointments') {
+                    try {
+                        const appointments = await getAppointmentsByPhone(phone)
+                        result = JSON.stringify(appointments)
+                    } catch (err) {
+                        result = JSON.stringify({ status: "error", message: err.message })
+                    }
+                }
+                else if (toolCall.function.name === 'cancel_appointment') {
+                    try {
+                        const cancelled = await cancelAppointment(args.appointmentId)
+                        result = JSON.stringify({ status: "success", cancelled })
                     } catch (err) {
                         result = JSON.stringify({ status: "error", message: err.message })
                     }
