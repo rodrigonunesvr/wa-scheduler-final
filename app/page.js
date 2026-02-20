@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save } from 'lucide-react'
+import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban } from 'lucide-react'
 
 const SERVICES = [
     { id: 'Fibra ou Molde F1', name: 'Fibra ou Molde F1', price: 190, duration: 120 },
@@ -65,12 +65,16 @@ export default function AdminDashboard() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState(fmt(new Date()))
     const [appointments, setAppointments] = useState([])
+    const [blocks, setBlocks] = useState([])
     const [loading, setLoading] = useState(true)
     const [showNewModal, setShowNewModal] = useState(false)
+    const [showBlockModal, setShowBlockModal] = useState(false)
     const [viewMode, setViewMode] = useState('week')
     const [refreshKey, setRefreshKey] = useState(0)
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [activePage, setActivePage] = useState('agenda')
+    const [lastCount, setLastCount] = useState(0)
+    const [newBadge, setNewBadge] = useState(0)
 
     // Action modals
     const [actionApt, setActionApt] = useState(null) // appointment being acted on
@@ -83,14 +87,32 @@ export default function AdminDashboard() {
         const s = new Date(currentDate); s.setDate(1); s.setMonth(s.getMonth() - 1)
         const e = new Date(currentDate); e.setMonth(e.getMonth() + 2)
         try {
-            const res = await fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}`)
-            const data = await res.json()
-            setAppointments(Array.isArray(data) ? data : [])
+            const [aptRes, blkRes] = await Promise.all([
+                fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}`),
+                fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}`)
+            ])
+            const aptData = await aptRes.json()
+            const blkData = await blkRes.json()
+            const apts = Array.isArray(aptData) ? aptData : []
+            setAppointments(apts)
+            setBlocks(Array.isArray(blkData) ? blkData : [])
+            // Badge for new appointments
+            const confirmedCount = apts.filter(a => a.status === 'CONFIRMED').length
+            if (lastCount > 0 && confirmedCount > lastCount) {
+                setNewBadge(confirmedCount - lastCount)
+            }
+            setLastCount(confirmedCount)
         } catch (err) { console.error(err) }
         setLoading(false)
-    }, [currentDate])
+    }, [currentDate, lastCount])
 
     useEffect(() => { fetchAppointments() }, [fetchAppointments, refreshKey])
+
+    // Auto-refresh every 30 seconds
+    useEffect(() => {
+        const interval = setInterval(() => setRefreshKey(k => k + 1), 30000)
+        return () => clearInterval(interval)
+    }, [])
 
     const nav = (dir) => {
         const d = new Date(currentDate)
@@ -120,9 +142,16 @@ export default function AdminDashboard() {
     }
 
     const confirmed = appointments.filter(a => a.status === 'CONFIRMED')
+    const allDayApts = appointments.filter(a => toSPDate(a.starts_at) === selectedDate).sort((a, b) => a.starts_at.localeCompare(b.starts_at))
     const dayApts = confirmed.filter(a => toSPDate(a.starts_at) === selectedDate).sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+    const dayBlocks = blocks.filter(b => toSPDate(b.starts_at) === selectedDate)
     const getCount = (d) => confirmed.filter(a => toSPDate(a.starts_at) === d).length
     const dayRevenue = dayApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0)
+
+    // Monthly stats for summary cards
+    const monthStart = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`
+    const monthApts = confirmed.filter(a => a.starts_at >= monthStart)
+    const monthRevenue = monthApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0)
 
     const headerLabel = viewMode === 'month'
         ? `${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}`
@@ -139,10 +168,11 @@ export default function AdminDashboard() {
                     {sidebarOpen && <span className="font-extrabold text-lg tracking-tight">Espaço C.A.</span>}
                 </div>
                 <nav className="flex-1 py-3 space-y-0.5 px-2">
-                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }].map(item => (
-                        <button key={item.id} onClick={() => setActivePage(item.id)}
+                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
+                        <button key={item.id} onClick={() => { setActivePage(item.id); setNewBadge(0) }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activePage === item.id ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}>
                             <item.icon size={18} />{sidebarOpen && item.label}
+                            {item.id === 'agenda' && newBadge > 0 && sidebarOpen && <span className="ml-auto bg-green-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">+{newBadge}</span>}
                         </button>
                     ))}
                 </nav>
@@ -173,25 +203,53 @@ export default function AdminDashboard() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <button onClick={() => setRefreshKey(k => k + 1)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
+                                <button onClick={() => setShowBlockModal(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition active:scale-95">
+                                    <Lock size={13} /> Bloquear
+                                </button>
                                 <button onClick={() => setShowNewModal(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 shadow-lg shadow-violet-200 transition active:scale-95">
                                     <Plus size={14} /> Novo
                                 </button>
                             </div>
                         </header>
+
+                        {/* Summary Cards */}
+                        {viewMode === 'day' && (
+                            <div className="px-4 pt-4 grid grid-cols-4 gap-3">
+                                <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center"><Calendar className="text-violet-600" size={18} /></div>
+                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Hoje</p><p className="text-xl font-black text-slate-800">{dayApts.length}</p></div>
+                                </div>
+                                <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center"><DollarSign className="text-green-600" size={18} /></div>
+                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fatur. Dia</p><p className="text-xl font-black text-green-600">R$ {dayRevenue}</p></div>
+                                </div>
+                                <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center"><TrendingUp className="text-blue-600" size={18} /></div>
+                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fatur. Mês</p><p className="text-xl font-black text-blue-600">R$ {monthRevenue}</p></div>
+                                </div>
+                                <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center"><Lock className="text-amber-600" size={18} /></div>
+                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bloqueios</p><p className="text-xl font-black text-amber-600">{dayBlocks.length}</p></div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex-1 overflow-auto p-4">
                             {viewMode === 'month' && <MonthView currentDate={currentDate} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} />}
                             {viewMode === 'week' && <WeekView weekDates={weekDates} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} />}
-                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={dayApts} onAction={openAction} dayRevenue={dayRevenue} />}
+                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={allDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} />}
                         </div>
                     </>
                 )}
                 {activePage === 'clientes' && <ClientsPage />}
                 {activePage === 'servicos' && <ServicesPage />}
+                {activePage === 'relatorios' && <ReportsPage appointments={confirmed} />}
             </main>
 
             {/* Modals */}
             {showNewModal && <NewAppointmentModal selectedDate={selectedDate} onClose={() => setShowNewModal(false)} onSave={() => { setShowNewModal(false); setRefreshKey(k => k + 1) }} />}
-            {actionApt && actionType === 'view' && <AppointmentDetailModal apt={actionApt} onClose={closeAction} onCancel={() => setActionType('cancel')} onReschedule={() => setActionType('reschedule')} />}
+            {showBlockModal && <BlockModal selectedDate={selectedDate} onClose={() => setShowBlockModal(false)} onSave={() => { setShowBlockModal(false); setRefreshKey(k => k + 1) }} />}
+            {actionApt && actionType === 'view' && <AppointmentDetailModal apt={actionApt} onClose={closeAction} onCancel={() => setActionType('cancel')} onReschedule={() => setActionType('reschedule')} onSaveNotes={async (id, notes) => { await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, notes }) }); setRefreshKey(k => k + 1) }} />}
             {actionApt && actionType === 'cancel' && <CancelConfirmModal apt={actionApt} onClose={closeAction} onConfirm={() => doCancelAppointment(actionApt.id)} />}
             {actionApt && actionType === 'reschedule' && <RescheduleModal apt={actionApt} onClose={closeAction} onConfirm={doReschedule} />}
         </div>
@@ -272,14 +330,16 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments }) {
     )
 }
 
-// ─── Day View (Absolute positioning for duration blocks) ───
-function DayView({ selectedDate, appointments, onAction, dayRevenue }) {
-    const SLOT_HEIGHT = 48 // pixels per 30min slot
+// ─── Day View (with blocks + status colors) ───────────────
+function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue, onDeleteBlock }) {
+    const SLOT_HEIGHT = 48
     const GRID_START = 7 * 60 // 07:00 in minutes
 
-    // Calculate which slots are occupied
+    const confirmedApts = appointments.filter(a => a.status === 'CONFIRMED')
+
+    // Calculate which slots are occupied (only confirmed)
     const occupiedSlots = new Set()
-    appointments.forEach(apt => {
+    confirmedApts.forEach(apt => {
         const time = toSPTime(apt.starts_at)
         const [h, m] = time.split(':').map(Number)
         const startMin = h * 60 + m
@@ -292,63 +352,132 @@ function DayView({ selectedDate, appointments, onAction, dayRevenue }) {
         }
     })
 
+    // Which slots are blocked
+    const blockedSlots = new Set()
+    blocks.forEach(blk => {
+        const time = toSPTime(blk.starts_at)
+        const [h, m] = time.split(':').map(Number)
+        const startMin = h * 60 + m
+        const endTime = toSPTime(blk.ends_at)
+        const [eh, em] = endTime.split(':').map(Number)
+        const endMin = eh * 60 + em
+        for (let t = startMin; t < endMin; t += 30) {
+            const slotH = String(Math.floor(t / 60)).padStart(2, '0')
+            const slotM = String(t % 60).padStart(2, '0')
+            blockedSlots.add(`${slotH}:${slotM}`)
+        }
+    })
+
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case 'CONFIRMED': return 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
+            case 'CANCELLED': return 'bg-gradient-to-r from-red-400 to-red-500 text-white opacity-50'
+            default: return 'bg-gradient-to-r from-slate-400 to-slate-500 text-white opacity-60'
+        }
+    }
+
     return (
-        <div className="flex gap-4">
-            <div className="flex-1 bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                    <h3 className="font-extrabold text-base text-slate-800 flex items-center gap-2">
-                        <Clock className="text-violet-500" size={18} />
-                        {new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                    </h3>
-                    <span className="text-xs font-bold text-slate-400">{appointments.length} agendamento{appointments.length !== 1 ? 's' : ''}</span>
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-extrabold text-base text-slate-800 flex items-center gap-2">
+                    <Clock className="text-violet-500" size={18} />
+                    {new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </h3>
+                <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-violet-500" /> {confirmedApts.length} confirmado{confirmedApts.length !== 1 ? 's' : ''}
+                    </span>
+                    {blocks.length > 0 && <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-slate-400" /> {blocks.length} bloqueio{blocks.length !== 1 ? 's' : ''}
+                    </span>}
                 </div>
+            </div>
 
-                {/* Time grid with absolute-positioned blocks */}
-                <div className="relative" style={{ height: `${TIME_SLOTS.length * SLOT_HEIGHT}px` }}>
-                    {/* Background grid lines */}
-                    {TIME_SLOTS.map((slot, idx) => {
-                        const isHour = slot.endsWith(':00')
-                        const isOccupied = occupiedSlots.has(slot)
-                        return (
-                            <div key={idx} className="absolute w-full flex" style={{ top: `${idx * SLOT_HEIGHT}px`, height: `${SLOT_HEIGHT}px` }}>
-                                <div className="w-16 shrink-0 flex items-start justify-end pr-3 pt-1">
-                                    {isHour && <span className="text-[11px] font-bold text-slate-400">{slot}</span>}
-                                </div>
-                                <div className={`flex-1 border-l border-slate-100 ${isHour ? 'border-t border-t-slate-200' : 'border-t border-t-slate-50'} ${isOccupied ? 'bg-violet-50/50' : ''}`} />
+            {/* Time grid */}
+            <div className="relative" style={{ height: `${TIME_SLOTS.length * SLOT_HEIGHT}px` }}>
+                {/* Background grid lines */}
+                {TIME_SLOTS.map((slot, idx) => {
+                    const isHour = slot.endsWith(':00')
+                    const isOccupied = occupiedSlots.has(slot)
+                    const isBlocked = blockedSlots.has(slot)
+                    return (
+                        <div key={idx} className="absolute w-full flex" style={{ top: `${idx * SLOT_HEIGHT}px`, height: `${SLOT_HEIGHT}px` }}>
+                            <div className="w-16 shrink-0 flex items-start justify-end pr-3 pt-1">
+                                {isHour && <span className="text-[11px] font-bold text-slate-400">{slot}</span>}
                             </div>
-                        )
-                    })}
+                            <div className={`flex-1 border-l border-slate-100 ${isHour ? 'border-t border-t-slate-200' : 'border-t border-t-slate-50'} ${isBlocked ? 'bg-slate-100' : isOccupied ? 'bg-violet-50/50' : ''}`} />
+                        </div>
+                    )
+                })}
 
-                    {/* Appointment blocks (absolute positioned, spanning full duration) */}
-                    {appointments.map(apt => {
-                        const time = toSPTime(apt.starts_at)
-                        const [h, m] = time.split(':').map(Number)
-                        const startMin = h * 60 + m
-                        const svcs = parseServices(apt.service_id)
-                        const dur = calcDuration(svcs)
-                        const total = calcTotal(svcs)
+                {/* Block bars (gray) */}
+                {blocks.map(blk => {
+                    const time = toSPTime(blk.starts_at)
+                    const [h, m] = time.split(':').map(Number)
+                    const startMin = h * 60 + m
+                    const endTime = toSPTime(blk.ends_at)
+                    const [eh, em] = endTime.split(':').map(Number)
+                    const endMin = eh * 60 + em
+                    const dur = endMin - startMin
+                    const topPx = ((startMin - GRID_START) / 30) * SLOT_HEIGHT
+                    const heightPx = (dur / 30) * SLOT_HEIGHT - 4
 
-                        const topPx = ((startMin - GRID_START) / 30) * SLOT_HEIGHT
-                        const heightPx = (dur / 30) * SLOT_HEIGHT - 4 // -4 for visual padding
+                    return (
+                        <div key={blk.id}
+                            className="absolute bg-slate-300/80 rounded-xl px-3 py-2 z-10 overflow-hidden group border-2 border-dashed border-slate-400"
+                            style={{ top: `${topPx + 2}px`, height: `${heightPx}px`, left: '68px', right: '8px' }}>
+                            <div className="flex items-center justify-between h-full">
+                                <div className="flex items-center gap-2">
+                                    <Lock size={14} className="text-slate-600" />
+                                    <span className="font-bold text-sm text-slate-700">{blk.title || 'Bloqueado'}</span>
+                                    <span className="text-xs text-slate-500">{time} — {endTime.split(':').slice(0, 2).join(':')}</span>
+                                </div>
+                                <button onClick={() => onDeleteBlock(blk.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-all" title="Remover bloqueio">
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    )
+                })}
 
-                        const endMin = startMin + dur
-                        const endH = String(Math.floor(endMin / 60)).padStart(2, '0')
-                        const endM = String(endMin % 60).padStart(2, '0')
+                {/* Appointment blocks */}
+                {appointments.map(apt => {
+                    const time = toSPTime(apt.starts_at)
+                    const [h, m] = time.split(':').map(Number)
+                    const startMin = h * 60 + m
+                    const svcs = parseServices(apt.service_id)
+                    const dur = calcDuration(svcs)
+                    const total = calcTotal(svcs)
 
-                        return (
-                            <div key={apt.id}
-                                onClick={() => onAction(apt, 'view')}
-                                className="absolute bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-all cursor-pointer group z-10 overflow-hidden"
-                                style={{ top: `${topPx + 2}px`, height: `${heightPx}px`, left: '68px', right: '8px' }}>
-                                <div className="flex items-start justify-between h-full">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-sm">{apt.customer_name}</p>
-                                        <p className="text-white/80 text-xs flex items-center gap-1 mt-0.5"><Phone size={10} /> {apt.customer_phone}</p>
-                                        <div className="flex flex-wrap gap-1 mt-1.5">
-                                            {svcs.map((s, i) => <span key={i} className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>)}
-                                        </div>
-                                        <p className="text-white/70 text-[10px] mt-1">{time} — {endH}:{endM} ({dur}min) • R$ {total}</p>
+                    const topPx = ((startMin - GRID_START) / 30) * SLOT_HEIGHT
+                    const heightPx = (dur / 30) * SLOT_HEIGHT - 4
+
+                    const endMin = startMin + dur
+                    const endH = String(Math.floor(endMin / 60)).padStart(2, '0')
+                    const endM = String(endMin % 60).padStart(2, '0')
+
+                    const isCancelled = apt.status === 'CANCELLED'
+
+                    return (
+                        <div key={apt.id}
+                            onClick={() => !isCancelled && onAction(apt, 'view')}
+                            className={`absolute ${getStatusStyle(apt.status)} rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-all ${isCancelled ? 'cursor-default' : 'cursor-pointer'} group z-10 overflow-hidden`}
+                            style={{ top: `${topPx + 2}px`, height: `${heightPx}px`, left: '68px', right: '8px' }}>
+                            <div className="flex items-start justify-between h-full">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <p className={`font-bold text-sm ${isCancelled ? 'line-through' : ''}`}>{apt.customer_name}</p>
+                                        {isCancelled && <span className="bg-white/30 text-[9px] font-bold px-1.5 py-0.5 rounded-full">CANCELADO</span>}
+                                        {apt.notes && <FileText size={12} className="text-white/70" title={apt.notes} />}
                                     </div>
+                                    <p className="text-white/80 text-xs flex items-center gap-1 mt-0.5"><Phone size={10} /> {apt.customer_phone}</p>
+                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                        {svcs.map((s, i) => <span key={i} className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>)}
+                                    </div>
+                                    <p className="text-white/70 text-[10px] mt-1">{time} — {endH}:{endM} ({dur}min) • R$ {total}</p>
+                                </div>
+                                {!isCancelled && (
                                     <div className="opacity-0 group-hover:opacity-100 flex flex-col gap-1 transition-opacity ml-2">
                                         <button onClick={(e) => { e.stopPropagation(); onAction(apt, 'reschedule') }}
                                             className="p-1.5 rounded-lg bg-white/20 hover:bg-amber-500 transition-colors" title="Reagendar">
@@ -359,44 +488,31 @@ function DayView({ selectedDate, appointments, onAction, dayRevenue }) {
                                             <XCircle size={13} />
                                         </button>
                                     </div>
-                                </div>
+                                )}
                             </div>
-                        )
-                    })}
-                </div>
-            </div>
-            {/* Stats */}
-            <div className="w-64 shrink-0 space-y-3">
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Agendamentos</p>
-                    <p className="text-4xl font-black text-violet-600">{appointments.length}</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Faturamento</p>
-                    <p className="text-2xl font-black text-green-600">R$ {dayRevenue.toFixed(2)}</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Próximos</p>
-                    <div className="space-y-2">
-                        {appointments.slice(0, 4).map(apt => (
-                            <div key={apt.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg p-1 -m-1 transition" onClick={() => onAction(apt, 'view')}>
-                                <span className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-1 rounded-lg">{toSPTime(apt.starts_at)}</span>
-                                <span className="text-xs font-medium text-slate-700 truncate">{apt.customer_name}</span>
-                            </div>
-                        ))}
-                        {appointments.length === 0 && <p className="text-xs text-slate-400">Nenhum agendamento</p>}
-                    </div>
-                </div>
+                        </div>
+                    )
+                })}
             </div>
         </div>
     )
 }
 
 // ─── Appointment Detail Modal ──────────────────────────────
-function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule }) {
+function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNotes }) {
     const svcs = parseServices(apt.service_id)
     const total = calcTotal(svcs)
     const dur = calcDuration(svcs)
+    const [notes, setNotes] = useState(apt.notes || '')
+    const [editingNotes, setEditingNotes] = useState(false)
+    const [savingNotes, setSavingNotes] = useState(false)
+
+    const handleSaveNotes = async () => {
+        setSavingNotes(true)
+        await onSaveNotes(apt.id, notes)
+        setSavingNotes(false)
+        setEditingNotes(false)
+    }
 
     return (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -437,6 +553,26 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule }) {
                             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total</span>
                             <span className="text-lg font-black text-green-600">R$ {total}</span>
                         </div>
+                    </div>
+
+                    {/* Notes Section */}
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1"><FileText size={12} /> Observações</span>
+                            {!editingNotes && <button onClick={() => setEditingNotes(true)} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"><Edit2 size={11} /> Editar</button>}
+                        </div>
+                        {editingNotes ? (
+                            <div className="space-y-2">
+                                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} placeholder="Ex: cliente alérgica a acetona, quer francesinha rosa..."
+                                    className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm resize-none" />
+                                <div className="flex gap-2">
+                                    <button onClick={() => { setEditingNotes(false); setNotes(apt.notes || '') }} className="flex-1 py-2 rounded-lg border border-slate-200 text-slate-500 text-xs font-bold hover:bg-slate-50">Cancelar</button>
+                                    <button onClick={handleSaveNotes} disabled={savingNotes} className="flex-1 py-2 rounded-lg bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-1"><Save size={12} /> {savingNotes ? 'Salvando...' : 'Salvar'}</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-amber-800">{notes || 'Nenhuma observação'}</p>
+                        )}
                     </div>
 
                     {/* Action Buttons */}
@@ -625,7 +761,7 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
 
 // ─── New Appointment Modal ─────────────────────────────────
 function NewAppointmentModal({ selectedDate, onClose, onSave }) {
-    const [form, setForm] = useState({ customer_name: '', customer_phone: '', services: [], date: selectedDate, time: '09:00' })
+    const [form, setForm] = useState({ customer_name: '', customer_phone: '', services: [], date: selectedDate, time: '09:00', notes: '' })
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
 
@@ -645,7 +781,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
         try {
             const res = await fetch('/api/admin', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ customer_name: form.customer_name, customer_phone: form.customer_phone, service_id: JSON.stringify(form.services), starts_at: startsAt, ends_at: endsAt })
+                body: JSON.stringify({ customer_name: form.customer_name, customer_phone: form.customer_phone, service_id: JSON.stringify(form.services), starts_at: startsAt, ends_at: endsAt, notes: form.notes || undefined })
             })
             const data = await res.json()
             if (data.error) throw new Error(data.error)
@@ -714,6 +850,11 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
                             <input type="time" required value={form.time} onChange={e => setForm({ ...form, time: e.target.value })}
                                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
                         </div>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Observações (opcional)</label>
+                        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Ex: alérgica a acetona, quer francesinha rosa..."
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm resize-none" />
                     </div>
                     {error && <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl border border-red-100">{error}</div>}
                     <button type="submit" disabled={saving}
@@ -930,6 +1071,214 @@ function ServicesPage() {
                     <p className="text-sm text-amber-700 font-medium">
                         💡 Os preços editados aqui são apenas visuais por enquanto. Para alterar permanentemente, atualize o código fonte.
                     </p>
+                </div>
+            </div>
+        </>
+    )
+}
+
+// ─── Block Modal ───────────────────────────────────────────
+function BlockModal({ selectedDate, onClose, onSave }) {
+    const [form, setForm] = useState({ title: '', date: selectedDate, startTime: '12:00', endTime: '13:00' })
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState('')
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        setSaving(true); setError('')
+        const startsAt = toISO_SP(form.date, form.startTime)
+        const endsAt = toISO_SP(form.date, form.endTime)
+
+        if (new Date(endsAt) <= new Date(startsAt)) {
+            setError('Horário final deve ser depois do inicial.')
+            setSaving(false)
+            return
+        }
+
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'block', title: form.title || 'Bloqueado', starts_at: startsAt, ends_at: endsAt })
+            })
+            const data = await res.json()
+            if (data.error) throw new Error(data.error)
+            onSave()
+        } catch (e) { setError(e.message) }
+        setSaving(false)
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-600 to-slate-700 text-white">
+                    <h3 className="text-base font-extrabold flex items-center gap-2"><Lock size={16} /> Bloquear Horário</h3>
+                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Motivo (opcional)</label>
+                        <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" placeholder="Ex: Almoço, Consulta médica..." />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Data</label>
+                        <input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Início</label>
+                            <input type="time" required value={form.startTime} onChange={e => setForm({ ...form, startTime: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Fim</label>
+                            <input type="time" required value={form.endTime} onChange={e => setForm({ ...form, endTime: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" />
+                        </div>
+                    </div>
+                    {error && <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl border border-red-100">{error}</div>}
+                    <button type="submit" disabled={saving}
+                        className="w-full py-3 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-800 disabled:opacity-50 transition-all shadow-lg shadow-slate-200 active:scale-[0.99]">
+                        {saving ? 'Bloqueando...' : 'Confirmar Bloqueio'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    )
+}
+
+// ─── Reports Page ──────────────────────────────────────────
+function ReportsPage({ appointments }) {
+    const today = new Date()
+    const todayStr = fmt(today)
+
+    // Last 7 days data
+    const last7 = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(today)
+        d.setDate(d.getDate() - (6 - i))
+        const dateStr = fmt(d)
+        const dayApts = appointments.filter(a => toSPDate(a.starts_at) === dateStr)
+        const revenue = dayApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0)
+        const label = d.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric' })
+        return { date: dateStr, count: dayApts.length, revenue, label }
+    })
+
+    const maxRevenue = Math.max(...last7.map(d => d.revenue), 1)
+
+    // This month stats
+    const monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+    const monthApts = appointments.filter(a => a.starts_at.startsWith(monthStr))
+    const monthRevenue = monthApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0)
+    const ticketMedio = monthApts.length > 0 ? (monthRevenue / monthApts.length).toFixed(0) : 0
+
+    // Top services
+    const serviceCounts = {}
+    appointments.forEach(a => {
+        const svcs = parseServices(a.service_id)
+        svcs.forEach(s => { serviceCounts[s] = (serviceCounts[s] || 0) + 1 })
+    })
+    const topServices = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    const maxServiceCount = topServices.length > 0 ? topServices[0][1] : 1
+
+    // Last 4 weeks
+    const last4Weeks = Array.from({ length: 4 }, (_, i) => {
+        const weekEnd = new Date(today)
+        weekEnd.setDate(weekEnd.getDate() - i * 7)
+        const weekStart = new Date(weekEnd)
+        weekStart.setDate(weekStart.getDate() - 6)
+        const weekApts = appointments.filter(a => {
+            const d = toSPDate(a.starts_at)
+            return d >= fmt(weekStart) && d <= fmt(weekEnd)
+        })
+        const revenue = weekApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0)
+        return {
+            label: `${weekStart.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })} — ${weekEnd.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}`,
+            count: weekApts.length,
+            revenue
+        }
+    }).reverse()
+
+    return (
+        <>
+            <header className="bg-white border-b border-slate-200 px-6 py-4 shrink-0">
+                <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-500" size={20} /> Relatórios</h2>
+            </header>
+            <div className="flex-1 overflow-auto p-4 space-y-4">
+                {/* Top Stats */}
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Faturamento Mensal</p>
+                        <p className="text-3xl font-black text-green-600">R$ {monthRevenue}</p>
+                        <p className="text-xs text-slate-400 mt-1">{monthApts.length} agendamentos</p>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Ticket Médio</p>
+                        <p className="text-3xl font-black text-blue-600">R$ {ticketMedio}</p>
+                        <p className="text-xs text-slate-400 mt-1">por atendimento</p>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Agend. Hoje</p>
+                        <p className="text-3xl font-black text-violet-600">{appointments.filter(a => toSPDate(a.starts_at) === todayStr).length}</p>
+                        <p className="text-xs text-slate-400 mt-1">{new Date().toLocaleDateString('pt-BR', { weekday: 'long' })}</p>
+                    </div>
+                </div>
+
+                {/* Chart: Last 7 Days Revenue */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                    <h3 className="font-bold text-sm text-slate-700 mb-4 flex items-center gap-2"><TrendingUp size={16} className="text-green-500" /> Faturamento — Últimos 7 dias</h3>
+                    <div className="flex items-end gap-2" style={{ height: '180px' }}>
+                        {last7.map((day, i) => (
+                            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                                <p className="text-[10px] font-bold text-green-600 mb-1">
+                                    {day.revenue > 0 ? `R$${day.revenue}` : ''}
+                                </p>
+                                <div className="w-full bg-gradient-to-t from-violet-500 to-purple-400 rounded-t-lg transition-all hover:from-violet-600 hover:to-purple-500"
+                                    style={{ height: `${(day.revenue / maxRevenue) * 140}px`, minHeight: day.revenue > 0 ? '8px' : '2px' }}
+                                    title={`${day.label}: R$ ${day.revenue} (${day.count} agend.)`} />
+                                <p className="text-[10px] font-bold text-slate-400 mt-2">{day.label}</p>
+                                <p className="text-[9px] text-slate-300">{day.count} agend.</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    {/* Top Services */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                        <h3 className="font-bold text-sm text-slate-700 mb-4 flex items-center gap-2"><Scissors size={16} className="text-violet-500" /> Serviços Mais Populares</h3>
+                        <div className="space-y-3">
+                            {topServices.map(([name, count], i) => (
+                                <div key={i}>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs font-semibold text-slate-700 truncate mr-2">{name}</span>
+                                        <span className="text-xs font-bold text-violet-600 shrink-0">{count}x</span>
+                                    </div>
+                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-gradient-to-r from-violet-400 to-purple-500 rounded-full transition-all"
+                                            style={{ width: `${(count / maxServiceCount) * 100}%` }} />
+                                    </div>
+                                </div>
+                            ))}
+                            {topServices.length === 0 && <p className="text-xs text-slate-400">Nenhum dado disponível</p>}
+                        </div>
+                    </div>
+
+                    {/* Weekly Breakdown */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                        <h3 className="font-bold text-sm text-slate-700 mb-4 flex items-center gap-2"><Calendar size={16} className="text-blue-500" /> Resumo Semanal</h3>
+                        <div className="space-y-2">
+                            {last4Weeks.map((week, i) => (
+                                <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                                    <span className="text-xs font-medium text-slate-600">{week.label}</span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-lg">{week.count} agend.</span>
+                                        <span className="text-xs font-bold text-green-600 w-16 text-right">R$ {week.revenue}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         </>
