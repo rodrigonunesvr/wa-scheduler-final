@@ -1,0 +1,94 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+)
+
+// GET: Fetch appointments for a date range
+export async function GET(request) {
+    const { searchParams } = new URL(request.url)
+    const startDate = searchParams.get('start')
+    const endDate = searchParams.get('end')
+    const type = searchParams.get('type') // 'appointments' or 'customers'
+
+    try {
+        if (type === 'customers') {
+            const { data, error } = await supabase
+                .from('customers')
+                .select('*')
+                .order('name', { ascending: true })
+            if (error) throw error
+            return NextResponse.json(data)
+        }
+
+        // Default: appointments
+        let query = supabase
+            .from('appointments')
+            .select('*')
+            .order('starts_at', { ascending: true })
+
+        if (startDate) query = query.gte('starts_at', startDate + 'T00:00:00')
+        if (endDate) query = query.lte('starts_at', endDate + 'T23:59:59')
+
+        const { data, error } = await query
+        if (error) throw error
+
+        return NextResponse.json(data)
+    } catch (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}
+
+// POST: Create new appointment
+export async function POST(request) {
+    try {
+        const body = await request.json()
+        const { customer_name, customer_phone, service_id, starts_at, ends_at } = body
+
+        const { data, error } = await supabase
+            .from('appointments')
+            .insert({
+                customer_name,
+                customer_phone,
+                service_id,
+                starts_at,
+                ends_at,
+                status: 'CONFIRMED'
+            })
+            .select()
+            .single()
+
+        if (error) throw error
+
+        // Auto-register customer
+        await supabase
+            .from('customers')
+            .upsert({ phone: customer_phone, name: customer_name }, { onConflict: 'phone' })
+
+        return NextResponse.json(data)
+    } catch (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}
+
+// PATCH: Cancel appointment
+export async function PATCH(request) {
+    try {
+        const body = await request.json()
+        const { id, status } = body
+
+        const { data, error } = await supabase
+            .from('appointments')
+            .update({ status: status || 'CANCELLED' })
+            .eq('id', id)
+            .select()
+            .single()
+
+        if (error) throw error
+        return NextResponse.json(data)
+    } catch (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}
