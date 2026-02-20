@@ -71,7 +71,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true)
     const [showNewModal, setShowNewModal] = useState(false)
     const [showBlockModal, setShowBlockModal] = useState(false)
-    const [viewMode, setViewMode] = useState('week')
+    const [viewMode, setViewMode] = useState('month')
     const [refreshKey, setRefreshKey] = useState(0)
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [activePage, setActivePage] = useState('agenda')
@@ -79,6 +79,22 @@ export default function AdminDashboard() {
     const [newBadge, setNewBadge] = useState(0)
     const [showCancelled, setShowCancelled] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
+    const [darkMode, setDarkMode] = useState(false)
+
+    // Sync Dark Mode with body class and localStorage
+    useEffect(() => {
+        const saved = localStorage.getItem('darkMode') === 'true'
+        setDarkMode(saved)
+        if (saved) document.documentElement.classList.add('dark-mode')
+    }, [])
+
+    const toggleDarkMode = () => {
+        const newMode = !darkMode
+        setDarkMode(newMode)
+        localStorage.setItem('darkMode', String(newMode))
+        if (newMode) document.documentElement.classList.add('dark-mode')
+        else document.documentElement.classList.remove('dark-mode')
+    }
 
     // Action modals
     const [actionApt, setActionApt] = useState(null) // appointment being acted on
@@ -185,7 +201,11 @@ export default function AdminDashboard() {
                         </button>
                     ))}
                 </nav>
-                <div className="p-3 border-t border-white/10">
+                <div className="p-3 border-t border-white/10 space-y-3">
+                    <button onClick={toggleDarkMode} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[11px] font-bold text-white/70 hover:bg-white/10 hover:text-white transition-all">
+                        {darkMode ? <RefreshCw size={14} /> : <RefreshCw size={14} className="rotate-180" />}
+                        {sidebarOpen && (darkMode ? 'Modo Claro' : 'Modo Escuro')}
+                    </button>
                     <div className="flex items-center gap-2 text-xs font-medium text-white/50">
                         <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span></span>
                         {sidebarOpen && 'Bot Ativo'}
@@ -299,7 +319,7 @@ function MonthView({ currentDate, selectedDate, setSelectedDate, getCount }) {
                     return (
                         <button key={i} onClick={() => !isClosed && isThisMonth && setSelectedDate(dateStr)} disabled={isClosed || !isThisMonth}
                             className={`relative h-24 p-2 border-b border-r border-slate-50 text-left transition-all ${!isThisMonth ? 'opacity-30' : isClosed ? 'bg-slate-50 opacity-40 cursor-not-allowed' : 'hover:bg-violet-50 cursor-pointer'}`}>
-                            <span className={`text-sm font-bold ${isToday(date) ? 'bg-violet-600 text-white w-7 h-7 rounded-full flex items-center justify-center' : 'text-slate-700'}`}>{date.getDate()}</span>
+                            <span className={`text-sm font-bold ${isToday(date) ? 'bg-violet-600 text-white w-7 h-7 rounded-full flex items-center justify-center today-pulse' : 'text-slate-700'}`}>{date.getDate()}</span>
                             {count > 0 && <div className="mt-1"><span className="bg-violet-100 text-violet-700 text-[10px] font-bold px-1.5 py-0.5 rounded">{count} agend.</span></div>}
                         </button>
                     )
@@ -322,7 +342,7 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments }) {
                         <button key={i} onClick={() => !isClosed && setSelectedDate(dateStr)} disabled={isClosed}
                             className={`py-4 text-center border-r border-slate-100 last:border-r-0 transition-all ${isClosed ? 'bg-slate-50 opacity-40 cursor-not-allowed' : 'hover:bg-violet-50 cursor-pointer'}`}>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{DAY_NAMES[date.getDay()]}</p>
-                            <p className={`text-2xl font-black mb-1 ${isToday(date) ? 'text-violet-600' : 'text-slate-700'}`}>{date.getDate()}</p>
+                            <p className={`text-2xl font-black mb-1 ${isToday(date) ? 'text-violet-600 today-pulse inline-block px-2' : 'text-slate-700'}`}>{date.getDate()}</p>
                             {count > 0 && <span className="inline-block mt-1 bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{count} agend.</span>}
                             {isClosed && <span className="block text-[10px] text-slate-400 mt-1">Fechado</span>}
                         </button>

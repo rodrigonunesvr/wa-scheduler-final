@@ -1,3 +1,79 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ─── Today Pulse Animation ──────────────────────────────── */
+@keyframes today-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }
+    50% { box-shadow: 0 0 0 8px rgba(139, 92, 246, 0); }
+}
+.today-pulse {
+    animation: today-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Dark Mode ──────────────────────────────────────────── */
+.dark-mode {
+    --bg-main: #0f172a;
+    --bg-card: #1e293b;
+    --bg-card-hover: #334155;
+    --border-color: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+}
+
+.dark-mode .bg-slate-50 { background-color: var(--bg-main) !important; }
+.dark-mode .bg-white { background-color: var(--bg-card) !important; }
+.dark-mode .bg-gray-100 { background-color: var(--bg-main) !important; }
+
+.dark-mode .border-slate-200,
+.dark-mode .border-slate-100,
+.dark-mode .border-slate-50 { border-color: var(--border-color) !important; }
+
+.dark-mode .text-slate-800,
+.dark-mode .text-slate-700 { color: var(--text-primary) !important; }
+
+.dark-mode .text-slate-600,
+.dark-mode .text-slate-500 { color: var(--text-secondary) !important; }
+
+.dark-mode .text-slate-400,
+.dark-mode .text-slate-300 { color: var(--text-muted) !important; }
+
+.dark-mode .bg-slate-100 { background-color: #334155 !important; }
+.dark-mode .bg-slate-50\/50 { background-color: rgba(30, 41, 59, 0.5) !important; }
+
+.dark-mode .hover\:bg-violet-50:hover { background-color: rgba(139, 92, 246, 0.15) !important; }
+.dark-mode .hover\:bg-slate-100:hover { background-color: rgba(51, 65, 85, 0.8) !important; }
+.dark-mode .hover\:bg-slate-50:hover { background-color: rgba(51, 65, 85, 0.5) !important; }
+
+.dark-mode .bg-violet-50,
+.dark-mode .bg-violet-50\/30 { background-color: rgba(139, 92, 246, 0.1) !important; }
+.dark-mode .bg-violet-100 { background-color: rgba(139, 92, 246, 0.2) !important; }
+
+.dark-mode .bg-green-50 { background-color: rgba(34, 197, 94, 0.1) !important; }
+.dark-mode .bg-green-100 { background-color: rgba(34, 197, 94, 0.15) !important; }
+.dark-mode .bg-red-50 { background-color: rgba(239, 68, 68, 0.1) !important; }
+.dark-mode .bg-red-100 { background-color: rgba(239, 68, 68, 0.15) !important; }
+.dark-mode .bg-amber-50 { background-color: rgba(245, 158, 11, 0.1) !important; }
+.dark-mode .bg-amber-100 { background-color: rgba(245, 158, 11, 0.15) !important; }
+.dark-mode .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+
+.dark-mode input,
+.dark-mode select {
+    background-color: var(--bg-main) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .divide-slate-50 > :not(:last-child) { border-color: var(--border-color) !important; }
+
+/* Modal overlay in dark mode */
+.dark-mode .bg-black\/40 { background-color: rgba(0, 0, 0, 0.6) !important; }
+
+/* Table headers */
+.dark-mode th { color: var(--text-muted) !important; }
+
+/* Scrollbar dark mode */
+.dark-mode ::-webkit-scrollbar { width: 6px; }
+.dark-mode ::-webkit-scrollbar-track { background: var(--bg-main); }
+.dark-mode ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
