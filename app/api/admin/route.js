@@ -27,8 +27,8 @@ export async function GET(request) {
         // --- Blocks ---
         if (type === 'blocks') {
             let query = supabase.from('blocks').select('*').order('starts_at', { ascending: true })
-            if (startDate) query = query.gte('starts_at', startDate + 'T00:00:00')
-            if (endDate) query = query.lte('starts_at', endDate + 'T23:59:59')
+            if (startDate) query = query.gte('starts_at', startDate + 'T00:00:00-03:00')
+            if (endDate) query = query.lte('starts_at', endDate + 'T23:59:59-03:00')
             const { data, error } = await query
             if (error) throw error
             return NextResponse.json(data || [])
@@ -60,8 +60,8 @@ export async function GET(request) {
             .select('*')
             .order('starts_at', { ascending: true })
 
-        if (startDate) query = query.gte('starts_at', startDate + 'T00:00:00')
-        if (endDate) query = query.lte('starts_at', endDate + 'T23:59:59')
+        if (startDate) query = query.gte('starts_at', startDate + 'T00:00:00-03:00')
+        if (endDate) query = query.lte('starts_at', endDate + 'T23:59:59-03:00')
 
         const { data, error } = await query
         if (error) throw error
@@ -106,8 +106,9 @@ export async function POST(request) {
 
         const newStart = new Date(starts_at).getTime()
         const newEnd = new Date(ends_at).getTime()
-        const dayStart = starts_at.split('T')[0] + 'T00:00:00'
-        const dayEnd = starts_at.split('T')[0] + 'T23:59:59'
+        const dayPrefix = starts_at.split('T')[0]
+        const dayStart = dayPrefix + 'T00:00:00-03:00'
+        const dayEnd = dayPrefix + 'T23:59:59-03:00'
 
         // Check appointment conflicts
         const { data: existing } = await supabase

@@ -33,10 +33,8 @@ function toSPFull(isoStr) { return new Date(isoStr).toLocaleDateString('pt-BR', 
 function toISO_SP(dateStr, timeStr) { return `${dateStr}T${timeStr}:00-03:00` }
 
 function fmt(date) {
-    const y = date.getFullYear()
-    const m = String(date.getMonth() + 1).padStart(2, '0')
-    const d = String(date.getDate()).padStart(2, '0')
-    return `${y}-${m}-${d}`
+    // Standardize to Brazil/Sao Paulo date string (YYYY-MM-DD)
+    return new Date(date).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 }
 
 function isToday(date) { return fmt(date) === fmt(new Date()) }
@@ -150,7 +148,11 @@ export default function AdminDashboard() {
         else { const sd = new Date(selectedDate + 'T12:00:00'); sd.setDate(sd.getDate() + dir); setSelectedDate(fmt(sd)); return }
         setCurrentDate(d)
     }
-    const goToday = () => { setCurrentDate(new Date()); setSelectedDate(fmt(new Date())) }
+    const goToday = () => {
+        const now = new Date();
+        setCurrentDate(now);
+        setSelectedDate(fmt(now));
+    }
 
     const openAction = (apt, type) => { setActionApt(apt); setActionType(type) }
     const closeAction = () => { setActionApt(null); setActionType(null) }
