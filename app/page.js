@@ -66,6 +66,7 @@ export default function AdminDashboard() {
     const [selectedDate, setSelectedDate] = useState(fmt(new Date()))
     const [appointments, setAppointments] = useState([])
     const [blocks, setBlocks] = useState([])
+    const [overrides, setOverrides] = useState([])
     const [loading, setLoading] = useState(true)
     const [showNewModal, setShowNewModal] = useState(false)
     const [showBlockModal, setShowBlockModal] = useState(false)
@@ -114,15 +115,18 @@ export default function AdminDashboard() {
         const s = new Date(currentDate); s.setDate(1); s.setMonth(s.getMonth() - 1)
         const e = new Date(currentDate); e.setMonth(e.getMonth() + 2)
         try {
-            const [aptRes, blkRes] = await Promise.all([
+            const [aptRes, blkRes, schRes] = await Promise.all([
                 fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}`),
-                fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}`)
+                fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}`),
+                fetch(`/api/admin?type=schedule`)
             ])
             const aptData = await aptRes.json()
             const blkData = await blkRes.json()
+            const schData = await schRes.json()
             const apts = Array.isArray(aptData) ? aptData : []
             setAppointments(apts)
             setBlocks(Array.isArray(blkData) ? blkData : [])
+            setOverrides(Array.isArray(schData) ? schData : [])
             // Badge for new appointments
             const confirmedCount = apts.filter(a => a.status === 'CONFIRMED').length
             if (lastCount > 0 && confirmedCount > lastCount) {
@@ -183,6 +187,14 @@ export default function AdminDashboard() {
     const dayBlocks = blocks.filter(b => toSPDate(b.starts_at) === selectedDate)
     const getCount = (d) => confirmed.filter(a => toSPDate(a.starts_at) === d).length
     const dayRevenue = dayApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0)
+
+    const isDayOpen = (date) => {
+        const dateStr = fmt(date)
+        const override = overrides.find(o => o.date === dateStr)
+        if (override) return override.is_open
+        // Default: closed Sun (0) and Mon (1)
+        return ![0, 1].includes(date.getDay())
+    }
 
     // Monthly stats for summary cards
     const monthStart = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`
@@ -304,8 +316,8 @@ export default function AdminDashboard() {
                         )}
 
                         <div className="flex-1 overflow-auto p-2 md:p-4">
-                            {viewMode === 'month' && <MonthView currentDate={currentDate} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} isMobile={isMobile} />}
-                            {viewMode === 'week' && <WeekView weekDates={weekDates} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} isMobile={isMobile} />}
+                            {viewMode === 'month' && <MonthView currentDate={currentDate} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} isMobile={isMobile} isDayOpen={isDayOpen} />}
+                            {viewMode === 'week' && <WeekView weekDates={weekDates} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} isMobile={isMobile} isDayOpen={isDayOpen} />}
                             {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={filteredDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} isMobile={isMobile} />}
                         </div>
                     </>
@@ -313,7 +325,7 @@ export default function AdminDashboard() {
                 {activePage === 'clientes' && <ClientsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
                 {activePage === 'servicos' && <ServicesPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
                 {activePage === 'relatorios' && <ReportsPage appointments={confirmed} isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
-                {activePage === 'horarios' && <SchedulePage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
+                {activePage === 'horarios' && <SchedulePage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} overrides={overrides} onRefresh={fetchAppointments} isDayOpen={isDayOpen} />}
             </main>
 
             {/* Modals */}
@@ -327,7 +339,7 @@ export default function AdminDashboard() {
 }
 
 // ─── Month View ────────────────────────────────────────────
-function MonthView({ currentDate, selectedDate, setSelectedDate, getCount, isMobile }) {
+function MonthView({ currentDate, selectedDate, setSelectedDate, getCount, isMobile, isDayOpen }) {
     const dates = getMonthDates(currentDate.getFullYear(), currentDate.getMonth())
     const thisMonth = currentDate.getMonth()
     return (
@@ -339,7 +351,7 @@ function MonthView({ currentDate, selectedDate, setSelectedDate, getCount, isMob
                 {dates.map((date, i) => {
                     const dateStr = fmt(date)
                     const isThisMonth = date.getMonth() === thisMonth
-                    const isClosed = date.getDay() === 0 || date.getDay() === 1
+                    const isClosed = !isDayOpen(date)
                     const count = getCount(dateStr)
                     return (
                         <button key={i} onClick={() => !isClosed && isThisMonth && setSelectedDate(dateStr)} disabled={isClosed || !isThisMonth}
@@ -355,13 +367,13 @@ function MonthView({ currentDate, selectedDate, setSelectedDate, getCount, isMob
 }
 
 // ─── Week View ─────────────────────────────────────────────
-function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile }) {
+function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile, isDayOpen }) {
     if (isMobile) {
         return (
             <div className="space-y-3">
                 {weekDates.map((date, i) => {
                     const dateStr = fmt(date)
-                    const isClosed = date.getDay() === 0 || date.getDay() === 1
+                    const isClosed = !isDayOpen(date)
                     const dayApts = appointments.filter(a => toSPDate(a.starts_at) === dateStr)
                     return (
                         <div key={i} onClick={() => !isClosed && setSelectedDate(dateStr)} className={`bg-white rounded-xl border border-slate-200 p-3 shadow-sm ${isClosed ? 'opacity-50' : ''}`}>
@@ -395,7 +407,7 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
             <div className="grid grid-cols-7 border-b border-slate-100">
                 {weekDates.map((date, i) => {
                     const dateStr = fmt(date)
-                    const isClosed = date.getDay() === 0 || date.getDay() === 1
+                    const isClosed = !isDayOpen(date)
                     const count = getCount(dateStr)
                     return (
                         <button key={i} onClick={() => !isClosed && setSelectedDate(dateStr)} disabled={isClosed}
@@ -1534,39 +1546,20 @@ function ReportsPage({ appointments, isMobile, onOpenMenu }) {
 }
 
 // ─── Schedule Page ─────────────────────────────────────────
-function SchedulePage({ isMobile, onOpenMenu }) {
-    const [overrides, setOverrides] = useState([])
-    const [loading, setLoading] = useState(true)
+function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen }) {
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [saving, setSaving] = useState(null) // dateStr being saved
 
-    const DEFAULT_CLOSED = [0, 1] // Sunday, Monday
-
     const loadOverrides = async () => {
-        setLoading(true)
-        try {
-            const res = await fetch('/api/admin?type=schedule')
-            const data = await res.json()
-            setOverrides(Array.isArray(data) ? data : [])
-        } catch (e) { console.error(e) }
-        setLoading(false)
+        await onRefresh()
     }
-
-    useEffect(() => { loadOverrides() }, [])
 
     const dates = getMonthDates(currentMonth.getFullYear(), currentMonth.getMonth())
     const thisMonth = currentMonth.getMonth()
 
-    const isDefaultOpen = (date) => !DEFAULT_CLOSED.includes(date.getDay())
-
     const getOverride = (dateStr) => overrides.find(o => o.date === dateStr)
 
-    const isDayOpen = (date) => {
-        const dateStr = fmt(date)
-        const override = getOverride(dateStr)
-        if (override) return override.is_open
-        return isDefaultOpen(date)
-    }
+    const isDefaultOpen = (date) => ![0, 1].includes(date.getDay())
 
     const toggleDay = async (date) => {
         const dateStr = fmt(date)
