@@ -43,6 +43,16 @@ export async function POST(request) {
                 .select()
                 .single()
             session = newSession
+        } else {
+            // 3.1 Session Timeout (10 minutes)
+            const lastUpdate = new Date(session.updated_at).getTime()
+            const nowMs = new Date().getTime()
+            const diffMins = (nowMs - lastUpdate) / (1000 * 60)
+
+            if (diffMins > 10) {
+                console.log('🕒 Sessão expirada (>10min). Resetando histórico.')
+                session.context_json = []
+            }
         }
 
         // 3.5 Check if client is registered
@@ -76,12 +86,25 @@ export async function POST(request) {
             history = history.slice(-20)
         }
 
-        // 6. Build calendar context for AI
         const moment = (await import('moment-timezone')).default
         await import('moment/locale/pt-br')
         moment.locale('pt-br')
         const now = moment().tz('America/Sao_Paulo')
         const todayLabel = now.format('dddd, DD [de] MMMM [de] YYYY')
+        const currentHour = now.hour()
+
+        // 6.1 Contextual Greeting
+        let greeting = 'Olá'
+        if (currentHour >= 5 && currentHour < 12) greeting = 'Bom dia'
+        else if (currentHour >= 12 && currentHour < 18) greeting = 'Boa tarde'
+        else greeting = 'Boa noite'
+
+        // 6.2 Fetch Existing Appointments for the client
+        const futureApts = await getAppointmentsByPhone(phone)
+        const hasApts = futureApts && futureApts.length > 0
+        const aptsContext = hasApts
+            ? `\n--- AGENDAMENTOS FUTUROS DESTA CLIENTE ---\n` + futureApts.map(a => `- ${moment(a.starts_at).tz('America/Sao_Paulo').format('DD/MM [às] HH:mm')}: ${a.service_id}`).join('\n')
+            : '\nEsta cliente não possui agendamentos futuros registrados.'
 
         // Fetch schedule overrides to determine open/closed days dynamically
         const scheduleOverrides = await fetchScheduleOverrides()
@@ -121,11 +144,15 @@ Você ainda não sabe o nome desta cliente.
 ⚠️ REGRA CRÍTICA: Se a cliente quiser agendar, você DEVE perguntar o nome dela antes de usar a ferramenta 'book_appointment'. Você só pode agendar se tiver o nome completo dela para o registro.
 `}
 
+${aptsContext}
+
 REGRAS DE COMPORTAMENTO:
-1. Seja sempre simpática, acolhedora e profissional. Comece sempre se apresentando na primeira interação: "Olá, meu nome é Clara! Como posso ajudar?"
-2. Se o cliente perguntar sobre horários disponíveis, USE OBRIGATORIAMENTE 'check_calendar'.
-3. Se o cliente escolher um horário e você já tiver o NOME, use 'book_appointment'. Se não tiver o nome, peça-o antes de agendar.
-4. Após confirmar, informe a data completa e o protocolo.
+1. Seja sempre simpática, acolhedora e profissional. Comece SEMPRE se apresentando na primeira interação da sessão: "${greeting}, meu nome é Clara! Como posso ajudar?"
+2. Se o cliente tiver agendamentos futuros (veja acima), mencione-os de forma proativa no início da conversa caso faça sentido (ex: "Vi que você já tem um horário marcado para...").
+3. Se o cliente perguntar sobre horários disponíveis, USE OBRIGATORIAMENTE 'check_calendar'.
+4. Se o cliente escolher um horário e você já tiver o NOME, use 'book_appointment'. Se não tiver o nome, peça-o antes de agendar.
+5. Após concluir um agendamento, cancelamento ou responder uma dúvida, SEMPRE encerre perguntando: "Posso ajudar em mais alguma coisa?" ou "Deseja agendar algo mais?".
+6. Informe sempre a data completa e o protocolo após uma confirmação.
 
 --- TABELA DE PREÇOS (VALORES) ---
 🔹 UNHAS DE GEL:
