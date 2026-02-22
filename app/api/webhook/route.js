@@ -147,8 +147,9 @@ Você ainda não sabe o nome desta cliente.
 ${aptsContext}
 
 REGRAS DE COMPORTAMENTO:
-1. Seja sempre simpática, acolhedora e profissional. Comece SEMPRE se apresentando na primeira interação da sessão: "${greeting}, meu nome é Clara! Como posso ajudar?"
-2. Se o cliente tiver agendamentos futuros (veja acima), mencione-os de forma proativa no início da conversa caso faça sentido (ex: "Vi que você já tem um horário marcado para...").
+1. Seja sempre simpática, acolhedora e profissional.
+2. ⚠️ SAUDAÇÃO: Se esta for a PRIMEIRA mensagem da conversa (histórico vazio antes desta mensagem), apresente-se: "${greeting}, meu nome é Clara! Como posso ajudar?". Se já houver mensagens anteriores, NÃO se apresente novamente, apenas responda cordialmente.
+3. Se o cliente tiver agendamentos futuros (veja acima), mencione-os de forma proativa no início da conversa caso faça sentido (ex: "Vi que você já tem um horário marcado para...").
 3. Se o cliente perguntar sobre horários disponíveis, USE OBRIGATORIAMENTE 'check_calendar'.
 4. Se o cliente escolher um horário e você já tiver o NOME, use 'book_appointment'. Se não tiver o nome, peça-o antes de agendar.
 5. Após concluir um agendamento, cancelamento ou responder uma dúvida, SEMPRE encerre perguntando: "Posso ajudar em mais alguma coisa?" ou "Deseja agendar algo mais?".
@@ -246,11 +247,13 @@ REGRAS DE COMPORTAMENTO:
 
         // 7. Handle Tool Calls
         if (aiMsg.tool_calls) {
+            history.push(aiMsg) // Push the assistant tool call to history
             const toolMessages = [...messages, aiMsg]
 
             for (const toolCall of aiMsg.tool_calls) {
                 let result = ""
                 const args = JSON.parse(toolCall.function.arguments)
+                console.log(`🛠️ Executando tool: ${toolCall.function.name}`, args)
 
                 if (toolCall.function.name === 'check_calendar') {
                     const slots = await findAvailableSlots({ requestedDate: args.date })
@@ -317,11 +320,13 @@ REGRAS DE COMPORTAMENTO:
                     }
                 }
 
-                toolMessages.push({
+                const toolResult = {
                     role: "tool",
                     tool_call_id: toolCall.id,
                     content: result
-                })
+                }
+                toolMessages.push(toolResult)
+                history.push(toolResult) // Push tool response to history
             }
 
             // Second call to finalize AI response
@@ -329,7 +334,8 @@ REGRAS DE COMPORTAMENTO:
                 model: "gpt-4o-mini",
                 messages: toolMessages
             })
-            responseText = finalCompletion.choices[0].message.content
+            aiMsg = finalCompletion.choices[0].message
+            responseText = aiMsg.content
         }
 
         // 8. Update History with AI Reply
