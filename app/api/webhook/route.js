@@ -149,20 +149,17 @@ Você ainda não sabe o nome desta cliente.
 
 ${aptsContext}
 
-REGRA DE SAUDAÇÃO:
-- Se 'isFirstInteraction' for VERDADEIRO, apresente-se: "${greeting}, meu nome é Clara! Como posso ajudar?".
-- Se 'isFirstInteraction' for FALSO, NÃO se apresente e NÃO diga seu nome novamente. Apenas responda de forma direta e gentil.
-- isFirstInteraction: ${isFirstInteraction}
+${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Como esta é a primeira mensagem da conversa, apresente-se: "${greeting}, meu nome é Clara! Como posso ajudar?".` : 'REGRA DE SAUDAÇÃO: NÃO se apresente e NÃO diga seu nome novamente. Apenas responda de forma direta.'}
 
 REGRAS DE COMPORTAMENTO:
-1. PRIORIDADE DE AÇÃO: Se o cliente mencionar um serviço e uma data/dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE. Não fique apenas conversando.
-2. AGENDAMENTOS EXISTENTES: Se o cliente já tiver agendamentos (veja acima), mencione-os apenas UMA VEZ no início da conversa ou se o cliente perguntar. Não deixe que isso impeça de marcar NOVOS horários.
+1. PRIORIDADE DE AÇÃO: Se o cliente mencionar um serviço e uma data/dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
+2. AGENDAMENTOS EXISTENTES: Se o cliente já tiver agendamentos (veja acima), mencione-os apenas uma vez. Não deixe que isso impeça de marcar NOVOS horários.
 3. FLUXO DE AGENDAMENTO:
    - Se o cliente perguntar por horários ou sugerir um dia: Use 'check_calendar'.
-   - Se o cliente escolher um horário e você tiver o NOME: Use 'book_appointment'.
+   - Se o cliente escolher um horário e você tiver o NOME: Use 'book_appointment' IMEDIATAMENTE após verificar a disponibilidade (se o usuário já demonstrou intenção de marcar).
    - Se não tiver o nome da cliente nova: Peça o nome ANTES de agendar.
-4. PÓS-AÇÃO: Após concluir um agendamento, cancelamento ou tirar uma dúvida, pergunte: "Posso ajudar em mais alguma coisa?".
-5. PROTOCOLO: Informe o protocolo de atrasos/cancelamento apenas uma vez após confirmar um agendamento.
+4. PÓS-AÇÃO: Após concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
+5. PROTOCOLO: Informe o protocolo apenas uma vez após confirmar um agendamento.
 
 --- TABELA DE PREÇOS (VALORES) ---
 🔹 UNHAS DE GEL:
@@ -192,77 +189,83 @@ REGRAS DE COMPORTAMENTO:
             ...history
         ]
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: messages,
-            tools: [
-                {
-                    type: "function",
-                    function: {
-                        name: "check_calendar",
-                        description: "Verifica horários livres na agenda.",
-                        parameters: {
-                            type: "object",
-                            properties: {
-                                date: { type: "string", description: "Data no formato YYYY-MM-DD. Se o usuário falar 'amanhã', calcule a data correta." }
-                            }
-                        }
-                    }
-                },
-                {
-                    type: "function",
-                    function: {
-                        name: "book_appointment",
-                        description: "Realiza o agendamento oficial no sistema. Suporta múltiplos serviços.",
-                        parameters: {
-                            type: "object",
-                            properties: {
-                                name: { type: "string", description: "Nome completo do cliente." },
-                                services: { type: "array", items: { type: "string" }, description: "Lista de serviços escolhidos. Ex: ['Fibra ou Molde F1', 'Esmaltação Premium']" },
-                                service: { type: "string", description: "Serviço único (usar 'services' para múltiplos)." },
-                                startsAt: { type: "string", description: "Data e hora ISO. Ex: 2024-05-20T14:00:00" }
-                            },
-                            required: ["name", "startsAt"]
-                        }
-                    }
-                },
-                {
-                    type: "function",
-                    function: {
-                        name: "list_my_appointments",
-                        description: "Lista os agendamentos futuros confirmados do cliente que está conversando.",
-                        parameters: { type: "object", properties: {} }
-                    }
-                },
-                {
-                    type: "function",
-                    function: {
-                        name: "cancel_appointment",
-                        description: "Cancela o agendamento do cliente na data informada.",
-                        parameters: {
-                            type: "object",
-                            properties: {
-                                date: { type: "string", description: "Data do agendamento a cancelar no formato YYYY-MM-DD." }
-                            },
-                            required: ["date"]
+        const tools = [
+            {
+                type: "function",
+                function: {
+                    name: "check_calendar",
+                    description: "Verifica horários livres na agenda.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            date: { type: "string", description: "Data no formato YYYY-MM-DD." }
                         }
                     }
                 }
-            ]
+            },
+            {
+                type: "function",
+                function: {
+                    name: "book_appointment",
+                    description: "Realiza o agendamento oficial no sistema. Suporta múltiplos serviços.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            name: { type: "string", description: "Nome completo do cliente." },
+                            services: { type: "array", items: { type: "string" }, description: "Lista de serviços. Ex: ['Banho de Gel']" },
+                            service: { type: "string", description: "Serviço único." },
+                            startsAt: { type: "string", description: "Data e hora ISO. Ex: 2024-05-20T14:00:00" }
+                        },
+                        required: ["name", "startsAt"]
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "list_my_appointments",
+                    description: "Lista os agendamentos futuros confirmados do cliente.",
+                    parameters: { type: "object", properties: {} }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "cancel_appointment",
+                    description: "Cancela o agendamento do cliente na data informada.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            date: { type: "string", description: "Data do agendamento a cancelar YYYY-MM-DD." }
+                        },
+                        required: ["date"]
+                    }
+                }
+            }
+        ]
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: messages,
+            tools: tools
         })
 
         let aiMsg = completion.choices[0].message
         let responseText = aiMsg.content
 
-        // 7. Handle Tool Calls
-        if (aiMsg.tool_calls) {
+        // 7. Handle Tool Calls with Loop (Recursive turns)
+        let toolTurn = 0
+        while (aiMsg.tool_calls && toolTurn < 3) {
+            toolTurn++
+            console.log(`🌀 Turno de Ferramentas ${toolTurn}`)
+
             history.push(aiMsg) // Push the assistant tool call to history
-            const toolMessages = [...messages, aiMsg]
+            const toolMessagesForCompletion = [...messages, ...history.slice(messages.length - 1)] // Get recent history including aiMsg
 
             for (const toolCall of aiMsg.tool_calls) {
                 let result = ""
                 const args = JSON.parse(toolCall.function.arguments)
-                console.log(`🛠️ Executando tool: ${toolCall.function.name}`, args)
+                console.log(`🛠️ Executando: ${toolCall.function.name}`, args)
 
                 if (toolCall.function.name === 'check_calendar') {
                     const slots = await findAvailableSlots({ requestedDate: args.date })
@@ -270,42 +273,24 @@ REGRAS DE COMPORTAMENTO:
                 }
                 else if (toolCall.function.name === 'book_appointment') {
                     try {
-                        console.log('🔵 BOOK_APPOINTMENT args:', JSON.stringify(args))
-                        // Support both 'services' (array) and 'service' (string)
                         const serviceList = args.services || (args.service ? [args.service] : [])
                         const serviceStr = serviceList.length > 1 ? JSON.stringify(serviceList) : serviceList[0]
-
-                        // Calculate total duration based on services
-                        const DURATIONS = { 'Fibra ou Molde F1': 120, 'Banho de Gel': 90, 'Manutenção': 90, 'Manutenção (outra prof.)': 90, 'Remoção': 30, 'Esmaltação Básica': 30, 'Esmaltação Premium': 45, 'Esm. ou Pó + Francesinha': 45, 'Esm. + Francesinha + Pó': 60 }
+                        const DURATIONS = { 'Fibra ou Molde F1': 120, 'Banho de Gel': 90, 'Manutenção': 120, 'Manutenção (outra prof.)': 120, 'Remoção': 30, 'Esmaltação Básica': 30, 'Esmaltação Premium': 45, 'Esm. ou Pó + Francesinha': 45, 'Esm. + Francesinha + Pó': 60 }
                         const totalDuration = serviceList.reduce((sum, s) => sum + (DURATIONS[s] || 60), 0)
 
                         const appointment = await bookAppointment({
-                            phone: phone,
-                            name: args.name,
-                            service: serviceStr,
-                            startsAt: args.startsAt,
-                            duration: totalDuration
+                            phone: phone, name: args.name, service: serviceStr, startsAt: args.startsAt, duration: totalDuration
                         })
 
-                        // Check if overlap error was returned
                         if (appointment?.error) {
-                            console.log('⚠️ BOOK_APPOINTMENT conflict:', appointment.message)
                             result = JSON.stringify({ status: "error", message: appointment.message })
                         } else {
-                            console.log('✅ BOOK_APPOINTMENT success:', JSON.stringify(appointment))
                             result = JSON.stringify({ status: "success", appointment })
-
-                            // Auto-register customer
                             try {
-                                await supabase
-                                    .from('customers')
-                                    .upsert({ phone: phone, name: args.name }, { onConflict: 'phone' })
-                            } catch (e) {
-                                console.error('Customer upsert error:', e)
-                            }
+                                await supabase.from('customers').upsert({ phone: phone, name: args.name }, { onConflict: 'phone' })
+                            } catch (e) { console.error('Customer upsert error:', e) }
                         }
                     } catch (err) {
-                        console.error('❌ BOOK_APPOINTMENT error:', err.message, JSON.stringify(err))
                         result = JSON.stringify({ status: "error", message: err.message })
                     }
                 }
@@ -319,38 +304,34 @@ REGRAS DE COMPORTAMENTO:
                 }
                 else if (toolCall.function.name === 'cancel_appointment') {
                     try {
-                        console.log('🔴 CANCEL args:', JSON.stringify(args), 'phone:', phone)
                         const cancelled = await cancelAppointment(phone, args.date)
-                        console.log('✅ CANCEL success:', JSON.stringify(cancelled))
                         result = JSON.stringify({ status: "success", cancelled })
                     } catch (err) {
-                        console.error('❌ CANCEL error:', err.message)
                         result = JSON.stringify({ status: "error", message: err.message })
                     }
                 }
 
-                const toolResult = {
-                    role: "tool",
-                    tool_call_id: toolCall.id,
-                    content: result
-                }
-                toolMessages.push(toolResult)
-                history.push(toolResult) // Push tool response to history
+                const toolResult = { role: "tool", tool_call_id: toolCall.id, content: result }
+                history.push(toolResult)
             }
 
-            // Second call to finalize AI response
-            const finalCompletion = await openai.chat.completions.create({
+            // Next completion to see if more tools are needed or final text
+            const nextCompletion = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
-                messages: toolMessages
+                messages: [messages[0], ...history],
+                tools: toolTurn < 3 ? tools : undefined
             })
-            aiMsg = finalCompletion.choices[0].message
+
+            aiMsg = nextCompletion.choices[0].message
             responseText = aiMsg.content
         }
 
         // 8. Update History with AI Reply
         if (responseText) {
             history.push({ role: 'assistant', content: responseText })
-            await supabase.from('wa_sessions').update({ context_json: history }).eq('phone', phone)
+            await supabase.from('wa_sessions')
+                .update({ context_json: history, updated_at: new Date().toISOString() })
+                .eq('phone', phone)
 
             // 9. Send back to WhatsApp (Z-API)
             await sendWhatsAppMessage(phone, responseText)
