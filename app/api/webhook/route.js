@@ -12,6 +12,14 @@ function validateToken(request) {
 // 2. Main Webhook Handler
 export async function POST(request) {
     try {
+        // Validation check
+        if (!validateToken(request)) {
+            const incomingKey = request.headers.get('apikey')
+            console.error('🚫 Invalid API Key. Received:', incomingKey)
+            // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+            // Note: Keeping it non-blocking for now to debug, but in production, uncomment the line above
+        }
+
         const body = await request.json()
         console.log('Webhook received:', JSON.stringify(body, null, 2))
 
@@ -44,18 +52,30 @@ export async function POST(request) {
         }
 
         // 3. Load or Create Session
-        let { data: session } = await supabase
+        const { data: existingSession, error: fetchError } = await supabase
             .from('wa_sessions')
             .select('*')
             .eq('phone', phone)
-            .single()
+            .maybeSingle()
+
+        if (fetchError) {
+            console.error('❌ Error fetching session:', fetchError)
+        }
+
+        let session = existingSession
 
         if (!session) {
-            const { data: newSession } = await supabase
+            console.log('🆕 Criando nova sessão para:', phone)
+            const { data: newSession, error: insertError } = await supabase
                 .from('wa_sessions')
                 .insert({ phone, state: 'START', context_json: [] })
                 .select()
-                .single()
+                .maybeSingle()
+
+            if (insertError) {
+                console.error('❌ Error creating session:', insertError)
+                return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
+            }
             session = newSession
         } else {
             // 3.1 Session Timeout (10 minutes)
@@ -67,6 +87,11 @@ export async function POST(request) {
                 console.log('🕒 Sessão expirada (>10min). Resetando histórico.')
                 session.context_json = []
             }
+        }
+
+        if (!session) {
+            console.error('❌ Session is still null after attempt to create')
+            return NextResponse.json({ error: 'Session initialization failed' }, { status: 500 })
         }
 
         // 3.5 Check if client is registered
