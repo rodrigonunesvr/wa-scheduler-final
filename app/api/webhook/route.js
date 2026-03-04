@@ -3,10 +3,10 @@ import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
 import { findAvailableSlots, bookAppointment, getAppointmentsByPhone, cancelAppointment, isDayOpen, fetchScheduleOverrides } from '@/lib/calendar'
 
-// 1. Validate Z-API Token
+// 1. Validate Evolution API Token
 function validateToken(request) {
-    const securityToken = request.headers.get('client-token')
-    return securityToken === process.env.ZAPI_SECURITY_TOKEN
+    const apikey = request.headers.get('apikey')
+    return apikey === process.env.EVOLUTION_API_KEY
 }
 
 // 2. Main Webhook Handler
@@ -15,15 +15,29 @@ export async function POST(request) {
         const body = await request.json()
         console.log('Webhook received:', JSON.stringify(body, null, 2))
 
-        const isGroup = body.isGroup
-        const fromMe = body.fromMe
+        // Support both Z-API (legacy) and Evolution API
+        // Evolution API usually sends phone in body.data.key.remoteJid
+        const isEvolution = body.event === 'messages.upsert'
+
+        const isGroup = isEvolution ? body.data?.key?.remoteJid?.includes('@g.us') : body.isGroup
+        const fromMe = isEvolution ? body.data?.key?.fromMe : body.fromMe
+
         if (isGroup || fromMe) {
             return NextResponse.json({ status: 'ignored' })
         }
 
-        const phone = body.phone
-        const text = body.message?.text?.message || body.text?.message || ''
-        const audioUrl = body.message?.audio?.audioUrl
+        let phone = isEvolution
+            ? body.data?.key?.remoteJid?.split('@')[0]
+            : body.phone
+
+        // Extraction for Evolution API
+        const text = isEvolution
+            ? body.data?.message?.conversation || body.data?.message?.extendedTextMessage?.text || ''
+            : body.message?.text?.message || body.text?.message || ''
+
+        const audioUrl = isEvolution
+            ? body.data?.message?.audioMessage?.url // Evolution might need different handling for audio
+            : body.message?.audio?.audioUrl
 
         if (!phone) {
             return NextResponse.json({ status: 'no-phone' })
@@ -346,35 +360,42 @@ REGRAS DE COMPORTAMENTO:
     }
 }
 
-// Helper: Send Message via Z-API
+// Helper: Send Message via Evolution API
 async function sendWhatsAppMessage(phone, message) {
-    const instanceId = process.env.ZAPI_INSTANCE_ID
-    const instanceToken = process.env.ZAPI_INSTANCE_TOKEN
-    const clientToken = process.env.ZAPI_SECURITY_TOKEN
+    const baseUrl = process.env.EVOLUTION_API_BASE_URL // e.g., http://localhost:8080
+    const instanceName = process.env.EVOLUTION_API_INSTANCE // e.g., Clara
+    const apikey = process.env.EVOLUTION_API_KEY
 
-    if (!instanceId || !instanceToken) {
-        console.error('Missing Z-API Credentials')
+    if (!baseUrl || !instanceName || !apikey) {
+        console.error('Missing Evolution API Credentials')
         return
     }
 
-    const url = `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/send-text`
+    const url = `${baseUrl}/message/sendText/${instanceName}`
 
     try {
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Client-Token': clientToken // Optional security header
+                'apikey': apikey
             },
             body: JSON.stringify({
-                phone: phone,
-                message: message
+                number: phone,
+                options: {
+                    delay: 1200,
+                    presence: "composing",
+                    linkPreview: false
+                },
+                textMessage: {
+                    text: message
+                }
             })
         })
 
         if (!response.ok) {
             const errorData = await response.text()
-            console.error('Z-API Error:', errorData)
+            console.error('Evolution API Error:', errorData)
         }
     } catch (error) {
         console.error('Fetch Error:', error)
