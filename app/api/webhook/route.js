@@ -102,7 +102,7 @@ export async function POST(request) {
             .from('customers')
             .select('name')
             .eq('phone', phone)
-            .single()
+            .maybeSingle()
         if (customer) {
             customerName = customer.name
             console.log('👤 Cliente reconhecida:', customerName)
@@ -409,14 +409,9 @@ async function sendWhatsAppMessage(phone, message) {
             },
             body: JSON.stringify({
                 number: phone,
-                options: {
-                    delay: 1200,
-                    presence: "composing",
-                    linkPreview: false
-                },
-                textMessage: {
-                    text: message
-                }
+                text: message,
+                delay: 1200,
+                linkPreview: false
             })
         })
 
