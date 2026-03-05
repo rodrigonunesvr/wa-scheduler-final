@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
-import { findAvailableSlots, bookAppointment, getAppointmentsByPhone, cancelAppointment, isDayOpen, fetchScheduleOverrides } from '@/lib/calendar'
+import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, isDayOpen, fetchScheduleOverrides } from '@/lib/calendar'
 
 // 1. Validate Evolution API Token
 function validateToken(request) {
@@ -181,7 +181,7 @@ Normalmente funcionamos de terça a sábado, mas pode haver exceções. Consulte
 ${customerName ? `
 --- CLIENTE IDENTIFICADA ---
 Essa cliente já é cadastrada! O nome dela é: ${customerName}.
-SEMPRE chame-a pelo nome de forma carinhosa em TODAS as respostas.
+⚠️ REGRA DE OURO: Chame-a pelo nome (ex: "Oi, ${customerName}!") logo na primeira frase de CADA resposta. Seja carinhosa e atenciosa.
 ` : `
 --- CLIENTE NOVA ---
 Você ainda não sabe o nome desta cliente. 
@@ -190,7 +190,7 @@ Você ainda não sabe o nome desta cliente.
 
 ${aptsContext}
 
-${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Como esta é a primeira mensagem da conversa, apresente-se: "${greeting}, meu nome é Clara! Como posso ajudar?".` : 'REGRA DE SAUDAÇÃO: NÃO se apresente e NÃO diga seu nome novamente. Apenas responda de forma direta.'}
+${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Como esta é a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}, meu nome é Clara! Sou a secretária virtual do Espaço C.A. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: NÃO se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
 
 REGRAS DE COMPORTAMENTO:
 1. PRIORIDADE DE AÇÃO: Se o cliente mencionar um serviço e uma data/dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
@@ -200,7 +200,7 @@ REGRAS DE COMPORTAMENTO:
    - Se o cliente escolher um horário e você tiver o NOME: Use 'book_appointment' IMEDIATAMENTE após verificar a disponibilidade (se o usuário já demonstrou intenção de marcar).
    - Se não tiver o nome da cliente nova: Peça o nome ANTES de agendar.
 4. PÓS-AÇÃO: Após concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
-5. PROTOCOLO: Informe o protocolo apenas uma vez após confirmar um agendamento.
+5. PROTOCOLO E PREPARO: Informe o protocolo de preparo (veja abaixo) SEMPRE que um agendamento for confirmado ou quando a cliente perguntar sobre o atendimento.
 
 --- TABELA DE PREÇOS (VALORES) ---
 🔹 UNHAS DE GEL:
@@ -281,6 +281,21 @@ REGRAS DE COMPORTAMENTO:
                         },
                         required: ["date"]
                     }
+                },
+                {
+                type: "function",
+                function: {
+                    name: "update_appointment",
+                    description: "Atualiza um agendamento existente (ex: adicionar um serviço novo no mesmo horário).",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            id: { type: "string", description: "O ID do agendamento (obtenha via list_my_appointments)." },
+                            services: { type: "array", items: { type: "string" }, description: "Lista atualizada de serviços." },
+                            total_duration: { type: "integer", description: "Duração total somada em minutos." }
+                        },
+                        required: ["id", "services", "total_duration"]
+                    }
                 }
             }
         ]
@@ -347,6 +362,19 @@ REGRAS DE COMPORTAMENTO:
                     try {
                         const cancelled = await cancelAppointment(phone, args.date)
                         result = JSON.stringify({ status: "success", cancelled })
+                    } catch (err) {
+                        result = JSON.stringify({ status: "error", message: err.message })
+                    }
+                }
+                else if (toolCall.function.name === 'update_appointment') {
+                    try {
+                        const serviceStr = args.services.length > 1 ? JSON.stringify(args.services) : args.services[0]
+                        const updated = await updateAppointment({
+                            id: args.id,
+                            service: serviceStr,
+                            duration: args.total_duration
+                        })
+                        result = JSON.stringify({ status: "success", updated })
                     } catch (err) {
                         result = JSON.stringify({ status: "error", message: err.message })
                     }
