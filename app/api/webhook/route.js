@@ -12,16 +12,18 @@ function validateToken(request) {
 // 2. Main Webhook Handler
 export async function POST(request) {
     try {
-        // Validation check
-        if (!validateToken(request)) {
-            const incomingKey = request.headers.get('apikey')
-            console.error('🚫 Invalid API Key. Received:', incomingKey)
-            // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-            // Note: Keeping it non-blocking for now to debug, but in production, uncomment the line above
-        }
-
         const body = await request.json()
         console.log('Webhook received:', JSON.stringify(body, null, 2))
+
+        // Validation check (Support both header and body)
+        const headerKey = request.headers.get('apikey')
+        const bodyKey = body.apikey
+        const currentApiKey = process.env.EVOLUTION_API_KEY
+
+        if (headerKey !== currentApiKey && bodyKey !== currentApiKey) {
+            console.error('🚫 Invalid API Key. Header:', headerKey, 'Body:', bodyKey)
+            // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
 
         // Support both Z-API (legacy) and Evolution API
         // Evolution API usually sends phone in body.data.key.remoteJid
