@@ -202,6 +202,11 @@ REGRAS DE COMPORTAMENTO:
 4. PÓS-AÇÃO: Após concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
 5. PROTOCOLO E PREPARO: Informe o protocolo de preparo (veja abaixo) SEMPRE que um agendamento for confirmado ou quando a cliente perguntar sobre o atendimento.
 
+6. REGRAS DE INTERATIVIDADE (NOVO):
+   - **Busca por Período**: Antes de listar os horários, pergunte: "Você prefere na parte da manhã ou da tarde?". Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
+   - **Venda Adicional (Upsell)**: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviço (como uma esmaltação rápida ou remoção)?".
+   - **Prevenção de Conflitos**: Se a cliente quiser dois serviços juntos, tente calcular a duração total e fazer um único agendamento longo em vez de dois separados.
+
 --- TABELA DE PREÇOS (VALORES) ---
 🔹 UNHAS DE GEL:
 - Fibra ou Molde F1: R$ 190,00
@@ -239,7 +244,8 @@ REGRAS DE COMPORTAMENTO:
                     parameters: {
                         type: "object",
                         properties: {
-                            date: { type: "string", description: "Data no formato YYYY-MM-DD." }
+                            date: { type: "string", description: "Data no formato YYYY-MM-DD." },
+                            period: { type: "string", enum: ["manha", "tarde"], description: "Filtro de período: 'manha' ou 'tarde'." }
                         }
                     }
                 }
@@ -325,7 +331,10 @@ REGRAS DE COMPORTAMENTO:
                 console.log(`🛠️ Executando: ${toolCall.function.name}`, args)
 
                 if (toolCall.function.name === 'check_calendar') {
-                    const slots = await findAvailableSlots({ requestedDate: args.date })
+                    const slots = await findAvailableSlots({
+                        requestedDate: args.date,
+                        period: args.period
+                    })
                     result = JSON.stringify(slots)
                 }
                 else if (toolCall.function.name === 'book_appointment') {
