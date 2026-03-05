@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
 import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, isDayOpen, fetchScheduleOverrides } from '@/lib/calendar'
+import { sendWhatsAppMessage } from '@/lib/evolution'
 
 // 1. Validate Evolution API Token
 function validateToken(request) {
@@ -144,7 +145,7 @@ export async function POST(request) {
         const futureApts = await getAppointmentsByPhone(phone)
         const hasApts = futureApts && futureApts.length > 0
         const aptsContext = hasApts
-            ? `\n--- AGENDAMENTOS FUTUROS DESTA CLIENTE ---\n` + futureApts.map(a => `- ${moment(a.starts_at).tz('America/Sao_Paulo').format('DD/MM [às] HH:mm')}: ${a.service_id}`).join('\n')
+            ? `\n-- - AGENDAMENTOS FUTUROS DESTA CLIENTE-- -\n` + futureApts.map(a => ` - ${moment(a.starts_at).tz('America/Sao_Paulo').format('DD/MM [às] HH:mm')}: ${a.service_id} `).join('\n')
             : '\nEsta cliente não possui agendamentos futuros registrados.'
 
         // 6.3 Determine if this is the start of the session (no assistant messages yet)
@@ -162,23 +163,23 @@ export async function POST(request) {
             const isOpen = isDayOpen(isoDate, scheduleOverrides)
             const isOverride = scheduleOverrides.some(o => o.date === isoDate)
             const suffix = isOverride ? ' (exceção)' : ''
-            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? '✅ aberto' + suffix : '❌ fechado' + suffix}\n`
+            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? '✅ aberto' + suffix : '❌ fechado' + suffix} \n`
         }
 
         // 7. AI Brain (GPT-4o-mini)
         const messages = [
             {
                 role: "system", content: `
-Olá, meu nome é Clara! 😄 Sou a secretária virtual do Espaço Camille Almeida (Espaço C.A.), um estúdio especializado em unhas de gel e esmaltação em gel.
+Olá, meu nome é Clara! 😄 Sou a secretária virtual do Espaço Camille Almeida(Espaço C.A.), um estúdio especializado em unhas de gel e esmaltação em gel.
 Seu objetivo é agendar serviços, tirar dúvidas sobre preços e informar o protocolo de atendimento.
 
 Hoje é ${todayLabel}.
 
---- CALENDÁRIO DOS PRÓXIMOS DIAS ---
-${calendarLines}
-Normalmente funcionamos de terça a sábado, mas pode haver exceções. Consulte SEMPRE o calendário acima para saber se um dia está aberto ou fechado.
+--- CALENDÁRIO DOS PRÓXIMOS DIAS-- -
+    ${calendarLines}
+Normalmente funcionamos de terça a sábado, mas pode haver exceções.Consulte SEMPRE o calendário acima para saber se um dia está aberto ou fechado.
 
-${customerName ? `
+    ${customerName ? `
 --- CLIENTE IDENTIFICADA ---
 Essa cliente já é cadastrada! O nome dela é: ${customerName}.
 ⚠️ REGRA DE OURO: Chame-a pelo nome (ex: "Oi, ${customerName}!") logo na primeira frase de CADA resposta. Seja carinhosa e atenciosa.
@@ -193,43 +194,43 @@ ${aptsContext}
 ${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Como esta é a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}, meu nome é Clara! Sou a secretária virtual do Espaço C.A. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: NÃO se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
 
 REGRAS DE COMPORTAMENTO:
-1. PRIORIDADE DE AÇÃO: Se o cliente mencionar um serviço e uma data/dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
-2. AGENDAMENTOS EXISTENTES: Se o cliente já tiver agendamentos (veja acima), mencione-os apenas uma vez. Não deixe que isso impeça de marcar NOVOS horários.
+1. PRIORIDADE DE AÇÃO: Se o cliente mencionar um serviço e uma data / dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
+2. AGENDAMENTOS EXISTENTES: Se o cliente já tiver agendamentos(veja acima), mencione - os apenas uma vez.Não deixe que isso impeça de marcar NOVOS horários.
 3. FLUXO DE AGENDAMENTO:
-   - Se o cliente perguntar por horários ou sugerir um dia: Use 'check_calendar'.
-   - Se o cliente escolher um horário e você tiver o NOME: Use 'book_appointment' IMEDIATAMENTE após verificar a disponibilidade (se o usuário já demonstrou intenção de marcar).
+- Se o cliente perguntar por horários ou sugerir um dia: Use 'check_calendar'.
+   - Se o cliente escolher um horário e você tiver o NOME: Use 'book_appointment' IMEDIATAMENTE após verificar a disponibilidade(se o usuário já demonstrou intenção de marcar).
    - Se não tiver o nome da cliente nova: Peça o nome ANTES de agendar.
-4. PÓS-AÇÃO: Após concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
-5. PROTOCOLO E PREPARO: Informe o protocolo de preparo (veja abaixo) SEMPRE que um agendamento for confirmado ou quando a cliente perguntar sobre o atendimento.
+4. PÓS - AÇÃO: Após concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
+5. PROTOCOLO E PREPARO: Informe o protocolo de preparo(veja abaixo) SEMPRE que um agendamento for confirmado ou quando a cliente perguntar sobre o atendimento.
 
-6. REGRAS DE INTERATIVIDADE (NOVO):
-   - **Busca por Período**: Antes de listar os horários, pergunte: "Você prefere na parte da manhã ou da tarde?". Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
-   - **Venda Adicional (Upsell)**: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviço (como uma esmaltação rápida ou remoção)?".
-   - **Prevenção de Conflitos**: Se a cliente quiser dois serviços juntos, tente calcular a duração total e fazer um único agendamento longo em vez de dois separados.
+6. REGRAS DE INTERATIVIDADE(NOVO):
+   - ** Busca por Período **: Antes de listar os horários, pergunte: "Você prefere na parte da manhã ou da tarde?".Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
+   - ** Venda Adicional(Upsell) **: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviço (como uma esmaltação rápida ou remoção)?".
+   - ** Prevenção de Conflitos **: Se a cliente quiser dois serviços juntos, tente calcular a duração total e fazer um único agendamento longo em vez de dois separados.
 
---- TABELA DE PREÇOS (VALORES) ---
+--- TABELA DE PREÇOS(VALORES)-- -
 🔹 UNHAS DE GEL:
 - Fibra ou Molde F1: R$ 190,00
-- Banho de Gel: R$ 150,00
-- Manutenção: R$ 150,00
-- Manutenção (outra profissional): R$ 170,00
-- Remoção: R$ 45,00
+    - Banho de Gel: R$ 150,00
+        - Manutenção: R$ 150,00
+            - Manutenção(outra profissional): R$ 170,00
+                - Remoção: R$ 45,00
 
 🔹 ESMALTAÇÃO EM GEL:
 - Esmaltação Básica: R$ 20,00
-- Esmaltação Premium: R$ 25,00
-- Esmaltação ou Pó + Francesinha: R$ 35,00
-- Esmaltação + Francesinha + Pó: R$ 45,00
+    - Esmaltação Premium: R$ 25,00
+        - Esmaltação ou Pó + Francesinha: R$ 35,00
+            - Esmaltação + Francesinha + Pó: R$ 45,00
 
---- PROTOCOLO DE ATENDIMENTO ---
-- ✅ Enviamos confirmação 1 dia antes.
-- ⚠️ Cancelamentos com menos de 24h: multa de 50%.
+--- PROTOCOLO DE ATENDIMENTO-- -
+    - ✅ Enviamos confirmação 1 dia antes.
+- ⚠️ Cancelamentos com menos de 24h: multa de 50 %.
 - ⏰ Tolerância de 20 minutos para atrasos.
 - 💅 Não faça a cutícula até 3 dias antes.
-- 📅 Manutenções: a cada 25/30 dias.
+- 📅 Manutenções: a cada 25 / 30 dias.
 
---- CANCELAMENTO E REAGENDAMENTO ---
-- Use 'list_my_appointments' para gerenciar agendamentos existentes.
+--- CANCELAMENTO E REAGENDAMENTO-- -
+    - Use 'list_my_appointments' para gerenciar agendamentos existentes.
 - Sempre confirme a data antes de cancelar ou mudar.
 `},
             ...history
@@ -320,7 +321,7 @@ REGRAS DE COMPORTAMENTO:
         let toolTurn = 0
         while (aiMsg.tool_calls && toolTurn < 3) {
             toolTurn++
-            console.log(`🌀 Turno de Ferramentas ${toolTurn}`)
+            console.log(`🌀 Turno de Ferramentas ${toolTurn} `)
 
             history.push(aiMsg) // Push the assistant tool call to history
             const toolMessagesForCompletion = [...messages, ...history.slice(messages.length - 1)] // Get recent history including aiMsg
@@ -328,7 +329,7 @@ REGRAS DE COMPORTAMENTO:
             for (const toolCall of aiMsg.tool_calls) {
                 let result = ""
                 const args = JSON.parse(toolCall.function.arguments)
-                console.log(`🛠️ Executando: ${toolCall.function.name}`, args)
+                console.log(`🛠️ Executando: ${toolCall.function.name} `, args)
 
                 if (toolCall.function.name === 'check_calendar') {
                     const slots = await findAvailableSlots({
@@ -425,39 +426,3 @@ REGRAS DE COMPORTAMENTO:
     }
 }
 
-// Helper: Send Message via Evolution API
-async function sendWhatsAppMessage(phone, message) {
-    const baseUrl = process.env.EVOLUTION_API_BASE_URL // e.g., http://localhost:8080
-    const instanceName = process.env.EVOLUTION_API_INSTANCE // e.g., Clara
-    const apikey = process.env.EVOLUTION_API_KEY
-
-    if (!baseUrl || !instanceName || !apikey) {
-        console.error('Missing Evolution API Credentials')
-        return
-    }
-
-    const url = `${baseUrl}/message/sendText/${instanceName}`
-
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': apikey
-            },
-            body: JSON.stringify({
-                number: phone,
-                text: message,
-                delay: 1200,
-                linkPreview: false
-            })
-        })
-
-        if (!response.ok) {
-            const errorData = await response.text()
-            console.error('Evolution API Error:', errorData)
-        }
-    } catch (error) {
-        console.error('Fetch Error:', error)
-    }
-}
