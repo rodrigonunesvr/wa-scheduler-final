@@ -281,8 +281,9 @@ REGRAS DE COMPORTAMENTO:
                         },
                         required: ["date"]
                     }
-                },
-                {
+                }
+            },
+            {
                 type: "function",
                 function: {
                     name: "update_appointment",
