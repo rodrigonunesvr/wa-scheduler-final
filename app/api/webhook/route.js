@@ -200,8 +200,8 @@ REGRAS DE COMPORTAMENTO:
 - Se o cliente perguntar por horários ou sugerir um dia: Use 'check_calendar'.
    - Se o cliente escolher um horário e você tiver o NOME: Use 'book_appointment' IMEDIATAMENTE após verificar a disponibilidade(se o usuário já demonstrou intenção de marcar).
    - Se não tiver o nome da cliente nova: Peça o nome ANTES de agendar.
-4. PÓS - AÇÃO: Após concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
-5. PROTOCOLO E PREPARO: Informe o protocolo de preparo(veja abaixo) SEMPRE que um agendamento for confirmado ou quando a cliente perguntar sobre o atendimento.
+4. PÓS-AÇÃO: Após concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
+5. PROTOCOLO E PREPARO: Você DEVE informar o protocolo de preparo (veja abaixo) COMPLETO sempre que um agendamento for confirmado. Não ignore nenhuma regra, especialmente a regra da cutícula.
 
 6. REGRAS DE INTERATIVIDADE(NOVO):
    - ** Busca por Período **: Antes de listar os horários, pergunte: "Você prefere na parte da manhã ou da tarde?".Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
@@ -299,10 +299,9 @@ REGRAS DE COMPORTAMENTO:
                         type: "object",
                         properties: {
                             id: { type: "string", description: "O ID do agendamento (obtenha via list_my_appointments)." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista atualizada de serviços." },
-                            total_duration: { type: "integer", description: "Duração total somada em minutos." }
+                            services: { type: "array", items: { type: "string" }, description: "Lista atualizada de serviços." }
                         },
-                        required: ["id", "services", "total_duration"]
+                        required: ["id", "services"]
                     }
                 }
             }
@@ -340,13 +339,11 @@ REGRAS DE COMPORTAMENTO:
                 }
                 else if (toolCall.function.name === 'book_appointment') {
                     try {
-                        const serviceList = args.services || (args.service ? [args.service] : [])
-                        const serviceStr = serviceList.length > 1 ? JSON.stringify(serviceList) : serviceList[0]
-                        const DURATIONS = { 'Fibra ou Molde F1': 120, 'Banho de Gel': 90, 'Manutenção': 120, 'Manutenção (outra prof.)': 120, 'Remoção': 30, 'Esmaltação Básica': 30, 'Esmaltação Premium': 45, 'Esm. ou Pó + Francesinha': 45, 'Esm. + Francesinha + Pó': 60 }
-                        const totalDuration = serviceList.reduce((sum, s) => sum + (DURATIONS[s] || 60), 0)
-
                         const appointment = await bookAppointment({
-                            phone: phone, name: args.name, service: serviceStr, startsAt: args.startsAt, duration: totalDuration
+                            phone: phone,
+                            name: args.name,
+                            services: args.services || args.service,
+                            startsAt: args.startsAt
                         })
 
                         if (appointment?.error) {
@@ -379,11 +376,9 @@ REGRAS DE COMPORTAMENTO:
                 }
                 else if (toolCall.function.name === 'update_appointment') {
                     try {
-                        const serviceStr = args.services.length > 1 ? JSON.stringify(args.services) : args.services[0]
                         const updated = await updateAppointment({
                             id: args.id,
-                            service: serviceStr,
-                            duration: args.total_duration
+                            services: args.services
                         })
                         result = JSON.stringify({ status: "success", updated })
                     } catch (err) {
