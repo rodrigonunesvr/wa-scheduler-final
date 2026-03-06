@@ -1317,29 +1317,48 @@ function ServicesPage({ isMobile, onOpenMenu }) {
 
 // ─── Block Modal ───────────────────────────────────────────
 function BlockModal({ selectedDate, onClose, onSave }) {
-    const [form, setForm] = useState({ title: '', date: selectedDate, startTime: '12:00', endTime: '13:00' })
+    const [form, setForm] = useState({ title: '', dates: [selectedDate], startTime: '12:00', endTime: '13:00' })
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
+
+    const addNext5Days = () => {
+        const d = new Date(selectedDate + 'T12:00:00')
+        const newDates = []
+        for (let i = 0; i < 5; i++) {
+            const next = new Date(d)
+            next.setDate(d.getDate() + i)
+            newDates.push(fmt(next))
+        }
+        setForm({ ...form, dates: Array.from(new Set([...form.dates, ...newDates])) })
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
         setSaving(true); setError('')
-        const startsAt = toISO_SP(form.date, form.startTime)
-        const endsAt = toISO_SP(form.date, form.endTime)
-
-        if (new Date(endsAt) <= new Date(startsAt)) {
-            setError('Horário final deve ser depois do inicial.')
-            setSaving(false)
-            return
-        }
 
         try {
-            const res = await fetch('/api/admin', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'block', title: form.title || 'Bloqueado', starts_at: startsAt, ends_at: endsAt })
+            // Validate all dates
+            for (const date of form.dates) {
+                const startsAt = toISO_SP(date, form.startTime)
+                const endsAt = toISO_SP(date, form.endTime)
+                if (new Date(endsAt) <= new Date(startsAt)) throw new Error(`Horário inválido em ${date}`)
+            }
+
+            // Batch send
+            const promises = form.dates.map(date => {
+                const startsAt = toISO_SP(date, form.startTime)
+                const endsAt = toISO_SP(date, form.endTime)
+                return fetch('/api/admin', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'block', title: form.title || 'Bloqueado', starts_at: startsAt, ends_at: endsAt })
+                })
             })
-            const data = await res.json()
-            if (data.error) throw new Error(data.error)
+
+            const results = await Promise.all(promises)
+            for (const res of results) {
+                const data = await res.json()
+                if (data.error) throw new Error(data.error)
+            }
             onSave()
         } catch (e) { setError(e.message) }
         setSaving(false)
@@ -1358,12 +1377,25 @@ function BlockModal({ selectedDate, onClose, onSave }) {
                         <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
                             className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" placeholder="Ex: Almoço, Consulta médica..." />
                     </div>
+
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Data</label>
-                        <input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" />
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Datas Selecionadas ({form.dates.length})</label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                            {form.dates.map(d => (
+                                <span key={d} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1">
+                                    {d.split('-').reverse().slice(0, 2).join('/')}
+                                    <button type="button" onClick={() => setForm({ ...form, dates: form.dates.filter(x => x !== d) })} className="hover:text-red-500"><X size={12} /></button>
+                                </span>
+                            ))}
+                        </div>
+                        <div className="flex gap-2">
+                            <input type="date" onChange={e => e.target.value && setForm({ ...form, dates: Array.from(new Set([...form.dates, e.target.value])) })}
+                                className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium outline-none" />
+                            <button type="button" onClick={addNext5Days} className="px-3 py-2 rounded-xl bg-slate-100 text-slate-600 text-[10px] font-bold hover:bg-slate-200 transition">+5 Dias</button>
+                        </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                    <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Início</label>
                             <input type="time" required value={form.startTime} onChange={e => setForm({ ...form, startTime: e.target.value })}
@@ -1376,9 +1408,9 @@ function BlockModal({ selectedDate, onClose, onSave }) {
                         </div>
                     </div>
                     {error && <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl border border-red-100">{error}</div>}
-                    <button type="submit" disabled={saving}
+                    <button type="submit" disabled={saving || form.dates.length === 0}
                         className="w-full py-3 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-800 disabled:opacity-50 transition-all shadow-lg shadow-slate-200 active:scale-[0.99]">
-                        {saving ? 'Bloqueando...' : 'Confirmar Bloqueio'}
+                        {saving ? 'Bloqueando...' : `Bloquear em ${form.dates.length} dia${form.dates.length !== 1 ? 's' : ''}`}
                     </button>
                 </form>
             </div>
