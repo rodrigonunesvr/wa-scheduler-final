@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
 import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, isDayOpen, fetchScheduleOverrides } from '@/lib/calendar'
 import { sendWhatsAppMessage } from '@/lib/evolution'
+import { SAAS_CONFIG } from '@/lib/saas_config'
 
 // 1. Validate Evolution API Token
 function validateToken(request) {
@@ -13,6 +14,10 @@ function validateToken(request) {
 // 2. Main Webhook Handler
 export async function POST(request) {
     try {
+        if (!SAAS_CONFIG.features.botEnabled) {
+            return NextResponse.json({ status: 'bot-disabled' })
+        }
+
         const body = await request.json()
         console.log('Webhook received:', JSON.stringify(body, null, 2))
 
