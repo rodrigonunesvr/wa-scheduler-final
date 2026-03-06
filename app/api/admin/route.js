@@ -80,12 +80,31 @@ export async function POST(request) {
         // --- Create Block ---
         if (body.type === 'block') {
             const { title, starts_at, ends_at } = body
+
+            // Defensivamente tentamos inserir com 'title'. 
+            // Se falhar por falta da coluna, tentamos sem ela.
+            const insertRecord = { starts_at, ends_at }
+            if (title) insertRecord.title = title
+
             const { data, error } = await supabase
                 .from('blocks')
-                .insert({ title: title || 'Bloqueado', starts_at, ends_at })
+                .insert(insertRecord)
                 .select()
                 .single()
-            if (error) throw error
+
+            if (error) {
+                // Se o erro for especificamente falta da coluna 'title', tentamos sem ela
+                if (error.message.includes("column \"title\"") || error.message.includes("column of 'blocks'")) {
+                    const { data: retryData, error: retryError } = await supabase
+                        .from('blocks')
+                        .insert({ starts_at, ends_at })
+                        .select()
+                        .single()
+                    if (retryError) throw retryError
+                    return NextResponse.json(retryData)
+                }
+                throw error
+            }
             return NextResponse.json(data)
         }
 
