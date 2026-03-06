@@ -171,6 +171,19 @@ export async function POST(request) {
             calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? '✅ aberto' + suffix : '❌ fechado' + suffix} \n`
         }
 
+        // 6.4 Fetch Dynamic Services
+        const { data: dbServices } = await supabase.from('services').select('*').eq('active', true).order('name', { ascending: true })
+
+        let servicesLines = '🔹 CATÁLOGO DE SERVIÇOS:\n'
+        if (dbServices && dbServices.length > 0) {
+            dbServices.forEach(s => {
+                servicesLines += `- ${s.name}: R$ ${s.price.toFixed(2)} (Duração: ${s.duration} min)\n`
+            })
+        } else {
+            servicesLines += 'Nenhum serviço cadastrado no momento.\n'
+        }
+
+
         // 7. AI Brain (GPT-4o-mini)
         const messages = [
             {
@@ -210,22 +223,11 @@ REGRAS DE COMPORTAMENTO:
 
 6. REGRAS DE INTERATIVIDADE(NOVO):
    - ** Busca por Período **: Antes de listar os horários, pergunte: "Você prefere na parte da manhã ou da tarde?".Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
-   - ** Venda Adicional(Upsell) **: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviço (como uma esmaltação rápida ou remoção)?".
    - ** Prevenção de Conflitos **: Se a cliente quiser dois serviços juntos, tente calcular a duração total e fazer um único agendamento longo em vez de dois separados.
+   - ** ATENÇÃO GIGANTE **: Só aceite agendamentos para serviços que constem ESTRITAMENTE na tabela de preços informada abaixo. Não invente serviços.
 
---- TABELA DE PREÇOS(VALORES)-- -
-🔹 UNHAS DE GEL:
-- Fibra ou Molde F1: R$ 190,00
-    - Banho de Gel: R$ 150,00
-        - Manutenção: R$ 150,00
-            - Manutenção(outra profissional): R$ 170,00
-                - Remoção: R$ 45,00
-
-🔹 ESMALTAÇÃO EM GEL:
-- Esmaltação Básica: R$ 20,00
-    - Esmaltação Premium: R$ 25,00
-        - Esmaltação ou Pó + Francesinha: R$ 35,00
-            - Esmaltação + Francesinha + Pó: R$ 45,00
+--- TABELA DE PREÇOS (VALORES) ---
+${servicesLines}
 
 --- PROTOCOLO DE ATENDIMENTO-- -
     - ✅ Enviamos confirmação 1 dia antes.
