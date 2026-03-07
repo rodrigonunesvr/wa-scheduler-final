@@ -5,7 +5,7 @@ import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle
 
 const whatsappLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '')}`
 
-let SERVICES = [
+const DEFAULT_SERVICES = [
     { id: 'Fibra ou Molde F1', name: 'Fibra ou Molde F1', price: 190, duration: 120, active: true },
     { id: 'Banho de Gel', name: 'Banho de Gel', price: 150, duration: 90, active: true },
     { id: 'Manutenção', name: 'Manutenção', price: 150, duration: 90, active: true },
@@ -16,6 +16,7 @@ let SERVICES = [
     { id: 'Esm. ou Pó + Francesinha', name: 'Esm. ou Pó + Francesinha', price: 35, duration: 45, active: true },
     { id: 'Esm. + Francesinha + Pó', name: 'Esm. + Francesinha + Pó', price: 45, duration: 60, active: true },
 ]
+let SERVICES = [...DEFAULT_SERVICES]
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
@@ -130,8 +131,17 @@ export default function AdminDashboard() {
                 if (svcRes.ok) {
                     const svcData = await svcRes.json()
                     if (Array.isArray(svcData) && svcData.length > 0) {
-                        SERVICES = svcData
-                        setGlobalServices(svcData)
+                        const merged = [...DEFAULT_SERVICES]
+                        svcData.forEach(dbSvc => {
+                            const idx = merged.findIndex(s => s.id === dbSvc.id || s.name === dbSvc.name)
+                            if (idx >= 0) {
+                                merged[idx] = { ...merged[idx], ...dbSvc }
+                            } else {
+                                merged.push(dbSvc)
+                            }
+                        })
+                        SERVICES = merged
+                        setGlobalServices(merged)
                     } else {
                         setGlobalServices(SERVICES)
                     }
@@ -139,6 +149,7 @@ export default function AdminDashboard() {
                     setGlobalServices(SERVICES)
                 }
             } catch (e) {
+                console.warn(e)
                 setGlobalServices(SERVICES)
             }
 
