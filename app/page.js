@@ -116,21 +116,29 @@ export default function AdminDashboard() {
         const s = new Date(currentDate); s.setDate(1); s.setMonth(s.getMonth() - 1)
         const e = new Date(currentDate); e.setMonth(e.getMonth() + 2)
         try {
-            const [aptRes, blkRes, schRes, svcRes] = await Promise.all([
+            const [aptRes, blkRes, schRes] = await Promise.all([
                 fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}`),
                 fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}`),
-                fetch(`/api/admin?type=schedule`),
-                fetch(`/api/services`)
+                fetch(`/api/admin?type=schedule`)
             ])
             const aptData = await aptRes.json()
             const blkData = await blkRes.json()
             const schData = await schRes.json()
-            const svcData = await svcRes.json()
 
-            if (Array.isArray(svcData) && svcData.length > 0) {
-                SERVICES = svcData
-                setGlobalServices(svcData)
-            } else {
+            try {
+                const svcRes = await fetch(`/api/services`)
+                if (svcRes.ok) {
+                    const svcData = await svcRes.json()
+                    if (Array.isArray(svcData) && svcData.length > 0) {
+                        SERVICES = svcData
+                        setGlobalServices(svcData)
+                    } else {
+                        setGlobalServices(SERVICES)
+                    }
+                } else {
+                    setGlobalServices(SERVICES)
+                }
+            } catch (e) {
                 setGlobalServices(SERVICES)
             }
 
