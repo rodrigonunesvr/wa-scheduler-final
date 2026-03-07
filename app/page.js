@@ -343,7 +343,7 @@ export default function AdminDashboard() {
                 )}
                 {activePage === 'clientes' && <ClientsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
                 {activePage === 'servicos' && <ServicesPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} globalServices={globalServices} refreshGlobal={fetchAppointments} />}
-                {activePage === 'relatorios' && <ReportsPage appointments={confirmed} isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
+                {activePage === 'relatorios' && <ReportsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
                 {activePage === 'horarios' && <SchedulePage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} overrides={overrides} onRefresh={fetchAppointments} isDayOpen={isDayOpen} />}
             </main>
 
@@ -1530,24 +1530,44 @@ function DonutChart({ data }) {
 }
 
 // ─── Reports Page ──────────────────────────────────────────
-function ReportsPage({ appointments, isMobile, onOpenMenu }) {
+function ReportsPage({ isMobile, onOpenMenu }) {
     const [period, setPeriod] = useState(30); // days
     const [mounted, setMounted] = useState(false);
+    const [allHistoricalApts, setAllHistoricalApts] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        setMounted(true);
+        const fetchHistory = async () => {
+            setLoading(true);
+            try {
+                const res = await fetch('/api/admin?type=stats');
+                if (res.ok) {
+                    const data = await res.json();
+                    setAllHistoricalApts(Array.isArray(data) ? data : []);
+                }
+            } catch (error) {
+                console.error("Erro ao buscar historico financeiro", error);
+            }
+            setLoading(false);
+        };
+        fetchHistory();
+    }, []);
 
-    if (!mounted) {
-        return <div className="p-10 text-center text-slate-500 flex flex-col items-center justify-center h-full"><RefreshCw className="animate-spin mb-4 text-violet-500" /> Carregando relatórios...</div>;
+    if (!mounted || loading) {
+        return <div className="p-10 text-center text-slate-500 flex flex-col items-center justify-center h-full"><RefreshCw className="animate-spin mb-4 text-violet-500" /> Carregando relatórios avançados...</div>;
     }
 
     const today = new Date();
 
     // Filter appointments by selected period
+    // If period is Infinity (Todo o período), just take all.
     const startPeriod = new Date();
     startPeriod.setDate(today.getDate() - period);
     startPeriod.setHours(0, 0, 0, 0);
 
-    const filteredApts = appointments.filter(a => {
+    const filteredApts = allHistoricalApts.filter(a => {
+        if (period === 9999) return true; // Todo o Período
         const d = new Date(a.starts_at);
         return d >= startPeriod && d <= today;
     });
@@ -1559,18 +1579,20 @@ function ReportsPage({ appointments, isMobile, onOpenMenu }) {
     // Previous period for comparison
     const startPrevContext = new Date(startPeriod);
     startPrevContext.setDate(startPrevContext.getDate() - period);
-    const prevApts = appointments.filter(a => {
+    const prevApts = allHistoricalApts.filter(a => {
+        if (period === 9999) return false; // Sem comparação
         const d = new Date(a.starts_at);
         return d >= startPrevContext && d < startPeriod;
     });
     const prevRevenue = prevApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0);
-    const growth = prevRevenue === 0 ? 100 : (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1);
+    const growth = period === 9999 ? 0 : (prevRevenue === 0 ? 100 : (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1));
 
     // Daily Chart Data (Aggregate by Date)
     const datesMap = {};
-    for (let i = 0; i < period; i++) {
+    const chartDays = period === 9999 ? 30 : period; // Limit chart to 30 dots if infinite
+    for (let i = 0; i < chartDays; i++) {
         const d = new Date(today);
-        d.setDate(today.getDate() - (period - 1 - i));
+        d.setDate(today.getDate() - (chartDays - 1 - i));
         datesMap[fmt(d)] = { revenue: 0, count: 0, label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) };
     }
     filteredApts.forEach(a => {
@@ -1621,7 +1643,7 @@ function ReportsPage({ appointments, isMobile, onOpenMenu }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
-                    {[{ label: '7 Dias', val: 7 }, { label: '15 Dias', val: 15 }, { label: '30 Dias', val: 30 }, { label: '90 Dias', val: 90 }].map(f => (
+                    {[{ label: '7 Dias', val: 7 }, { label: '15 Dias', val: 15 }, { label: '30 Dias', val: 30 }, { label: '90 Dias', val: 90 }, { label: 'Todo Histórico', val: 9999 }].map(f => (
                         <button key={f.val} onClick={() => setPeriod(f.val)}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${period === f.val ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/30' : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-300 hover:text-violet-600'}`}>
                             {f.label}
@@ -1692,7 +1714,7 @@ function ReportsPage({ appointments, isMobile, onOpenMenu }) {
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2"><TrendingUp size={18} className="text-violet-600" /> Evolução do Faturamento</h3>
-                        <span className="px-3 py-1 bg-violet-50 text-violet-700 text-[10px] font-bold rounded-lg border border-violet-100">Visão de {period} dias</span>
+                        <span className="px-3 py-1 bg-violet-50 text-violet-700 text-[10px] font-bold rounded-lg border border-violet-100">Visão Histórica Dinâmica</span>
                     </div>
                     {/* Horizontal scrolling if period > 15 to fit bars nicely */}
                     <div className="overflow-x-auto scrollbar-hide">
@@ -1770,7 +1792,7 @@ function ReportsPage({ appointments, isMobile, onOpenMenu }) {
                 <div className="bg-gradient-to-r from-violet-600 to-purple-700 rounded-3xl p-6 text-white shadow-xl shadow-violet-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div>
                         <h4 className="font-black text-lg mb-1 flex items-center gap-2"><Award size={20} className="text-amber-300" /> Crescimento Constante</h4>
-                        <p className="text-sm text-white/80 font-medium">Você faturou R$ {totalRevenue} nos últimos {period} dias. Continue acompanhando e promovendo seus serviços para aumentar ainda mais!</p>
+                        <p className="text-sm text-white/80 font-medium">Você faturou R$ {totalRevenue} no período selecionado. Continue acompanhando e promovendo seus serviços para aumentar ainda mais!</p>
                     </div>
                     <button className="px-6 py-3 bg-white text-violet-700 font-black text-xs uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg whitespace-nowrap">
                         Baixar Resumo em PDF
