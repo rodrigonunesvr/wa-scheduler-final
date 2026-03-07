@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History } from 'lucide-react'
+import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award } from 'lucide-react'
 
 const whatsappLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '')}`
 
@@ -67,6 +67,7 @@ export default function AdminDashboard() {
     const [appointments, setAppointments] = useState([])
     const [blocks, setBlocks] = useState([])
     const [overrides, setOverrides] = useState([])
+    const [globalServices, setGlobalServices] = useState(SERVICES)
     const [loading, setLoading] = useState(true)
     const [showNewModal, setShowNewModal] = useState(false)
     const [showBlockModal, setShowBlockModal] = useState(false)
@@ -115,14 +116,24 @@ export default function AdminDashboard() {
         const s = new Date(currentDate); s.setDate(1); s.setMonth(s.getMonth() - 1)
         const e = new Date(currentDate); e.setMonth(e.getMonth() + 2)
         try {
-            const [aptRes, blkRes, schRes] = await Promise.all([
+            const [aptRes, blkRes, schRes, svcRes] = await Promise.all([
                 fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}`),
                 fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}`),
-                fetch(`/api/admin?type=schedule`)
+                fetch(`/api/admin?type=schedule`),
+                fetch(`/api/services`)
             ])
             const aptData = await aptRes.json()
             const blkData = await blkRes.json()
             const schData = await schRes.json()
+            const svcData = await svcRes.json()
+
+            if (Array.isArray(svcData) && svcData.length > 0) {
+                SERVICES = svcData
+                setGlobalServices(svcData)
+            } else {
+                setGlobalServices(SERVICES)
+            }
+
             const apts = Array.isArray(aptData) ? aptData : []
             setAppointments(apts)
             setBlocks(Array.isArray(blkData) ? blkData : [])
@@ -323,7 +334,7 @@ export default function AdminDashboard() {
                     </>
                 )}
                 {activePage === 'clientes' && <ClientsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
-                {activePage === 'servicos' && <ServicesPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
+                {activePage === 'servicos' && <ServicesPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} globalServices={globalServices} refreshGlobal={fetchAppointments} />}
                 {activePage === 'relatorios' && <ReportsPage appointments={confirmed} isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
                 {activePage === 'horarios' && <SchedulePage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} overrides={overrides} onRefresh={fetchAppointments} isDayOpen={isDayOpen} />}
             </main>
