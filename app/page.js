@@ -1219,13 +1219,21 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
     const saveEdit = async (id) => {
         setLoading(true)
         try {
-            await fetch('/api/services', {
-                method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, ...editForm })
-            })
+            const isDefault = !id.includes('-');
+            if (isDefault) {
+                await fetch('/api/services', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...editForm })
+                })
+            } else {
+                await fetch('/api/services', {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, ...editForm })
+                })
+            }
             refreshGlobal()
             setEditing(null)
-        } catch (e) { }
+        } catch (e) { console.error(e) }
         setLoading(false)
     }
 
@@ -1247,12 +1255,20 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
     const toggleActive = async (svc) => {
         setLoading(true)
         try {
-            await fetch('/api/services', {
-                method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: svc.id, active: !svc.active })
-            })
+            const isDefault = !svc.id.includes('-');
+            if (isDefault) {
+                await fetch('/api/services', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: svc.name, price: svc.price, duration: svc.duration, active: !svc.active })
+                })
+            } else {
+                await fetch('/api/services', {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: svc.id, active: !svc.active })
+                })
+            }
             refreshGlobal()
-        } catch (e) { }
+        } catch (e) { console.error(e) }
         setLoading(false)
     }
 
