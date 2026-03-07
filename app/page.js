@@ -116,18 +116,19 @@ export default function AdminDashboard() {
         setLoading(true)
         const s = new Date(currentDate); s.setDate(1); s.setMonth(s.getMonth() - 1)
         const e = new Date(currentDate); e.setMonth(e.getMonth() + 2)
+        const cacheBuster = `t=${Date.now()}`
         try {
             const [aptRes, blkRes, schRes] = await Promise.all([
-                fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}`),
-                fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}`),
-                fetch(`/api/admin?type=schedule`)
+                fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}&${cacheBuster}`),
+                fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}&${cacheBuster}`),
+                fetch(`/api/admin?type=schedule&${cacheBuster}`)
             ])
             const aptData = await aptRes.json()
             const blkData = await blkRes.json()
             const schData = await schRes.json()
 
             try {
-                const svcRes = await fetch(`/api/services`)
+                const svcRes = await fetch(`/api/services?${cacheBuster}`)
                 if (svcRes.ok) {
                     const svcData = await svcRes.json()
                     if (Array.isArray(svcData) && svcData.length > 0) {
@@ -1568,7 +1569,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
         const fetchHistory = async () => {
             setLoading(true);
             try {
-                const res = await fetch('/api/admin?type=stats');
+                const res = await fetch(`/api/admin?type=stats&t=${Date.now()}`);
                 if (res.ok) {
                     const data = await res.json();
                     setAllHistoricalApts(Array.isArray(data) ? data : []);
