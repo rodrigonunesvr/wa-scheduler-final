@@ -5,12 +5,16 @@ import { findAvailableSlots, bookAppointment, updateAppointment, getAppointments
 import { sendWhatsAppMessage } from '@/lib/evolution'
 import { SAAS_CONFIG } from '@/lib/saas_config'
 
+// 1. Validate Evolution API Token
+function validateToken(request) {
+    const apikey = request.headers.get('apikey')
+    return apikey === process.env.EVOLUTION_API_KEY
+}
+
 // 2. Main Webhook Handler
 export async function POST(request) {
     try {
-        // Modular Check: Is the AI Bot enabled for this project?
-        if (!SAAS_CONFIG.modules.botEnabled) {
-            console.log('🤖 Módulo de Bot desativado no SAAS_CONFIG. Ignorando processamento de IA.')
+        if (!SAAS_CONFIG.features.botEnabled) {
             return NextResponse.json({ status: 'bot-disabled' })
         }
 

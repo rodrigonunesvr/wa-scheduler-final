@@ -21,7 +21,9 @@ const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
 const PROFESSIONALS = [
-    { id: 'camille', name: 'Camille Almeida', role: 'Especialista', color: 'border-violet-500', initial: 'C' }
+    { id: 'camille', name: 'Camille Almeida', role: 'Especialista', color: 'border-violet-500', initial: 'C' },
+    { id: 'clara', name: 'Clara Nails', role: 'Manicure', color: 'border-pink-500', initial: 'L' },
+    { id: 'juliana', name: 'Juliana', role: 'Estética', color: 'border-blue-500', initial: 'J' },
 ]
 
 const TIME_SLOTS = []
