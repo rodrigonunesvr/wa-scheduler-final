@@ -3,16 +3,17 @@ import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
 import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, isDayOpen, fetchScheduleOverrides } from '@/lib/calendar'
 import { sendWhatsAppMessage } from '@/lib/evolution'
-
-// 1. Validate Evolution API Token
-function validateToken(request) {
-    const apikey = request.headers.get('apikey')
-    return apikey === process.env.EVOLUTION_API_KEY
-}
+import { SAAS_CONFIG } from '@/lib/saas_config'
 
 // 2. Main Webhook Handler
 export async function POST(request) {
     try {
+        // Modular Check: Is the AI Bot enabled for this project?
+        if (!SAAS_CONFIG.modules.botEnabled) {
+            console.log('🤖 Módulo de Bot desativado no SAAS_CONFIG. Ignorando processamento de IA.')
+            return NextResponse.json({ status: 'bot-disabled' })
+        }
+
         const body = await request.json()
         console.log('Webhook received:', JSON.stringify(body, null, 2))
 
@@ -154,6 +155,12 @@ export async function POST(request) {
         // Fetch schedule overrides to determine open/closed days dynamically
         const scheduleOverrides = await fetchScheduleOverrides()
 
+        // Fetch active services and format for AI
+        const { data: dbServices } = await supabase.from('services').select('*').eq('active', true).order('name')
+        const servicesListText = dbServices && dbServices.length > 0
+            ? dbServices.map(s => `- ${s.name}: R$ ${s.price.toFixed(2)}`).join('\n')
+            : '- Nenhum serviço disponível no momento.'
+
         let calendarLines = ''
         for (let i = 0; i < 7; i++) {
             const day = now.clone().add(i, 'days')
@@ -208,19 +215,8 @@ REGRAS DE COMPORTAMENTO:
    - ** Venda Adicional(Upsell) **: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviço (como uma esmaltação rápida ou remoção)?".
    - ** Prevenção de Conflitos **: Se a cliente quiser dois serviços juntos, tente calcular a duração total e fazer um único agendamento longo em vez de dois separados.
 
---- TABELA DE PREÇOS(VALORES)-- -
-🔹 UNHAS DE GEL:
-- Fibra ou Molde F1: R$ 190,00
-    - Banho de Gel: R$ 150,00
-        - Manutenção: R$ 150,00
-            - Manutenção(outra profissional): R$ 170,00
-                - Remoção: R$ 45,00
-
-🔹 ESMALTAÇÃO EM GEL:
-- Esmaltação Básica: R$ 20,00
-    - Esmaltação Premium: R$ 25,00
-        - Esmaltação ou Pó + Francesinha: R$ 35,00
-            - Esmaltação + Francesinha + Pó: R$ 45,00
+--- TABELA DE PREÇOS (VALORES DINÂMICOS) ---
+${servicesListText}
 
 --- PROTOCOLO DE ATENDIMENTO-- -
     - ✅ Enviamos confirmação 1 dia antes.
