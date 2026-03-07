@@ -21,9 +21,7 @@ const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
 const PROFESSIONALS = [
-    { id: 'camille', name: 'Camille Almeida', role: 'Especialista', color: 'border-violet-500', initial: 'C' },
-    { id: 'clara', name: 'Clara Nails', role: 'Manicure', color: 'border-pink-500', initial: 'L' },
-    { id: 'juliana', name: 'Juliana', role: 'Estética', color: 'border-blue-500', initial: 'J' },
+    { id: 'camille', name: 'Camille Almeida', role: 'Especialista', color: 'border-violet-500', initial: 'C' }
 ]
 
 const TIME_SLOTS = []
@@ -231,7 +229,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <nav className="flex-1 py-6 space-y-1 px-3">
-                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Horários' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
+                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
                         <button key={item.id} onClick={() => { setActivePage(item.id); setNewBadge(0); if (isMobile) setSidebarOpen(false) }}
                             className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-[13px] font-bold transition-all group ${activePage === item.id ? 'bg-white/10 text-white shadow-xl shadow-black/20 border border-white/10' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
                             <item.icon size={18} className={`${activePage === item.id ? 'text-brand-violet' : 'group-hover:text-white'} transition-colors`} />
@@ -1009,78 +1007,78 @@ function ClientsPage({ isMobile, onOpenMenu }) {
 
     return (
         <>
-            <header className="glass-dark border-b border-white/5 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2">
                     {isMobile && (
-                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-white/50">
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500">
                             <LayoutGrid size={20} />
                         </button>
                     )}
-                    <h2 className="text-lg font-black text-white flex items-center gap-2"><Users className="text-violet-500" size={20} /> Clientes</h2>
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Users className="text-violet-500" size={20} /> Clientes</h2>
                 </div>
-                <div className="relative w-full md:w-64 flex items-center">
-                    <Search size={14} className="absolute left-3 text-white/40" />
+                <div className="relative w-full md:w-64">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input type="text" placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                        className="pl-9 pr-4 py-2 rounded-xl glass-dark border border-white/10 text-sm w-full focus:border-violet-500 text-white outline-none placeholder:text-white/30 transition-colors" />
+                        className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm w-full focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none" />
                 </div>
             </header>
             <div className="flex-1 overflow-auto p-2 md:p-4">
                 {loading ? (
                     <div className="flex items-center justify-center h-40">
-                        <RefreshCw className="animate-spin text-violet-500" size={24} />
+                        <RefreshCw className="animate-spin text-violet-400" size={24} />
                     </div>
                 ) : filtered.length === 0 ? (
                     <div className="text-center py-16">
-                        <Users className="mx-auto text-white/20 mb-3" size={48} />
-                        <p className="text-white/50 font-medium">Nenhum cliente encontrado</p>
+                        <Users className="mx-auto text-slate-300 mb-3" size={48} />
+                        <p className="text-slate-400 font-medium">Nenhum cliente encontrado</p>
                     </div>
                 ) : (
-                    <div className="glass-dark rounded-2xl border border-white/10 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
-                                    <tr className="border-b border-white/5 bg-white/5">
-                                        <th className="text-left text-[10px] font-bold uppercase tracking-widest text-white/40 px-4 md:px-5 py-3">Cliente</th>
-                                        <th className="text-left text-[10px] font-bold uppercase tracking-widest text-white/40 px-4 md:px-5 py-3">Telefone</th>
-                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-white/40 px-4 md:px-5 py-3 mobile-hide">Agendamentos</th>
-                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-white/40 px-4 md:px-5 py-3 mobile-hide">Próximos</th>
-                                        <th className="text-right text-[10px] font-bold uppercase tracking-widest text-white/40 px-4 md:px-5 py-3">Total Gasto</th>
-                                        <th className="text-right text-[10px] font-bold uppercase tracking-widest text-white/40 px-4 md:px-5 py-3 mobile-hide">Última Visita</th>
-                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-white/40 px-4 md:px-5 py-3">Ações</th>
+                                    <tr className="border-b border-slate-100">
+                                        <th className="text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Cliente</th>
+                                        <th className="text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Telefone</th>
+                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">Agendamentos</th>
+                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">Próximos</th>
+                                        <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Total Gasto</th>
+                                        <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">Última Visita</th>
+                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filtered.map((c, i) => {
                                         const stats = getStats(c.phone)
                                         return (
-                                            <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                            <tr key={i} className="border-b border-slate-50 hover:bg-violet-50/30 transition-colors">
                                                 <td className="px-5 py-3">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400 font-black text-sm">
+                                                        <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-sm">
                                                             {c.name?.charAt(0)?.toUpperCase() || '?'}
                                                         </div>
-                                                        <span className="font-bold text-sm text-white">{c.name || 'Sem nome'}</span>
+                                                        <span className="font-semibold text-sm text-slate-800">{c.name || 'Sem nome'}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-5 py-3">
-                                                    <a href={whatsappLink(c.phone)} target="_blank" rel="noopener" className="text-sm text-white/60 font-mono hover:text-green-400 transition-colors">{c.phone}</a>
+                                                    <a href={whatsappLink(c.phone)} target="_blank" rel="noopener" className="text-sm text-slate-600 font-mono hover:text-green-600 hover:underline transition-colors">{c.phone}</a>
                                                 </td>
-                                                <td className="px-5 py-3 text-center mobile-hide">
-                                                    <span className="bg-white/10 text-white/70 text-[10px] font-black px-2 py-1 rounded-lg">{stats.total}</span>
+                                                <td className="px-5 py-3 text-center">
+                                                    <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded-lg">{stats.total}</span>
                                                 </td>
-                                                <td className="px-5 py-3 text-center mobile-hide">
+                                                <td className="px-5 py-3 text-center">
                                                     {stats.upcoming > 0
-                                                        ? <span className="bg-green-500/20 text-green-400 text-[10px] font-black px-2 py-1 rounded-lg border border-green-500/30">{stats.upcoming}</span>
-                                                        : <span className="text-xs text-white/20">—</span>}
+                                                        ? <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg">{stats.upcoming}</span>
+                                                        : <span className="text-xs text-slate-400">—</span>}
                                                 </td>
                                                 <td className="px-5 py-3 text-right">
-                                                    <span className="text-sm font-black text-green-400">R$ {stats.totalSpent.toFixed(0)}</span>
+                                                    <span className="text-sm font-bold text-green-600">R$ {stats.totalSpent.toFixed(0)}</span>
                                                 </td>
-                                                <td className="px-5 py-3 text-right text-xs text-white/50 mobile-hide font-medium">
+                                                <td className="px-5 py-3 text-right text-sm text-slate-500">
                                                     {stats.lastVisit ? toSPDate(stats.lastVisit.starts_at).split('-').reverse().join('/') : '—'}
                                                 </td>
                                                 <td className="px-5 py-3 text-center">
-                                                    <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1.5 text-xs font-bold text-violet-400 hover:text-white glass-dark border border-white/10 px-3 py-1.5 rounded-xl hover:bg-white/10 transition-colors">
+                                                    <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1 text-xs font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-2.5 py-1 rounded-lg hover:bg-violet-100 transition-colors">
                                                         <History size={12} /> Histórico
                                                     </button>
                                                 </td>
@@ -1092,43 +1090,43 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                         </div>
                     </div>
                 )}
-                <div className="mt-4 text-center text-[10px] uppercase font-bold tracking-widest text-white/40">
+                <div className="mt-4 text-center text-xs text-slate-400 font-medium">
                     {filtered.length} cliente{filtered.length !== 1 ? 's' : ''}
                 </div>
             </div>
 
             {/* History Modal */}
             {historyPhone && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setHistoryPhone(null)}>
-                    <div className="glass-dark rounded-3xl border border-white/10 shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between p-6 border-b border-white/10 glass">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setHistoryPhone(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-5 border-b border-slate-100">
                             <div>
-                                <h3 className="font-black text-white flex items-center gap-2 text-lg"><History className="text-violet-500" size={20} /> Histórico</h3>
-                                <p className="text-sm text-white/50 font-medium mt-1">{historyCustomer?.name || 'Cliente'} • {historyPhone}</p>
+                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><History className="text-violet-500" size={18} /> Histórico</h3>
+                                <p className="text-sm text-slate-500">{historyCustomer?.name || 'Cliente'} • {historyPhone}</p>
                             </div>
-                            <button onClick={() => setHistoryPhone(null)} className="p-2 rounded-xl glass-dark border border-white/10 hover:bg-white/10 text-white/50 hover:text-white transition"><X size={18} /></button>
+                            <button onClick={() => setHistoryPhone(null)} className="p-2 rounded-lg hover:bg-slate-100"><X size={18} /></button>
                         </div>
-                        <div className="overflow-auto max-h-[60vh] p-6 space-y-3">
+                        <div className="overflow-auto max-h-[60vh] p-4 space-y-2">
                             {historyApts.length === 0 ? (
-                                <p className="text-center text-sm text-white/40 py-8 font-medium">Nenhum agendamento encontrado</p>
+                                <p className="text-center text-sm text-slate-400 py-8">Nenhum agendamento encontrado</p>
                             ) : historyApts.map(a => {
                                 const svcs = parseServices(a.service_id)
                                 const total = calcTotal(svcs)
                                 const date = toSPDate(a.starts_at).split('-').reverse().join('/')
                                 const time = new Date(a.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
                                 return (
-                                    <div key={a.id} className={`flex items-center justify-between p-4 rounded-2xl border ${a.status === 'CANCELLED' ? 'bg-red-500/5 border-red-500/20' : 'glass-dark border-white/10'
+                                    <div key={a.id} className={`flex items-center justify-between p-3 rounded-xl border ${a.status === 'CANCELLED' ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'
                                         }`}>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-3 mb-1">
-                                                <span className="text-sm font-black text-white">{date}</span>
-                                                <span className="text-xs text-white/50 font-medium">{time}</span>
-                                                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg border ${a.status === 'CONFIRMED' ? 'bg-green-500/20 text-green-400 border-green-500/30' : a.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-white/10 text-white/50 border-white/10'
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-slate-700">{date}</span>
+                                                <span className="text-xs text-slate-400">{time}</span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${a.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : a.status === 'CANCELLED' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'
                                                     }`}>{a.status === 'CONFIRMED' ? 'Confirmado' : a.status === 'CANCELLED' ? 'Cancelado' : a.status}</span>
                                             </div>
-                                            <p className="text-xs text-white/60 font-medium truncate">{svcs.join(' + ')}</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">{svcs.join(' + ')}</p>
                                         </div>
-                                        <span className="text-sm font-black text-green-400 ml-4">R$ {total}</span>
+                                        <span className="text-sm font-bold text-green-600 ml-3">R$ {total}</span>
                                     </div>
                                 )
                             })}
@@ -1142,168 +1140,145 @@ function ClientsPage({ isMobile, onOpenMenu }) {
 
 // ─── Services Page ─────────────────────────────────────────
 function ServicesPage({ isMobile, onOpenMenu }) {
-    const [services, setServices] = useState([])
-    const [loading, setLoading] = useState(true)
+    const loadServices = () => {
+        try {
+            const saved = JSON.parse(localStorage.getItem('services_overrides') || '{}')
+            return SERVICES.map(s => ({
+                ...s,
+                price: saved[s.id]?.price ?? s.price,
+                duration: saved[s.id]?.duration ?? s.duration
+            }))
+        } catch { return SERVICES.map(s => ({ ...s })) }
+    }
+
+    const [services, setServices] = useState(loadServices)
     const [editing, setEditing] = useState(null)
     const [editForm, setEditForm] = useState({})
     const [saved, setSaved] = useState(false)
-    const [showNew, setShowNew] = useState(false)
-
-    useEffect(() => { loadServices() }, [])
-
-    const loadServices = async () => {
-        setLoading(true)
-        try {
-            const res = await fetch('/api/services')
-            const data = await res.json()
-            setServices(data || [])
-        } catch (e) { console.error(e) }
-        setLoading(false)
-    }
 
     const startEdit = (svc) => {
         setEditing(svc.id)
-        setEditForm({ name: svc.name, price: svc.price, duration: svc.duration })
+        setEditForm({ price: svc.price, duration: svc.duration })
     }
 
-    const saveEdit = async (id) => {
-        try {
-            await fetch('/api/services', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, ...editForm })
-            })
-            await loadServices()
-            setEditing(null)
-            setSaved(true)
-            setTimeout(() => setSaved(false), 2000)
-        } catch (e) { console.error(e) }
+    const saveEdit = (id) => {
+        const updated = services.map(s =>
+            s.id === id ? { ...s, price: Number(editForm.price), duration: Number(editForm.duration) } : s
+        )
+        setServices(updated)
+        // Save to localStorage
+        const overrides = {}
+        updated.forEach(s => {
+            const original = SERVICES.find(o => o.id === s.id)
+            if (s.price !== original.price || s.duration !== original.duration) {
+                overrides[s.id] = { price: s.price, duration: s.duration }
+            }
+        })
+        localStorage.setItem('services_overrides', JSON.stringify(overrides))
+        setEditing(null)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
     }
 
-    const handleDelete = async (id) => {
-        if (!confirm('Deseja excluir este serviço?')) return
-        try {
-            await fetch(`/api/services?id=${id}`, { method: 'DELETE' })
-            await loadServices()
-        } catch (e) { console.error(e) }
+    const resetAll = () => {
+        localStorage.removeItem('services_overrides')
+        setServices(SERVICES.map(s => ({ ...s })))
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
     }
 
-    const handleCreate = async (e) => {
-        e.preventDefault()
-        try {
-            await fetch('/api/services', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(editForm)
-            })
-            setShowNew(false)
-            setEditForm({})
-            await loadServices()
-            setSaved(true)
-            setTimeout(() => setSaved(false), 2000)
-        } catch (e) { console.error(e) }
-    }
+    const hasOverrides = services.some((s, i) => s.price !== SERVICES[i].price || s.duration !== SERVICES[i].duration)
+
+    const categories = [
+        { name: 'Unhas de Gel', emoji: '💎', ids: ['Fibra ou Molde F1', 'Banho de Gel', 'Manutenção', 'Manutenção (outra prof.)', 'Remoção'] },
+        { name: 'Esmaltação em Gel', emoji: '💅', ids: ['Esmaltação Básica', 'Esmaltação Premium', 'Esm. ou Pó + Francesinha', 'Esm. + Francesinha + Pó'] },
+    ]
 
     return (
         <>
-            <header className="glass-dark border-b border-white/5 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                     {isMobile && (
-                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-white/60">
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500">
                             <LayoutGrid size={20} />
                         </button>
                     )}
-                    <h2 className="text-lg font-black text-white flex items-center gap-2"><Scissors className="text-violet-500" size={20} /> Serviços</h2>
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Scissors className="text-violet-500" size={20} /> Serviços</h2>
                 </div>
                 <div className="flex items-center gap-3">
-                    {saved && <span className="text-xs font-bold text-green-400 animate-pulse">✅ Salvo!</span>}
-                    <button onClick={() => { setShowNew(true); setEditForm({ name: '', price: 0, duration: 60 }) }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition shadow-lg shadow-violet-600/20 active:scale-95">
-                        <Plus size={16} /> Novo Serviço
-                    </button>
+                    {saved && <span className="text-xs font-bold text-green-600 animate-pulse">✅ Salvo!</span>}
+                    {hasOverrides && (
+                        <button onClick={resetAll} className="text-xs font-bold text-red-500 hover:text-red-600 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition-colors">
+                            Resetar Padrão
+                        </button>
+                    )}
+                    <span className="text-xs text-slate-400 font-medium">{services.length} serviços</span>
                 </div>
             </header>
             <div className="flex-1 overflow-auto p-4 space-y-4">
-                {showNew && (
-                    <form onSubmit={handleCreate} className="glass-dark rounded-2xl border border-white/10 shadow-lg p-5">
-                        <h3 className="font-bold text-sm text-white mb-4 flex items-center gap-2">Adicionar Novo Serviço</h3>
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <input type="text" required placeholder="Nome do Serviço" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="flex-1 px-4 py-2 rounded-xl glass-dark border border-white/10 focus:border-violet-500 outline-none text-sm text-white" />
-                            <div className="flex items-center gap-2 w-full md:w-auto">
-                                <span className="text-white/50 font-bold">R$</span>
-                                <input type="number" required placeholder="Preço" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} className="w-24 px-4 py-2 rounded-xl glass-dark border border-white/10 focus:border-violet-500 outline-none text-sm text-white text-center" />
-                            </div>
-                            <div className="flex items-center gap-2 w-full md:w-auto">
-                                <Clock size={16} className="text-white/50" />
-                                <input type="number" required placeholder="Duração" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} className="w-24 px-4 py-2 rounded-xl glass-dark border border-white/10 focus:border-violet-500 outline-none text-sm text-white text-center" />
-                                <span className="text-white/50 font-bold text-sm">min</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <button type="submit" className="p-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 transition border border-green-500/30"><Save size={18} /></button>
-                                <button type="button" onClick={() => setShowNew(false)} className="p-2 rounded-xl glass-dark border border-white/10 text-white/50 hover:text-white transition"><X size={18} /></button>
-                            </div>
+                {categories.map(cat => (
+                    <div key={cat.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
+                            <h3 className="font-bold text-sm text-slate-700 flex items-center gap-2">
+                                <span className="text-lg">{cat.emoji}</span> {cat.name}
+                            </h3>
                         </div>
-                    </form>
-                )}
-
-                <div className="glass-dark rounded-2xl border border-white/10 shadow-sm overflow-hidden">
-                    <div className="divide-y divide-white/5">
-                        {loading ? (
-                            <div className="p-8 flex justify-center"><RefreshCw className="animate-spin text-violet-500" /></div>
-                        ) : services.length === 0 ? (
-                            <div className="p-8 text-center text-white/50">Nenhum serviço cadastrado. Pressione "Novo Serviço".</div>
-                        ) : services.map(svc => (
-                            <div key={svc.id} className="flex flex-col md:flex-row md:items-center justify-between px-5 py-4 hover:bg-white/5 transition-colors">
-                                {editing === svc.id ? (
-                                    <div className="flex flex-col md:flex-row gap-4 w-full">
-                                        <input type="text" required placeholder="Nome do Serviço" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="flex-1 px-4 py-2 rounded-xl glass-dark border border-white/10 focus:border-violet-500 outline-none text-sm text-white" />
-                                        <div className="flex flex-wrap items-center gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-white/50 font-bold">R$</span>
-                                                <input type="number" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} className="w-20 px-3 py-2 rounded-xl glass-dark border border-white/10 focus:border-violet-500 outline-none text-sm text-white text-center" />
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Clock size={16} className="text-white/50" />
-                                                <input type="number" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} className="w-20 px-3 py-2 rounded-xl glass-dark border border-white/10 focus:border-violet-500 outline-none text-sm text-white text-center" />
-                                            </div>
-                                            <div className="flex items-center gap-2 ml-auto">
-                                                <button onClick={() => saveEdit(svc.id)} className="p-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 transition border border-green-500/30"><Save size={16} /></button>
-                                                <button onClick={() => setEditing(null)} className="p-2 rounded-xl glass-dark border border-white/10 text-white/50 hover:text-white transition"><X size={16} /></button>
-                                            </div>
+                        <div className="divide-y divide-slate-50">
+                            {services.filter(s => cat.ids.includes(s.id)).map(svc => {
+                                const original = SERVICES.find(o => o.id === svc.id)
+                                const isModified = svc.price !== original.price || svc.duration !== original.duration
+                                return (
+                                    <div key={svc.id} className={`flex flex-col md:flex-row md:items-center justify-between px-4 md:px-5 py-3 md:py-3 hover:bg-violet-50/30 transition-colors ${isModified ? 'bg-amber-50/30' : ''}`}>
+                                        <div className="flex-1 flex items-center gap-2 mb-2 md:mb-0">
+                                            <p className="font-semibold text-sm text-slate-800">{svc.name}</p>
+                                            {isModified && <span className="text-[9px] font-bold text-amber-500 bg-amber-100 px-1.5 py-0.5 rounded-full">editado</span>}
                                         </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="flex-1 flex items-center gap-3 mb-2 md:mb-0">
-                                            <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
-                                                <Scissors size={14} className="text-violet-400" />
-                                            </div>
-                                            <p className="font-bold text-sm text-white">{svc.name}</p>
-                                        </div>
-                                        <div className="flex items-center justify-between md:justify-end gap-5">
-                                            <div className="flex items-center gap-6">
-                                                <div className="text-right">
-                                                    <p className="text-[10px] uppercase font-bold text-white/40 tracking-wider">Valor</p>
-                                                    <p className="text-sm font-black text-green-400">R$ {svc.price}</p>
+                                        {editing === svc.id ? (
+                                            <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                                                <div className="flex items-center gap-1 bg-violet-50 md:bg-transparent p-1 px-2 rounded-lg md:p-0">
+                                                    <span className="text-xs text-slate-400 font-bold">R$</span>
+                                                    <input type="number" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })}
+                                                        className="w-16 md:w-20 px-2 py-1 md:py-1.5 rounded-lg border border-violet-300 text-sm font-bold text-center focus:ring-2 focus:ring-violet-100 outline-none" />
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-[10px] uppercase font-bold text-white/40 tracking-wider">Duração</p>
-                                                    <p className="text-sm font-black text-white/80">{svc.duration}min</p>
+                                                <div className="flex items-center gap-1 bg-violet-50 md:bg-transparent p-1 px-2 rounded-lg md:p-0">
+                                                    <Clock size={12} className="text-slate-400" />
+                                                    <input type="number" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })}
+                                                        className="w-14 md:w-16 px-2 py-1 md:py-1.5 rounded-lg border border-violet-300 text-sm font-medium text-center focus:ring-2 focus:ring-violet-100 outline-none" />
+                                                    <span className="text-xs text-slate-400">min</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 ml-auto md:ml-0">
+                                                    <button onClick={() => saveEdit(svc.id)}
+                                                        className="p-1.5 md:p-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors" title="Salvar">
+                                                        <Save size={14} />
+                                                    </button>
+                                                    <button onClick={() => setEditing(null)}
+                                                        className="p-1.5 md:p-2 rounded-lg bg-slate-200 text-slate-500 hover:bg-slate-300 transition-colors" title="Cancelar">
+                                                        <X size={14} />
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2 border-l border-white/10 pl-4">
-                                                <button onClick={() => startEdit(svc)} className="p-2 rounded-xl glass-dark border border-white/10 hover:bg-white/10 text-white/50 hover:text-violet-400 transition-colors" title="Editar">
+                                        ) : (
+                                            <div className="flex items-center justify-between md:justify-end gap-4">
+                                                <div className="text-left md:text-right">
+                                                    <p className="text-sm font-bold text-violet-600">R$ {svc.price}</p>
+                                                    <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 md:justify-end"><Clock size={10} /> {svc.duration}min</p>
+                                                </div>
+                                                <button onClick={() => startEdit(svc)}
+                                                    className="p-2 md:p-1.5 rounded-lg bg-slate-50 md:bg-transparent border border-slate-100 md:border-0 hover:bg-slate-100 text-slate-400 hover:text-violet-600 transition-colors" title="Editar">
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button onClick={() => handleDelete(svc.id)} className="p-2 rounded-xl glass-dark border border-white/10 hover:bg-red-500/20 text-white/50 hover:text-red-400 border-transparent hover:border-red-500/30 transition-colors" title="Excluir">
-                                                    <Trash2 size={16} />
-                                                </button>
                                             </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        ))}
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
                     </div>
+                ))}
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                    <p className="text-sm text-green-700 font-medium">
+                        💾 As alterações de preço e duração são salvas automaticamente e persistem entre sessões.
+                    </p>
                 </div>
             </div>
         </>
@@ -1466,14 +1441,14 @@ function ReportsPage({ appointments, isMobile, onOpenMenu }) {
 
     return (
         <>
-            <header className="glass-dark border-b border-white/5 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2">
                     {isMobile && (
-                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-white/50">
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500">
                             <LayoutGrid size={20} />
                         </button>
                     )}
-                    <h2 className="text-lg font-black text-white flex items-center gap-2"><BarChart3 className="text-violet-500" size={20} /> Relatórios</h2>
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-500" size={20} /> Relatórios</h2>
                 </div>
                 <button onClick={() => {
                     const rows = [['Data', 'Cliente', 'Telefone', 'Serviço', 'Status', 'Valor']]
@@ -1488,86 +1463,80 @@ function ReportsPage({ appointments, isMobile, onOpenMenu }) {
                     const a = document.createElement('a')
                     a.href = url; a.download = `relatorio_${fmt(new Date())}.csv`; a.click()
                     URL.revokeObjectURL(url)
-                }} className="w-full md:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 shadow-[0_0_20px_rgba(139,92,246,0.3)] transition active:scale-95">
+                }} className="w-full md:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 shadow-lg shadow-green-200 transition active:scale-95">
                     <Download size={14} /> Exportar CSV
                 </button>
             </header>
             <div className="flex-1 overflow-auto p-2 md:p-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="glass-dark rounded-3xl border border-white/10 p-5 shadow-sm relative overflow-hidden">
-                        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-green-500/20 rounded-full blur-2xl pointer-events-none" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Faturamento Mensal</p>
-                        <p className="text-3xl font-black text-green-400">R$ {monthRevenue}</p>
-                        <p className="text-[10px] text-white/40 mt-1 font-medium">{monthApts.length} agendamentos</p>
+                    <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Faturamento Mensal</p>
+                        <p className="text-2xl font-black text-green-600">R$ {monthRevenue}</p>
+                        <p className="text-[10px] text-slate-400 mt-1">{monthApts.length} agendamentos</p>
                     </div>
-                    <div className="glass-dark rounded-3xl border border-white/10 p-5 shadow-sm relative overflow-hidden">
-                        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Ticket Médio</p>
-                        <p className="text-3xl font-black text-white">R$ {ticketMedio}</p>
-                        <p className="text-[10px] text-white/40 mt-1 font-medium">por atendimento</p>
+                    <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Ticket Médio</p>
+                        <p className="text-2xl font-black text-blue-600">R$ {ticketMedio}</p>
+                        <p className="text-[10px] text-slate-400 mt-1">por atendimento</p>
                     </div>
-                    <div className="glass-dark rounded-3xl border border-white/10 p-5 shadow-sm relative overflow-hidden">
-                        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-violet-500/20 rounded-full blur-2xl pointer-events-none" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Agend. Hoje</p>
-                        <p className="text-3xl font-black text-violet-400">{appointments.filter(a => toSPDate(a.starts_at) === todayStr).length}</p>
-                        <p className="text-[10px] text-white/40 mt-1 font-medium uppercase">{new Date().toLocaleDateString('pt-BR', { weekday: 'long' })}</p>
+                    <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Agend. Hoje</p>
+                        <p className="text-2xl font-black text-violet-600">{appointments.filter(a => toSPDate(a.starts_at) === todayStr).length}</p>
+                        <p className="text-[10px] text-slate-400 mt-1">{new Date().toLocaleDateString('pt-BR', { weekday: 'long' })}</p>
                     </div>
                 </div>
 
                 {/* Chart: Last 7 Days Revenue */}
-                <div className="glass-dark rounded-3xl border border-white/10 shadow-sm p-6 pt-5 relative">
-                    <h3 className="font-black text-sm text-white mb-6 flex items-center gap-2 tracking-wide"><TrendingUp size={18} className="text-green-400" /> Curva de Faturamento</h3>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                    <h3 className="font-bold text-sm text-slate-700 mb-4 flex items-center gap-2"><TrendingUp size={16} className="text-green-500" /> Faturamento — Últimos 7 dias</h3>
                     <div className="flex items-end gap-2" style={{ height: '180px' }}>
                         {last7.map((day, i) => (
-                            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group">
-                                <p className="text-[10px] font-bold text-green-400 mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                                <p className="text-[10px] font-bold text-green-600 mb-1">
                                     {day.revenue > 0 ? `R$${day.revenue}` : ''}
                                 </p>
-                                <div className="w-full max-w-[40px] bg-gradient-to-t from-violet-600/50 to-purple-400/80 rounded-t-lg transition-all hover:brightness-125 border border-white/5 border-b-0 shadow-[0_0_15px_rgba(167,139,250,0.2)]"
+                                <div className="w-full bg-gradient-to-t from-violet-500 to-purple-400 rounded-t-lg transition-all hover:from-violet-600 hover:to-purple-500"
                                     style={{ height: `${(day.revenue / maxRevenue) * 140}px`, minHeight: day.revenue > 0 ? '8px' : '2px' }}
                                     title={`${day.label}: R$ ${day.revenue} (${day.count} agend.)`} />
-                                <p className="text-[9px] font-bold text-white/50 mt-3 truncate w-full text-center uppercase tracking-wider">{day.label.split(',')[0]}</p>
-                                <p className="text-[8px] text-white/30 truncate mt-0.5">{day.count} agend.</p>
+                                <p className="text-[10px] font-bold text-slate-400 mt-2">{day.label}</p>
+                                <p className="text-[9px] text-slate-300">{day.count} agend.</p>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                     {/* Top Services */}
-                    <div className="glass-dark rounded-3xl border border-white/10 shadow-sm p-5">
-                        <h3 className="font-black text-sm text-white mb-4 tracking-wide flex items-center gap-2"><Scissors size={16} className="text-violet-400" /> Serviços Populares no Mês</h3>
-                        <div className="space-y-4">
-                            {topServices.length === 0 ? <p className="text-sm text-white/30 text-center py-4">Sem dados</p> : topServices.map(([name, count], i) => (
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                        <h3 className="font-bold text-sm text-slate-700 mb-4 flex items-center gap-2"><Scissors size={16} className="text-violet-500" /> Serviços Mais Populares</h3>
+                        <div className="space-y-3">
+                            {topServices.map(([name, count], i) => (
                                 <div key={i}>
-                                    <div className="flex justify-between text-xs font-bold text-white mb-1.5">
-                                        <span className="truncate mr-2">{i + 1}. {name}</span>
-                                        <span className="text-violet-400 shrink-0">{count}x</span>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs font-semibold text-slate-700 truncate mr-2">{name}</span>
+                                        <span className="text-xs font-bold text-violet-600 shrink-0">{count}x</span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                        <div className="h-full bg-gradient-to-r from-violet-600 to-purple-400 rounded-full transition-all" style={{ width: `${(count / maxServiceCount) * 100}%` }} />
+                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-gradient-to-r from-violet-400 to-purple-500 rounded-full transition-all"
+                                            style={{ width: `${(count / maxServiceCount) * 100}%` }} />
                                     </div>
                                 </div>
                             ))}
+                            {topServices.length === 0 && <p className="text-xs text-slate-400">Nenhum dado disponível</p>}
                         </div>
                     </div>
 
-                    {/* Weekly breakdown */}
-                    <div className="glass-dark rounded-3xl border border-white/10 shadow-sm p-5">
-                        <h3 className="font-black text-sm text-white mb-4 tracking-wide flex items-center gap-2"><Calendar size={16} className="text-blue-400" /> Resumo Semanal</h3>
-                        <div className="space-y-3">
-                            {last4Weeks.map((wk, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                    {/* Weekly Breakdown */}
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                        <h3 className="font-bold text-sm text-slate-700 mb-4 flex items-center gap-2"><Calendar size={16} className="text-blue-500" /> Resumo Semanal</h3>
+                        <div className="space-y-2">
+                            {last4Weeks.map((week, i) => (
+                                <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                                    <span className="text-xs font-medium text-slate-600">{week.label}</span>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 font-black text-[10px] flex items-center justify-center border border-blue-500/30">
-                                            S{4 - i}
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">{wk.label}</p>
-                                            <p className="text-[10px] text-white/50 font-medium mt-0.5">{wk.count} atendimentos</p>
-                                        </div>
+                                        <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-lg">{week.count} agend.</span>
+                                        <span className="text-xs font-bold text-green-600 w-16 text-right">R$ {week.revenue}</span>
                                     </div>
-                                    <span className="text-sm font-black text-green-400">R$ {wk.revenue}</span>
                                 </div>
                             ))}
                         </div>
@@ -1645,56 +1614,56 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
 
     return (
         <>
-            <header className="glass-dark border-b border-white/5 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2">
                     {isMobile && (
-                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-white/50">
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500">
                             <LayoutGrid size={20} />
                         </button>
                     )}
-                    <h2 className="text-lg font-black text-white flex items-center gap-2"><Clock className="text-violet-500" size={20} /> Horários</h2>
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Clock className="text-violet-500" size={20} /> Horários</h2>
                 </div>
-                <span className="text-[10px] md:text-xs text-white/40 font-medium whitespace-nowrap">Clique no dia para alternar aberto/fechado</span>
+                <span className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap">Clique no dia para alternar aberto/fechado</span>
             </header>
             <div className="flex-1 overflow-auto p-2 md:p-4 space-y-4">
                 {/* Legend */}
-                <div className="glass-dark rounded-3xl border border-white/10 p-3 md:p-4 shadow-sm">
+                <div className="bg-white rounded-2xl border border-slate-200 p-3 md:p-4 shadow-sm">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-green-500/20 border-2 border-green-500/50" />
-                            <span className="text-[9px] md:text-xs font-bold text-white/60">Aberto (padrão)</span>
+                            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-green-100 border-2 border-green-400" />
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Aberto (padrão)</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-red-500/20 border-2 border-red-500/50" />
-                            <span className="text-[9px] md:text-xs font-bold text-white/60">Fechado (padrão)</span>
+                            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-red-100 border-2 border-red-400" />
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Fechado (padrão)</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-green-500/20 border-2 border-amber-400/50 ring-2 ring-amber-400/20" />
-                            <span className="text-[9px] md:text-xs font-bold text-white/60">Aberto (exceção)</span>
+                            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-green-100 border-2 border-amber-400 ring-2 ring-amber-200" />
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Aberto (exceção)</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-red-500/20 border-2 border-amber-400/50 ring-2 ring-amber-400/20" />
-                            <span className="text-[9px] md:text-xs font-bold text-white/60">Fechado (exceção)</span>
+                            <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-red-100 border-2 border-amber-400 ring-2 ring-amber-200" />
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Fechado (exceção)</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Month Navigation */}
-                <div className="flex items-center justify-between glass-dark rounded-2xl border border-white/10 p-1 md:p-2 shadow-sm">
-                    <button onClick={() => navMonth(-1)} className="p-2.5 rounded-xl hover:bg-white/10 text-white/50 transition-colors"><ChevronLeft size={20} /></button>
-                    <h3 className="text-sm md:text-lg font-black text-white text-center">
+                <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200 p-1 md:p-2 shadow-sm">
+                    <button onClick={() => navMonth(-1)} className="p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 active:bg-slate-200 transition-colors"><ChevronLeft size={20} /></button>
+                    <h3 className="text-sm md:text-lg font-extrabold text-slate-700 text-center">
                         {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-                        {monthOverrides.length > 0 && <div className="text-[10px] font-bold text-amber-400 mt-0.5">{monthOverrides.length} exceção{monthOverrides.length > 1 ? 'ões' : ''}</div>}
+                        {monthOverrides.length > 0 && <div className="text-[10px] font-bold text-amber-500">{monthOverrides.length} exceção{monthOverrides.length > 1 ? 'ões' : ''}</div>}
                     </h3>
-                    <button onClick={() => navMonth(1)} className="p-2.5 rounded-xl hover:bg-white/10 text-white/50 transition-colors"><ChevronRight size={20} /></button>
+                    <button onClick={() => navMonth(1)} className="p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 active:bg-slate-200 transition-colors"><ChevronRight size={20} /></button>
                 </div>
 
                 {/* Calendar Grid */}
-                <div className="glass-dark rounded-3xl border border-white/10 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     {/* Day Headers */}
-                    <div className="grid grid-cols-7 border-b border-white/5 bg-white/5">
+                    <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50/50">
                         {DAY_NAMES.map(d => (
-                            <div key={d} className="text-center py-3 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-white/40">{d.substring(0, 3)}</div>
+                            <div key={d} className="text-center py-2 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">{d.substring(0, 3)}</div>
                         ))}
                     </div>
                     {/* Date Grid */}
@@ -1713,27 +1682,27 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                                     onClick={() => inMonth && !isPast && toggleDay(date)}
                                     disabled={!inMonth || isPast || isSaving}
                                     className={`
-                                        relative py-3 md:py-5 px-1 md:px-2 border-b border-r border-white/5 text-center transition-all
-                                        ${!inMonth ? 'opacity-10 cursor-default' : isPast ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:bg-white/5 active:scale-95'}
-                                        ${inMonth && open ? 'bg-green-500/5 hover:bg-green-500/10' : inMonth ? 'bg-red-500/5 hover:bg-red-500/10' : ''}
-                                        ${isException && inMonth ? 'ring-1 md:ring-2 ring-amber-400/50 ring-inset' : ''}
+                                        relative py-2 md:py-4 px-1 md:px-2 border-b border-r border-slate-50 text-center transition-all
+                                        ${!inMonth ? 'opacity-20 cursor-default' : isPast ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50 active:scale-95'}
+                                        ${inMonth && open ? 'bg-green-50' : inMonth ? 'bg-red-50' : ''}
+                                        ${isException && inMonth ? 'ring-1 md:ring-2 ring-amber-300 ring-inset' : ''}
                                     `}>
-                                    <p className={`text-sm md:text-lg font-black ${inMonth ? (open ? 'text-green-400' : 'text-red-400') : 'text-white/20'}`}>
+                                    <p className={`text-sm md:text-lg font-black ${inMonth ? (open ? 'text-green-700' : 'text-red-500') : 'text-slate-300'}`}>
                                         {date.getDate()}
                                     </p>
-                                    <p className={`text-[7px] md:text-[9px] font-bold mt-1 uppercase tracking-wider ${open ? 'text-green-500' : 'text-red-400'}`}>
+                                    <p className={`text-[7px] md:text-[10px] font-bold mt-0.5 ${open ? 'text-green-500' : 'text-red-400'}`}>
                                         {inMonth ? (open ? 'Aberto' : 'Fechado') : ''}
                                     </p>
                                     {isException && inMonth && (
-                                        <span className="absolute top-1 right-1 text-[10px] drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]">⭐</span>
+                                        <span className="absolute top-0.5 right-0.5 text-[8px]">⭐</span>
                                     )}
                                     {isSaving && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-lg m-1">
-                                            <RefreshCw size={14} className="animate-spin text-violet-400" />
+                                        <div className="absolute inset-0 flex items-center justify-center bg-white/60">
+                                            <RefreshCw size={12} className="animate-spin text-violet-500" />
                                         </div>
                                     )}
                                     {isToday(date) && (
-                                        <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 md:w-2 h-1.5 md:h-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+                                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-violet-500" />
                                     )}
                                 </button>
                             )
@@ -1743,26 +1712,24 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
 
                 {/* Overrides List */}
                 {monthOverrides.length > 0 && (
-                    <div className="glass-dark rounded-3xl border border-white/10 shadow-sm p-6">
-                        <h3 className="font-black text-sm text-white mb-4 flex items-center gap-2">⭐ Exceções neste mês</h3>
-                        <div className="space-y-3">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                        <h3 className="font-bold text-sm text-slate-700 mb-3 flex items-center gap-2">⭐ Exceções neste mês</h3>
+                        <div className="space-y-2">
                             {monthOverrides.map(o => {
                                 const d = new Date(o.date + 'T12:00:00')
                                 return (
-                                    <div key={o.id} className="flex items-center justify-between py-3 px-4 rounded-xl glass-dark border border-white/10 hover:bg-white/5 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <span className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${o.is_open ? 'bg-green-400 text-green-400' : 'bg-red-400 text-red-400'}`} />
-                                            <div>
-                                                <span className="text-sm font-bold text-white block">
-                                                    {d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}
-                                                </span>
-                                                {o.reason && <span className="text-[10px] text-white/40 font-medium block mt-0.5">{o.reason}</span>}
-                                            </div>
-                                            <span className={`hidden md:inline-block text-[10px] font-black tracking-widest px-2.5 py-1 rounded-lg border ${o.is_open ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
+                                    <div key={o.id} className="flex items-center justify-between py-2 px-3 rounded-xl bg-amber-50 border border-amber-100">
+                                        <div className="flex items-center gap-3">
+                                            <span className={`w-3 h-3 rounded-full ${o.is_open ? 'bg-green-400' : 'bg-red-400'}`} />
+                                            <span className="text-sm font-bold text-slate-700">
+                                                {d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                            </span>
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${o.is_open ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
                                                 {o.is_open ? 'ABERTO' : 'FECHADO'}
                                             </span>
+                                            {o.reason && <span className="text-xs text-slate-400 italic">{o.reason}</span>}
                                         </div>
-                                        <button onClick={() => toggleDay(d)} className="text-[10px] uppercase font-bold text-red-400 hover:text-white glass-dark border border-white/10 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors tracking-widest">
+                                        <button onClick={() => toggleDay(d)} className="text-xs font-bold text-red-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">
                                             Remover
                                         </button>
                                     </div>
@@ -1773,8 +1740,8 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                 )}
 
                 {/* Info */}
-                <div className="glass-dark border border-violet-500/30 rounded-2xl p-5 text-center shadow-[0_0_30px_rgba(139,92,246,0.05)]">
-                    <p className="text-sm text-violet-400 font-medium">
+                <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 text-center">
+                    <p className="text-sm text-violet-700 font-medium">
                         💡 As mudanças feitas aqui são aplicadas instantaneamente. O bot já saberá quais dias estão abertos ou fechados.
                     </p>
                 </div>
