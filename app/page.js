@@ -6,15 +6,15 @@ import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle
 const whatsappLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '')}`
 
 let SERVICES = [
-    { id: 'Fibra', name: 'Fibra ou Molde F1', price: 190, duration: 120, active: true },
-    { id: 'Banho', name: 'Banho de Gel', price: 150, duration: 90, active: true },
-    { id: 'Manutencao', name: 'Manutenção', price: 150, duration: 90, active: true },
-    { id: 'Manutencao-Outra', name: 'Manutenção (outra prof.)', price: 170, duration: 90, active: true },
-    { id: 'Remocao', name: 'Remoção', price: 45, duration: 30, active: true },
-    { id: 'Esmaltacao-Basica', name: 'Esmaltação Básica', price: 20, duration: 30, active: true },
-    { id: 'Esmaltacao-Premium', name: 'Esmaltação Premium', price: 25, duration: 45, active: true },
-    { id: 'Esmaltacao-Po', name: 'Esm. ou Pó + Francesinha', price: 35, duration: 45, active: true },
-    { id: 'Esmaltacao-Po-Francesinha', name: 'Esm. + Francesinha + Pó', price: 45, duration: 60, active: true },
+    { id: 'Fibra ou Molde F1', name: 'Fibra ou Molde F1', price: 190, duration: 120 },
+    { id: 'Banho de Gel', name: 'Banho de Gel', price: 150, duration: 90 },
+    { id: 'Manutenção', name: 'Manutenção', price: 150, duration: 90 },
+    { id: 'Manutenção (outra prof.)', name: 'Manutenção (outra prof.)', price: 170, duration: 90 },
+    { id: 'Remoção', name: 'Remoção', price: 45, duration: 30 },
+    { id: 'Esmaltação Básica', name: 'Esmaltação Básica', price: 20, duration: 30 },
+    { id: 'Esmaltação Premium', name: 'Esmaltação Premium', price: 25, duration: 45 },
+    { id: 'Esm. ou Pó + Francesinha', name: 'Esm. ou Pó + Francesinha', price: 35, duration: 45 },
+    { id: 'Esm. + Francesinha + Pó', name: 'Esm. + Francesinha + Pó', price: 45, duration: 60 },
 ]
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -1513,6 +1513,14 @@ function DonutChart({ data }) {
 // ─── Reports Page ──────────────────────────────────────────
 function ReportsPage({ appointments, isMobile, onOpenMenu }) {
     const [period, setPeriod] = useState(30); // days
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => setMounted(true), []);
+
+    if (!mounted) {
+        return <div className="p-10 text-center text-slate-500 flex flex-col items-center justify-center h-full"><RefreshCw className="animate-spin mb-4 text-violet-500" /> Carregando relatórios...</div>;
+    }
+
     const today = new Date();
 
     // Filter appointments by selected period
