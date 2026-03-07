@@ -20,14 +20,8 @@ const SERVICES = [
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
-const PROFESSIONALS = [
-    { id: 'camille', name: 'Camille Almeida', role: 'Especialista', color: 'border-violet-500', initial: 'C' },
-    { id: 'clara', name: 'Clara Nails', role: 'Manicure', color: 'border-pink-500', initial: 'L' },
-    { id: 'juliana', name: 'Juliana', role: 'Estética', color: 'border-blue-500', initial: 'J' },
-]
-
 const TIME_SLOTS = []
-for (let h = 8; h <= 19; h++) {
+for (let h = 7; h <= 19; h++) {
     TIME_SLOTS.push(`${String(h).padStart(2, '0')}:00`)
     TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`)
 }
@@ -214,49 +208,37 @@ export default function AdminDashboard() {
             : new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 
     return (
-        <div className="min-h-screen bg-transparent flex overflow-hidden">
+        <div className="min-h-screen bg-slate-50 flex overflow-hidden">
             {/* Sidebar Overlay (Mobile) */}
             {isMobile && sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
             {/* Sidebar */}
-            <aside className={`${isMobile ? 'sidebar-drawer' : sidebarOpen ? 'w-64' : 'w-20'} ${isMobile && sidebarOpen ? 'open' : ''} glass border-r border-white/5 backdrop-blur-3xl transition-all duration-500 flex flex-col shrink-0 h-full relative z-40`}>
-                <div className="p-6 flex items-center justify-between border-b border-white/10">
+            <aside className={`${isMobile ? 'sidebar-drawer' : sidebarOpen ? 'w-56' : 'w-16'} ${isMobile && sidebarOpen ? 'open' : ''} bg-gradient-to-b from-violet-700 to-purple-900 text-white transition-all duration-300 flex flex-col shrink-0 h-full`}>
+                <div className="p-4 flex items-center justify-between border-b border-white/10">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-purple-400 rotate-12 flex items-center justify-center shadow-lg shadow-violet-500/20">
-                            <Scissors className="text-white -rotate-12" size={16} />
-                        </div>
-                        {(sidebarOpen || isMobile) && <span className="font-black text-xl tracking-tight text-white">AGENDAÍ<span className="text-brand-violet">.</span></span>}
+                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-lg hover:bg-white/10 transition mobile-hide"><LayoutGrid size={20} /></button>
+                        {(sidebarOpen || isMobile) && <span className="font-extrabold text-lg tracking-tight">Espaço C.A.</span>}
                     </div>
-                    {isMobile && <button onClick={() => setSidebarOpen(false)} className="p-1 text-white/50 hover:text-white transition-colors"><X size={20} /></button>}
+                    {isMobile && <button onClick={() => setSidebarOpen(false)} className="p-1 text-white/50 hover:text-white"><X size={20} /></button>}
                 </div>
-
-                <nav className="flex-1 py-6 space-y-1 px-3">
-                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
+                <nav className="flex-1 py-3 space-y-0.5 px-2">
+                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Horários' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
                         <button key={item.id} onClick={() => { setActivePage(item.id); setNewBadge(0); if (isMobile) setSidebarOpen(false) }}
-                            className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-[13px] font-bold transition-all group ${activePage === item.id ? 'bg-white/10 text-white shadow-xl shadow-black/20 border border-white/10' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
-                            <item.icon size={18} className={`${activePage === item.id ? 'text-brand-violet' : 'group-hover:text-white'} transition-colors`} />
-                            {(sidebarOpen || isMobile) && item.label}
-                            {item.id === 'agenda' && newBadge > 0 && (sidebarOpen || isMobile) && <span className="ml-auto bg-violet-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-lg">NEW</span>}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activePage === item.id ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}>
+                            <item.icon size={18} />{(sidebarOpen || isMobile) && item.label}
+                            {item.id === 'agenda' && newBadge > 0 && (sidebarOpen || isMobile) && <span className="ml-auto bg-green-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">+{newBadge}</span>}
                         </button>
                     ))}
                 </nav>
-
-                <div className="p-4 mt-auto space-y-4">
-                    <div className="glass-dark rounded-2xl p-4 border border-white/5">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                            </div>
-                            <span className="text-[10px] font-black uppercase text-slate-400">Bot Ativo</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 font-medium">Clara está gerenciando as conversas.</p>
-                    </div>
-
-                    <button onClick={toggleDarkMode} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-bold text-slate-500 hover:bg-white/5 hover:text-white transition-all">
-                        <RefreshCw size={14} className={darkMode ? 'rotate-180 transition-transform duration-500' : 'transition-transform duration-500'} />
-                        {(sidebarOpen || isMobile) && (darkMode ? 'MODO CLARO' : 'MODO ESCURO')}
+                <div className="p-3 border-t border-white/10 space-y-3">
+                    <button onClick={toggleDarkMode} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[11px] font-bold text-white/70 hover:bg-white/10 hover:text-white transition-all text-left">
+                        {darkMode ? <RefreshCw size={14} /> : <RefreshCw size={14} className="rotate-180" />}
+                        {(sidebarOpen || isMobile) && (darkMode ? 'Modo Claro' : 'Modo Escuro')}
                     </button>
+                    <div className="flex items-center gap-2 text-xs font-medium text-white/50 px-3">
+                        <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span></span>
+                        {(sidebarOpen || isMobile) && 'Bot Ativo'}
+                    </div>
                 </div>
             </aside>
 
@@ -264,91 +246,71 @@ export default function AdminDashboard() {
             <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
                 {activePage === 'agenda' && (
                     <>
-                        {/* Header */}
-                        <header className="glass-dark border-b border-white/5 px-6 py-4 flex items-center justify-between shrink-0 sticky top-0 z-30">
-                            <div className="flex items-center gap-4 overflow-hidden">
+                        <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-1 md:gap-2 overflow-hidden">
                                 {isMobile && (
-                                    <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-white/60 hover:text-white">
+                                    <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-slate-500">
                                         <LayoutGrid size={20} />
                                     </button>
                                 )}
-                                <div className="flex glass-dark rounded-2xl p-1 shrink-0 border border-white/10">
+                                <div className="flex bg-slate-100 rounded-xl p-0.5 shrink-0">
                                     {['dia', 'semana', 'mês'].map((v, i) => {
                                         const mode = ['day', 'week', 'month'][i]
-                                        return (
-                                            <button key={mode} onClick={() => setViewMode(mode)}
-                                                className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${viewMode === mode ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20' : 'text-slate-500 hover:text-white'}`}>
-                                                {v}
-                                            </button>
-                                        )
+                                        return <button key={mode} onClick={() => setViewMode(mode)} className={`px-2 md:px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition-all ${viewMode === mode ? 'bg-white shadow text-violet-700' : 'text-slate-500'}`}>{v.charAt(0).toUpperCase() + v.slice(1)}</button>
                                     })}
                                 </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                    <button onClick={() => nav(-1)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors"><ChevronLeft size={20} /></button>
-                                    <button onClick={goToday} className="px-4 py-2 rounded-xl bg-white/5 text-white text-[11px] font-black uppercase tracking-widest hover:bg-white/10 border border-white/10 transition-all">Hoje</button>
-                                    <button onClick={() => nav(1)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 transition-colors"><ChevronRight size={20} /></button>
+                                <div className="flex items-center shrink-0">
+                                    <button onClick={() => nav(-1)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"><ChevronLeft size={18} /></button>
+                                    <button onClick={goToday} className="px-2 py-1 md:px-3 md:py-1.5 rounded-lg bg-violet-600 text-white text-[10px] md:text-xs font-bold hover:bg-violet-700 transition">HOJE</button>
+                                    <button onClick={() => nav(1)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"><ChevronRight size={18} /></button>
                                 </div>
-                                <span className="text-sm font-black text-white ml-2 truncate capitalize tracking-tight hidden lg:block">{headerLabel}</span>
+                                <span className="text-xs md:text-sm font-bold text-slate-700 ml-1 truncate">{headerLabel}</span>
                             </div>
-
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setRefreshKey(k => k + 1)} className="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 transition-all active:rotate-180 hidden sm:block"><RefreshCw size={18} className={loading ? 'animate-spin text-brand-violet' : ''} /></button>
+                            <div className="flex items-center gap-1 md:gap-2">
+                                <button onClick={() => setRefreshKey(k => k + 1)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 mobile-hide"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
                                 {viewMode === 'day' && (
-                                    <div className="relative hidden xl:block">
-                                        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                                        <input type="text" placeholder="Pesquisar..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                                            className="pl-10 pr-4 py-2 rounded-xl glass-dark border border-white/10 text-xs w-48 focus:border-brand-violet outline-none text-white transition-all font-medium" />
-                                    </div>
+                                    <>
+                                        <div className="relative mobile-hide md:block">
+                                            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input type="text" placeholder="Buscar..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                                                className="pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs w-24 md:w-40 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none" />
+                                        </div>
+                                        <button onClick={() => setShowCancelled(!showCancelled)}
+                                            className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition-all border-2 ${showCancelled ? 'border-slate-200 text-slate-500' : 'border-red-200 bg-red-50 text-red-600'}`}>
+                                            {showCancelled ? <EyeOff size={13} /> : <Eye size={13} />}
+                                            <span className="hidden md:inline">{showCancelled ? 'Ocultar' : 'Mostrar'} ✕</span>
+                                        </button>
+                                    </>
                                 )}
-                                <button onClick={() => setShowNewModal(true)}
-                                    className="flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-[11px] font-black uppercase tracking-widest hover:scale-[1.02] shadow-xl shadow-violet-600/20 transition-all active:scale-[0.98] shrink-0">
-                                    <Plus size={18} /> Novo
+                                <button onClick={() => setShowBlockModal(true)} className="flex items-center gap-1 px-2 py-1.5 rounded-xl border-2 border-slate-200 text-slate-600 text-[10px] md:text-xs font-bold hover:bg-slate-50 transition active:scale-95 shrink-0">
+                                    <Lock size={12} className="text-slate-400" />
+                                    <span className="hidden md:inline">Bloquear</span>
+                                </button>
+                                <button onClick={() => setShowNewModal(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-600 text-white text-[10px] md:text-xs font-bold hover:bg-violet-700 shadow-md shadow-violet-200 transition active:scale-95 shrink-0">
+                                    <Plus size={16} />
+                                    <span className="hidden md:inline">Novo</span>
                                 </button>
                             </div>
                         </header>
 
                         {/* Summary Cards */}
                         {viewMode === 'day' && (
-                            <div className="px-6 pt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="glass-dark rounded-[30px] border border-white/5 p-5 flex flex-col gap-4 group hover:bg-white/[0.04] transition-all cursor-default">
-                                    <div className="flex items-center justify-between">
-                                        <div className="w-10 h-10 rounded-2xl bg-violet-600/10 flex items-center justify-center border border-violet-600/20"><Calendar className="text-violet-500" size={18} /></div>
-                                        <span className="text-[10px] font-black text-violet-500 bg-violet-500/10 px-2 py-1 rounded-lg uppercase tracking-wider">Confirmed</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Agendamentos Hoje</p>
-                                        <p className="text-3xl font-black text-white tracking-tight">{dayApts.length}</p>
-                                    </div>
+                            <div className="px-4 pt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3">
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-violet-100 flex items-center justify-center"><Calendar className="text-violet-600" size={16} /></div>
+                                    <div><p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-slate-400">Hoje</p><p className="text-lg md:text-xl font-black text-slate-800">{dayApts.length}</p></div>
                                 </div>
-                                <div className="glass-dark rounded-[30px] border border-white/5 p-5 flex flex-col gap-4 group hover:bg-white/[0.04] transition-all cursor-default">
-                                    <div className="flex items-center justify-between">
-                                        <div className="w-10 h-10 rounded-2xl bg-green-600/10 flex items-center justify-center border border-green-600/20"><DollarSign className="text-green-500" size={18} /></div>
-                                        <span className="text-[10px] font-black text-green-500 bg-green-500/10 px-2 py-1 rounded-lg uppercase tracking-wider">Revenue</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Faturamento Estimado</p>
-                                        <p className="text-3xl font-black text-green-400 tracking-tight">R$ {dayRevenue}</p>
-                                    </div>
+                                <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3">
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-green-100 flex items-center justify-center"><DollarSign className="text-green-600" size={16} /></div>
+                                    <div><p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-slate-400">Fatur. Dia</p><p className="text-lg md:text-xl font-black text-green-600">R$ {dayRevenue}</p></div>
                                 </div>
-                                <div className="glass-dark rounded-[30px] border border-white/5 p-5 flex flex-col gap-4 group hover:bg-white/[0.04] transition-all cursor-default hidden md:flex">
-                                    <div className="flex items-center justify-between">
-                                        <div className="w-10 h-10 rounded-2xl bg-blue-600/10 flex items-center justify-center border border-blue-600/20"><TrendingUp className="text-blue-500" size={18} /></div>
-                                        <span className="text-[10px] font-black text-blue-500 bg-blue-500/10 px-2 py-1 rounded-lg uppercase tracking-wider">Monthly</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Total do Mês</p>
-                                        <p className="text-3xl font-black text-white tracking-tight">{monthApts.length}</p>
-                                    </div>
+                                <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3 mobile-hide md:flex">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center"><TrendingUp className="text-blue-600" size={18} /></div>
+                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Mês</p><p className="text-xl font-black text-blue-600">{monthApts.length}</p></div>
                                 </div>
-                                <div className="glass-dark rounded-[30px] border border-white/5 p-5 flex flex-col gap-4 group hover:bg-white/[0.04] transition-all cursor-default hidden md:flex">
-                                    <div className="flex items-center justify-between">
-                                        <div className="w-10 h-10 rounded-2xl bg-brand-violet/10 flex items-center justify-center border border-brand-violet/20"><FileText className="text-brand-violet" size={18} /></div>
-                                        <span className="text-[10px] font-black text-brand-violet bg-brand-violet/10 px-2 py-1 rounded-lg uppercase tracking-wider">Projection</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Proj. Mensal</p>
-                                        <p className="text-2xl font-black text-brand-violet tracking-tight truncate">R$ {monthRevenue}</p>
-                                    </div>
+                                <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3 mobile-hide md:flex">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center"><FileText className="text-amber-600" size={18} /></div>
+                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fatur. Mês</p><p className="text-xl font-black text-amber-600 truncate">R$ {monthRevenue}</p></div>
                                 </div>
                             </div>
                         )}
@@ -486,94 +448,167 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
 
 // ─── Day View (with blocks + status colors) ───────────────
 function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue, onDeleteBlock, isMobile }) {
-    const SLOT_HEIGHT = 64
-    const GRID_START = 8 * 60 // 08:00 in minutes
+    const SLOT_HEIGHT = 48
+    const GRID_START = 7 * 60 // 07:00 in minutes
 
     const confirmedApts = appointments.filter(a => a.status === 'CONFIRMED')
 
-    const getAptsForProfessional = (profId, allApts) => {
-        return allApts.filter((apt, idx) => {
-            const assignedId = apt.professional_id || PROFESSIONALS[idx % PROFESSIONALS.length].id
-            return assignedId === profId
-        })
+    // Calculate which slots are occupied (only confirmed)
+    const occupiedSlots = new Set()
+    confirmedApts.forEach(apt => {
+        const time = toSPTime(apt.starts_at)
+        const [h, m] = time.split(':').map(Number)
+        const startMin = h * 60 + m
+        const svcs = parseServices(apt.service_id)
+        const dur = calcDuration(svcs)
+        for (let t = startMin; t < startMin + dur; t += 30) {
+            const slotH = String(Math.floor(t / 60)).padStart(2, '0')
+            const slotM = String(t % 60).padStart(2, '0')
+            occupiedSlots.add(`${slotH}:${slotM}`)
+        }
+    })
+
+    // Which slots are blocked
+    const blockedSlots = new Set()
+    blocks.forEach(blk => {
+        const time = toSPTime(blk.starts_at)
+        const [h, m] = time.split(':').map(Number)
+        const startMin = h * 60 + m
+        const endTime = toSPTime(blk.ends_at)
+        const [eh, em] = endTime.split(':').map(Number)
+        const endMin = eh * 60 + em
+        for (let t = startMin; t < endMin; t += 30) {
+            const slotH = String(Math.floor(t / 60)).padStart(2, '0')
+            const slotM = String(t % 60).padStart(2, '0')
+            blockedSlots.add(`${slotH}:${slotM}`)
+        }
+    })
+
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case 'CONFIRMED': return 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
+            case 'CANCELLED': return 'bg-gradient-to-r from-red-400 to-red-500 text-white opacity-50'
+            default: return 'bg-gradient-to-r from-slate-400 to-slate-500 text-white opacity-60'
+        }
     }
 
     return (
-        <div className="glass rounded-[32px] overflow-hidden border border-white/5 shadow-2xl">
-            {/* Header com Profissionais */}
-            <div className="flex border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-30">
-                <div className="w-20 shrink-0 border-r border-white/10 flex items-center justify-center p-4">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Horário</span>
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-extrabold text-base text-slate-800 flex items-center gap-2">
+                    <Clock className="text-violet-500" size={18} />
+                    {new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </h3>
+                <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-violet-500" /> {confirmedApts.length} confirmado{confirmedApts.length !== 1 ? 's' : ''}
+                    </span>
+                    {blocks.length > 0 && <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-slate-400" /> {blocks.length} bloqueio{blocks.length !== 1 ? 's' : ''}
+                    </span>}
                 </div>
-                {PROFESSIONALS.map(prof => (
-                    <div key={prof.id} className="flex-1 min-w-[200px] p-4 border-r border-white/10 last:border-r-0">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-2xl border-2 ${prof.color} bg-slate-900 flex items-center justify-center font-bold text-sm shadow-lg text-white`}>
-                                {prof.initial}
-                            </div>
-                            <div className="overflow-hidden">
-                                <p className="font-bold text-sm text-white truncate">{prof.name}</p>
-                                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{prof.role}</p>
-                            </div>
-                        </div>
-                    </div>
-                ))}
             </div>
 
-            {/* Grid de Horários e Agendamentos */}
-            <div className="relative flex overflow-auto max-h-[700px]">
-                {/* Coluna de Horas */}
-                <div className="w-20 shrink-0 border-r border-white/10 sticky left-0 z-20 bg-slate-950">
-                    {TIME_SLOTS.map((slot, idx) => (
-                        <div key={idx} className="h-16 border-b border-white/[0.03] flex items-center justify-center text-[11px] font-bold text-slate-500 bg-black/20">
-                            {slot}
+            {/* Time grid */}
+            <div className="relative" style={{ height: `${TIME_SLOTS.length * SLOT_HEIGHT}px` }}>
+                {/* Background grid lines */}
+                {TIME_SLOTS.map((slot, idx) => {
+                    const isHour = slot.endsWith(':00')
+                    const isOccupied = occupiedSlots.has(slot)
+                    const isBlocked = blockedSlots.has(slot)
+                    return (
+                        <div key={idx} className="absolute w-full flex" style={{ top: `${idx * SLOT_HEIGHT}px`, height: `${SLOT_HEIGHT}px` }}>
+                            <div className="w-16 shrink-0 flex items-start justify-end pr-3 pt-1">
+                                {isHour && <span className="text-[11px] font-bold text-slate-400">{slot}</span>}
+                            </div>
+                            <div className={`flex-1 border-l border-slate-100 ${isHour ? 'border-t border-t-slate-200' : 'border-t border-t-slate-50'} ${isBlocked ? 'bg-slate-100' : isOccupied ? 'bg-violet-50/50' : ''}`} />
                         </div>
-                    ))}
-                </div>
+                    )
+                })}
 
-                {/* Colunas dos Profissionais */}
-                {PROFESSIONALS.map(prof => {
-                    const profApts = getAptsForProfessional(prof.id, confirmedApts)
-                    const profBlocks = blocks.filter(b => b.professional_id === prof.id || !b.professional_id)
+                {/* Block bars (gray) */}
+                {blocks.map(blk => {
+                    const time = toSPTime(blk.starts_at)
+                    const [h, m] = time.split(':').map(Number)
+                    const startMin = h * 60 + m
+                    const endTime = toSPTime(blk.ends_at)
+                    const [eh, em] = endTime.split(':').map(Number)
+                    const endMin = eh * 60 + em
+                    const dur = endMin - startMin
+                    const topPx = ((startMin - GRID_START) / 30) * SLOT_HEIGHT
+                    const heightPx = (dur / 30) * SLOT_HEIGHT - 4
 
                     return (
-                        <div key={prof.id} className="flex-1 min-w-[200px] border-r border-white/[0.03] last:border-r-0 relative">
-                            {/* Grid Lines Background */}
-                            {TIME_SLOTS.map((_, idx) => (
-                                <div key={idx} className="h-16 border-b border-white/[0.03] w-full" />
-                            ))}
+                        <div key={blk.id}
+                            className="absolute bg-slate-300/80 rounded-xl px-3 py-2 z-10 overflow-hidden group border-2 border-dashed border-slate-400"
+                            style={{ top: `${topPx + 2}px`, height: `${heightPx}px`, left: '68px', right: '8px' }}>
+                            <div className="flex items-center justify-between h-full">
+                                <div className="flex items-center gap-2">
+                                    <Lock size={14} className="text-slate-600" />
+                                    <span className="font-bold text-sm text-slate-700">{blk.title || 'Bloqueado'}</span>
+                                    <span className="text-xs text-slate-500">{time} — {endTime.split(':').slice(0, 2).join(':')}</span>
+                                </div>
+                                <button onClick={() => onDeleteBlock(blk.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-all" title="Remover bloqueio">
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    )
+                })}
 
-                            {/* Agendamentos do Profissional */}
-                            {profApts.map(apt => {
-                                const time = toSPTime(apt.starts_at)
-                                const [h, m] = time.split(':').map(Number)
-                                const startMin = h * 60 + m
-                                const svcs = parseServices(apt.service_id)
-                                const dur = calcDuration(svcs)
-                                const total = calcTotal(svcs)
+                {/* Appointment blocks */}
+                {appointments.map(apt => {
+                    const time = toSPTime(apt.starts_at)
+                    const [h, m] = time.split(':').map(Number)
+                    const startMin = h * 60 + m
+                    const svcs = parseServices(apt.service_id)
+                    const dur = calcDuration(svcs)
+                    const total = calcTotal(svcs)
 
-                                const topPx = ((startMin - GRID_START) / 30) * SLOT_HEIGHT
-                                const heightPx = (dur / 30) * SLOT_HEIGHT - 4
+                    const topPx = ((startMin - GRID_START) / 30) * SLOT_HEIGHT
+                    const heightPx = (dur / 30) * SLOT_HEIGHT - 4
 
-                                return (
-                                    <div key={apt.id}
-                                        onClick={() => onAction(apt, 'view')}
-                                        className="absolute inset-x-2 glass border-violet-500/30 bg-violet-500/10 rounded-2xl p-3 shadow-lg z-10 cursor-pointer hover:scale-[1.02] transition-all group overflow-hidden"
-                                        style={{ top: `${topPx + 2}px`, height: `${heightPx}px` }}>
-                                        <div className="flex flex-col h-full">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-[9px] font-black uppercase text-violet-400 tracking-wider truncate">{svcs[0]}</span>
-                                                <span className="text-[9px] font-bold text-white/50">{time}</span>
-                                            </div>
-                                            <p className="font-bold text-xs text-white truncate">{apt.customer_name}</p>
-                                            <div className="mt-auto flex items-center justify-between">
-                                                <span className="text-[9px] font-medium text-slate-400">{dur}min</span>
-                                                <span className="text-[10px] font-black text-violet-400">R$ {total}</span>
-                                            </div>
-                                        </div>
+                    const endMin = startMin + dur
+                    const endH = String(Math.floor(endMin / 60)).padStart(2, '0')
+                    const endM = String(endMin % 60).padStart(2, '0')
+
+                    const isCancelled = apt.status === 'CANCELLED'
+
+                    return (
+                        <div key={apt.id}
+                            onClick={() => !isCancelled && onAction(apt, 'view')}
+                            className={`absolute ${getStatusStyle(apt.status)} rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-all ${isCancelled ? 'cursor-default' : 'cursor-pointer'} group z-10 overflow-hidden`}
+                            style={{ top: `${topPx + 2}px`, height: `${heightPx}px`, left: '68px', right: '8px' }}>
+                            <div className="flex items-start justify-between h-full">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <p className={`font-bold text-sm ${isCancelled ? 'line-through' : ''}`}>{apt.customer_name}</p>
+                                        {isCancelled && <span className="bg-white/30 text-[9px] font-bold px-1.5 py-0.5 rounded-full">CANCELADO</span>}
+                                        {apt.notes && <FileText size={12} className="text-white/70" title={apt.notes} />}
                                     </div>
-                                )
-                            })}
+                                    <p className="text-white/80 text-xs flex items-center gap-1 mt-0.5">
+                                        <Phone size={10} />
+                                        <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="hover:underline">{apt.customer_phone}</a>
+                                    </p>
+                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                        {svcs.map((s, i) => <span key={i} className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>)}
+                                    </div>
+                                    <p className="text-white/70 text-[10px] mt-1">{time} — {endH}:{endM} ({dur}min) • R$ {total}</p>
+                                </div>
+                                {!isCancelled && (
+                                    <div className="opacity-0 group-hover:opacity-100 flex flex-col gap-1 transition-opacity ml-2">
+                                        <button onClick={(e) => { e.stopPropagation(); onAction(apt, 'reschedule') }}
+                                            className="p-1.5 rounded-lg bg-white/20 hover:bg-amber-500 transition-colors" title="Reagendar">
+                                            <CalendarClock size={13} />
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); onAction(apt, 'cancel') }}
+                                            className="p-1.5 rounded-lg bg-white/20 hover:bg-red-500 transition-colors" title="Cancelar">
+                                            <XCircle size={13} />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )
                 })}
@@ -599,71 +634,79 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
     }
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-            <div className="glass-dark rounded-[40px] border border-white/10 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300 shadow-[0_0_50px_rgba(0,0,0,0.5)]" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in" onClick={e => e.stopPropagation()}>
                 {/* Header */}
-                <div className="bg-gradient-to-br from-violet-600 to-purple-800 p-8 text-white relative">
-                    <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-2xl bg-black/20 hover:bg-black/40 transition-colors"><X size={18} /></button>
-                    <div className="flex flex-col items-center text-center">
-                        <div className="w-20 h-20 rounded-[32px] bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-3xl font-black mb-4 shadow-2xl">
-                            {apt.customer_name?.charAt(0)?.toUpperCase()}
-                        </div>
-                        <h3 className="text-2xl font-black tracking-tight mb-1">{apt.customer_name}</h3>
-                        <p className="text-white/60 text-xs font-bold uppercase tracking-widest">{toSPFull(apt.starts_at)}</p>
+                <div className="bg-gradient-to-r from-violet-600 to-purple-700 text-white px-6 py-5">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-extrabold">Detalhes do Agendamento</h3>
+                        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
                     </div>
+                    <p className="text-white/80 text-sm">{toSPFull(apt.starts_at)}</p>
                 </div>
 
-                {/* Body */}
-                <div className="p-8 space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="glass-dark border border-white/5 rounded-3xl p-4">
-                            <p className="text-[10px] font-black uppercase text-slate-500 mb-1">Horário</p>
-                            <p className="text-sm font-bold text-white tracking-tight">{toSPTime(apt.starts_at)} <span className="text-slate-500 font-medium">({dur}m)</span></p>
+                {/* Details */}
+                <div className="p-4 md:p-6 space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-lg mx-auto md:mx-0">
+                            {apt.customer_name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <div className="glass-dark border border-white/5 rounded-3xl p-4">
-                            <p className="text-[10px] font-black uppercase text-slate-500 mb-1">Total</p>
-                            <p className="text-sm font-black text-brand-violet tracking-tight">R$ {total}</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest px-1">Serviços</p>
-                        <div className="flex flex-wrap gap-2">
-                            {svcs.map((s, i) => <span key={i} className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-white text-[10px] font-bold uppercase tracking-wider">{s}</span>)}
+                        <div className="text-center md:text-left">
+                            <p className="font-bold text-slate-800 text-lg">{apt.customer_name}</p>
+                            <p className="text-sm text-slate-500 flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
+                                <span className="flex items-center justify-center md:justify-start gap-1"><Phone size={12} /> {apt.customer_phone}</span>
+                                <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full hover:bg-green-100 transition-colors">Conversar no WhatsApp <ExternalLink size={9} /></a>
+                            </p>
                         </div>
                     </div>
 
-                    <div className="glass-dark border border-white/5 rounded-3xl p-5">
-                        <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-3">
-                            <div className="flex items-center gap-2">
-                                <FileText size={14} className="text-brand-violet" />
-                                <span className="text-[10px] font-black uppercase text-white/50 tracking-wider">Notas</span>
+                    <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Horário</span>
+                            <span className="text-sm font-bold text-slate-800">{toSPTime(apt.starts_at)} ({dur}min)</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Serviços</span>
+                            <div className="flex flex-wrap gap-1 justify-end">
+                                {svcs.map((s, i) => <span key={i} className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{s}</span>)}
                             </div>
-                            <button onClick={() => setEditingNotes(!editingNotes)} className="text-[10px] font-black text-brand-violet hover:underline">EDITAR</button>
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total</span>
+                            <span className="text-lg font-black text-green-600">R$ {total}</span>
+                        </div>
+                    </div>
+
+                    {/* Notes Section */}
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1"><FileText size={12} /> Observações</span>
+                            {!editingNotes && <button onClick={() => setEditingNotes(true)} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"><Edit2 size={11} /> Editar</button>}
                         </div>
                         {editingNotes ? (
-                            <div className="space-y-3">
-                                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} autoFocus
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-3 text-white text-xs outline-none focus:border-brand-violet transition-all resize-none" />
+                            <div className="space-y-2">
+                                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} placeholder="Ex: cliente alérgica a acetona, quer francesinha rosa..."
+                                    className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm resize-none" />
                                 <div className="flex gap-2">
-                                    <button onClick={handleSaveNotes} disabled={savingNotes} className="flex-1 py-2.5 rounded-xl bg-violet-600 text-white text-[10px] font-black uppercase tracking-wider shadow-lg shadow-violet-600/20 active:scale-95 transition-all">
-                                        {savingNotes ? 'Salvando...' : 'Salvar Notas'}
-                                    </button>
+                                    <button onClick={() => { setEditingNotes(false); setNotes(apt.notes || '') }} className="flex-1 py-2 rounded-lg border border-slate-200 text-slate-500 text-xs font-bold hover:bg-slate-50">Cancelar</button>
+                                    <button onClick={handleSaveNotes} disabled={savingNotes} className="flex-1 py-2 rounded-lg bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-1"><Save size={12} /> {savingNotes ? 'Salvando...' : 'Salvar'}</button>
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-xs text-slate-400 font-medium leading-relaxed italic">"{notes || 'Sem observações adicionais.'}"</p>
+                            <p className="text-sm text-amber-800">{notes || 'Nenhuma observação'}</p>
                         )}
                     </div>
 
-                    <div className="flex flex-col gap-3 pt-4">
-                        <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="w-full py-4 rounded-3xl bg-[#25D366] text-white font-black text-xs uppercase tracking-widest text-center shadow-xl shadow-green-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                            <Phone size={16} /> Contatar Cliente
-                        </a>
-                        <div className="grid grid-cols-2 gap-3">
-                            <button onClick={onReschedule} className="py-4 rounded-3xl glass text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all border border-white/10">Reagendar</button>
-                            <button onClick={onCancel} className="py-4 rounded-3xl bg-red-500/10 text-red-500 font-black text-[10px] uppercase tracking-widest hover:bg-red-500/20 transition-all border border-red-500/20 shadow-xl shadow-red-500/5">Cancelar</button>
-                        </div>
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <button onClick={onReschedule}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-50 border-2 border-amber-200 text-amber-700 font-bold text-sm hover:bg-amber-100 transition-all active:scale-[0.98]">
+                            <CalendarClock size={16} /> Reagendar
+                        </button>
+                        <button onClick={onCancel}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-50 border-2 border-red-200 text-red-600 font-bold text-sm hover:bg-red-100 transition-all active:scale-[0.98]">
+                            <XCircle size={16} /> Cancelar
+                        </button>
                     </div>
                 </div>
             </div>
@@ -840,7 +883,7 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
 
 // ─── New Appointment Modal ─────────────────────────────────
 function NewAppointmentModal({ selectedDate, onClose, onSave }) {
-    const [form, setForm] = useState({ customer_name: '', customer_phone: '', services: [], date: selectedDate, time: '09:00', notes: '', professional_id: PROFESSIONALS[0].id })
+    const [form, setForm] = useState({ customer_name: '', customer_phone: '', services: [], date: selectedDate, time: '09:00', notes: '' })
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
 
@@ -860,15 +903,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
         try {
             const res = await fetch('/api/admin', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    customer_name: form.customer_name,
-                    customer_phone: form.customer_phone,
-                    service_id: JSON.stringify(form.services),
-                    starts_at: startsAt,
-                    ends_at: endsAt,
-                    notes: form.notes || undefined,
-                    professional_id: form.professional_id
-                })
+                body: JSON.stringify({ customer_name: form.customer_name, customer_phone: form.customer_phone, service_id: JSON.stringify(form.services), starts_at: startsAt, ends_at: endsAt, notes: form.notes || undefined })
             })
             const data = await res.json()
             if (data.error) throw new Error(data.error)
@@ -878,83 +913,76 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
     }
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-            <div className="glass-dark rounded-[40px] border border-white/10 w-full max-w-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-10 shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="p-8 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-violet-600/20 to-purple-600/20">
-                    <div>
-                        <h3 className="text-2xl font-black text-white tracking-tight">Novo Agendamento</h3>
-                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Reserve um horário de elite</p>
-                    </div>
-                    <button onClick={onClose} className="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors text-slate-400 hover:text-white"><X size={20} /></button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-600 to-purple-700 text-white">
+                    <h3 className="text-base font-extrabold">Novo Agendamento</h3>
+                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
                 </div>
-
-                <form onSubmit={handleSubmit} className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-6">
-                            <div className="space-y-4">
-                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest px-1">Dados do Cliente</p>
-                                <div className="space-y-3">
-                                    <input type="text" required value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })}
-                                        className="w-full glass-dark border border-white/10 rounded-2xl px-5 py-3.5 text-white text-sm outline-none focus:border-brand-violet transition-all font-medium" placeholder="Nome completo" />
-                                    <input type="text" required value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })}
-                                        className="w-full glass-dark border border-white/10 rounded-2xl px-5 py-3.5 text-white text-sm outline-none focus:border-brand-violet transition-all font-medium" placeholder="WhatsApp (DDD + Número)" />
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest px-1">Profissional Responsável</p>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {PROFESSIONALS.map(p => (
-                                        <button key={p.id} type="button" onClick={() => setForm({ ...form, professional_id: p.id })}
-                                            className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${form.professional_id === p.id ? 'bg-violet-600/10 border-violet-600 scale-[1.05]' : 'bg-white/5 border-white/5 grayscale opacity-50 hover:opacity-100 hover:grayscale-0'}`}>
-                                            <div className={`w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center font-bold text-xs text-white`}>{p.initial}</div>
-                                            <span className="text-[9px] font-black text-white uppercase">{p.id}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4 max-h-[75vh] md:max-h-[70vh] overflow-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Nome</label>
+                            <input type="text" required value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" placeholder="Maria Silva" />
                         </div>
-
-                        <div className="space-y-6">
-                            <div className="space-y-4">
-                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest px-1">Data & Horário</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
-                                        className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white text-[13px] outline-none" />
-                                    <input type="time" required value={form.time} onChange={e => setForm({ ...form, time: e.target.value })}
-                                        className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white text-[13px] outline-none" />
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest px-1">Serviços Disponíveis</p>
-                                <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto p-1">
-                                    {SERVICES.map(s => {
-                                        const sel = form.services.includes(s.id)
-                                        return (
-                                            <button key={s.id} type="button" onClick={() => toggle(s.id)}
-                                                className={`px-4 py-2 rounded-xl border text-xs font-bold transition-all ${sel ? 'bg-violet-600 border-violet-500 text-white shadow-lg shadow-violet-600/20' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:border-white/20'}`}>
-                                                {s.name} <span className="text-[10px] ml-1 opacity-50">R${s.price}</span>
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Telefone</label>
+                            <input type="text" required value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" placeholder="5511999999999" />
                         </div>
                     </div>
-
-                    <div className="pt-6 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
-                        {form.services.length > 0 && (
-                            <div className="flex items-center gap-6">
-                                <div><p className="text-[10px] font-black uppercase text-slate-500">Total Previsto</p><p className="text-2xl font-black text-brand-violet tracking-tight">R$ {totalPrice}</p></div>
-                                <div><p className="text-[10px] font-black uppercase text-slate-500">Duração</p><p className="text-2xl font-black text-white tracking-tight">{totalDuration}m</p></div>
-                            </div>
-                        )}
-                        <button type="submit" disabled={saving}
-                            className="w-full md:w-auto px-12 py-4 rounded-[28px] bg-gradient-to-r from-violet-600 to-purple-600 text-white font-black text-sm uppercase tracking-widest hover:scale-[1.02] shadow-2xl shadow-violet-600/30 transition-all active:scale-[0.98] disabled:opacity-50">
-                            {saving ? 'PROCESSANDO...' : 'FINALIZAR RESERVA'}
-                        </button>
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Serviços (selecione um ou mais)</label>
+                        <div className="space-y-1.5">
+                            {SERVICES.map(s => {
+                                const sel = form.services.includes(s.id)
+                                return (
+                                    <button key={s.id} type="button" onClick={() => toggle(s.id)}
+                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border-2 text-left transition-all text-sm ${sel ? 'border-violet-500 bg-violet-50 text-violet-900' : 'border-slate-150 hover:border-violet-200 text-slate-700'}`}>
+                                        <div className="flex items-center gap-2.5">
+                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${sel ? 'bg-violet-600 border-violet-600' : 'border-slate-300'}`}>
+                                                {sel && <CheckCircle2 size={12} className="text-white" />}
+                                            </div>
+                                            <span className="font-semibold">{s.name}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="font-bold text-violet-600">R$ {s.price}</span>
+                                            <span className="text-slate-400 text-xs ml-2">{s.duration}min</span>
+                                        </div>
+                                    </button>
+                                )
+                            })}
+                        </div>
                     </div>
+                    {form.services.length > 0 && (
+                        <div className="bg-violet-50 border border-violet-200 rounded-xl px-4 py-3 flex items-center justify-between">
+                            <div><span className="text-xs font-bold text-violet-600">{form.services.length} serviço{form.services.length > 1 ? 's' : ''}</span><span className="text-xs text-violet-400 ml-2">• {totalDuration}min</span></div>
+                            <span className="text-lg font-black text-violet-700">R$ {totalPrice}</span>
+                        </div>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Data</label>
+                            <input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Horário</label>
+                            <input type="time" required value={form.time} onChange={e => setForm({ ...form, time: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Observações (opcional)</label>
+                        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Ex: alérgica a acetona, quer francesinha rosa..."
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm resize-none" />
+                    </div>
+                    {error && <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl border border-red-100">{error}</div>}
+                    <button type="submit" disabled={saving}
+                        className="w-full py-3 rounded-xl bg-violet-600 text-white font-bold hover:bg-violet-700 disabled:opacity-50 transition-all shadow-lg shadow-violet-200 active:scale-[0.99]">
+                        {saving ? 'Salvando...' : `Confirmar — R$ ${totalPrice}`}
+                    </button>
                 </form>
             </div>
         </div>
