@@ -5,16 +5,16 @@ import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle
 
 const whatsappLink = (phone) => `https://wa.me/${phone.replace(/\D/g, '')}`
 
-const SERVICES = [
-    { id: 'Fibra ou Molde F1', name: 'Fibra ou Molde F1', price: 190, duration: 120 },
-    { id: 'Banho de Gel', name: 'Banho de Gel', price: 150, duration: 90 },
-    { id: 'Manutenção', name: 'Manutenção', price: 150, duration: 90 },
-    { id: 'Manutenção (outra prof.)', name: 'Manutenção (outra prof.)', price: 170, duration: 90 },
-    { id: 'Remoção', name: 'Remoção', price: 45, duration: 30 },
-    { id: 'Esmaltação Básica', name: 'Esmaltação Básica', price: 20, duration: 30 },
-    { id: 'Esmaltação Premium', name: 'Esmaltação Premium', price: 25, duration: 45 },
-    { id: 'Esm. ou Pó + Francesinha', name: 'Esm. ou Pó + Francesinha', price: 35, duration: 45 },
-    { id: 'Esm. + Francesinha + Pó', name: 'Esm. + Francesinha + Pó', price: 45, duration: 60 },
+let SERVICES = [
+    { id: 'Fibra', name: 'Fibra ou Molde F1', price: 190, duration: 120, active: true },
+    { id: 'Banho', name: 'Banho de Gel', price: 150, duration: 90, active: true },
+    { id: 'Manutencao', name: 'Manutenção', price: 150, duration: 90, active: true },
+    { id: 'Manutencao-Outra', name: 'Manutenção (outra prof.)', price: 170, duration: 90, active: true },
+    { id: 'Remocao', name: 'Remoção', price: 45, duration: 30, active: true },
+    { id: 'Esmaltacao-Basica', name: 'Esmaltação Básica', price: 20, duration: 30, active: true },
+    { id: 'Esmaltacao-Premium', name: 'Esmaltação Premium', price: 25, duration: 45, active: true },
+    { id: 'Esmaltacao-Po', name: 'Esm. ou Pó + Francesinha', price: 35, duration: 45, active: true },
+    { id: 'Esmaltacao-Po-Francesinha', name: 'Esm. + Francesinha + Pó', price: 45, duration: 60, active: true },
 ]
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -1570,11 +1570,12 @@ function ReportsPage({ appointments, isMobile, onOpenMenu }) {
     // Top Clients
     const clientStats = {};
     filteredApts.forEach(a => {
-        if (!clientStats[a.customer_phone]) {
-            clientStats[a.customer_phone] = { name: a.customer_name, visits: 0, spent: 0 };
+        const phoneKey = a.customer_phone || 'Sem Numero';
+        if (!clientStats[phoneKey]) {
+            clientStats[phoneKey] = { name: a.customer_name || 'Desconhecido', phone: phoneKey, visits: 0, spent: 0 };
         }
-        clientStats[a.customer_phone].visits += 1;
-        clientStats[a.customer_phone].spent += calcTotal(parseServices(a.service_id));
+        clientStats[phoneKey].visits += 1;
+        clientStats[phoneKey].spent += calcTotal(parseServices(a.service_id));
     });
     const topClients = Object.values(clientStats).sort((a, b) => b.spent - a.spent).slice(0, 5);
 
@@ -1720,15 +1721,17 @@ function ReportsPage({ appointments, isMobile, onOpenMenu }) {
                                             #{i + 1}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-sm text-slate-800">{client.name.split(' ')[0]} {client.name.split(' ')[1] || ''}</p>
+                                            <p className="font-bold text-sm text-slate-800">{client.name?.split(' ')[0]} {client.name?.split(' ')[1] || ''}</p>
                                             <p className="text-[10px] text-slate-500 font-medium">{client.visits} atendimento{client.visits > 1 ? 's' : ''}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="font-black text-sm text-green-600">R$ {client.spent}</p>
-                                        <a href={whatsappLink(client.name)} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-green-500 transition-colors mt-0.5">
-                                            Lembrar <ArrowUpRight size={10} />
-                                        </a>
+                                        {client.phone !== 'Sem Numero' && (
+                                            <a href={whatsappLink(client.phone)} target="_blank" rel="noopener" className="inline-flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-green-500 transition-colors mt-0.5">
+                                                Lembrar <ArrowUpRight size={10} />
+                                            </a>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -1747,8 +1750,8 @@ function ReportsPage({ appointments, isMobile, onOpenMenu }) {
                     </button>
                 </div>
 
-            </div>
-        </div>
+            </div >
+        </div >
     )
 }
 
