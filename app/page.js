@@ -44,8 +44,8 @@ function parseServices(s) {
     if (!s) return []
     try { const arr = JSON.parse(s); return Array.isArray(arr) ? arr : [s] } catch { return [s] }
 }
-function calcTotal(svcs) { return svcs.reduce((sum, id) => sum + (SERVICES.find(s => s.id === id)?.price || 0), 0) }
-function calcDuration(svcs) { return svcs.reduce((sum, id) => sum + (SERVICES.find(s => s.id === id)?.duration || 60), 0) }
+function calcTotal(svcs) { return svcs.reduce((sum, id) => sum + (SERVICES.find(s => s.id === id || s.name === id)?.price || 0), 0) }
+function calcDuration(svcs) { return svcs.reduce((sum, id) => sum + (SERVICES.find(s => s.id === id || s.name === id)?.duration || 60), 0) }
 
 function getWeekDates(base) {
     const d = new Date(base); const day = d.getDay()
@@ -1221,20 +1221,18 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
         setLoading(true)
         try {
             const isDefault = !id.includes('-');
-            if (isDefault) {
-                await fetch('/api/services', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...editForm })
-                })
+            const res = await fetch('/api/services', {
+                method: isDefault ? 'POST' : 'PATCH', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...(isDefault ? {} : { id }), ...editForm })
+            })
+            if (!res.ok) {
+                const err = await res.json()
+                alert(`Erro ao salvar no banco de dados do Supabase.\nDetalhe: ${err.error || res.statusText}\nSua tabela 'services' pode estar ausente ou bloqueada por segurança RLS.`)
             } else {
-                await fetch('/api/services', {
-                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, ...editForm })
-                })
+                refreshGlobal()
+                setEditing(null)
             }
-            refreshGlobal()
-            setEditing(null)
-        } catch (e) { console.error(e) }
+        } catch (e) { alert(`Erro de Conexão: ${e.message}`) }
         setLoading(false)
     }
 
@@ -1242,14 +1240,19 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
         e.preventDefault()
         setLoading(true)
         try {
-            await fetch('/api/services', {
+            const res = await fetch('/api/services', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(addForm)
             })
-            setIsAdding(false)
-            setAddForm({ name: '', price: '', duration: '', active: true })
-            refreshGlobal()
-        } catch (e) { }
+            if (!res.ok) {
+                const err = await res.json()
+                alert(`Supabase recusou a inserção do serviço.\nErro: ${err.error || res.statusText}\nVocê executou o script SQL de criação da tabela 'services' e removeu o bloqueio RLS?`)
+            } else {
+                setIsAdding(false)
+                setAddForm({ name: '', price: '', duration: '', active: true })
+                refreshGlobal()
+            }
+        } catch (e) { alert(`Erro de Rede: ${e.message}`) }
         setLoading(false)
     }
 
@@ -1257,19 +1260,23 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
         setLoading(true)
         try {
             const isDefault = !svc.id.includes('-');
-            if (isDefault) {
-                await fetch('/api/services', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: svc.name, price: svc.price, duration: svc.duration, active: !svc.active })
-                })
+            const body = isDefault
+                ? { name: svc.name, price: svc.price, duration: svc.duration, active: !svc.active }
+                : { id: svc.id, active: !svc.active }
+
+            const res = await fetch('/api/services', {
+                method: isDefault ? 'POST' : 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+
+            if (!res.ok) {
+                const err = await res.json()
+                alert(`Ocultação falhou!\nErro BD: ${err.error || res.statusText}\nA tabela "services" do seu Supabase não permite acesso. Crie a tabela e desabilite a segurança RLS.`)
             } else {
-                await fetch('/api/services', {
-                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: svc.id, active: !svc.active })
-                })
+                refreshGlobal()
             }
-            refreshGlobal()
-        } catch (e) { console.error(e) }
+        } catch (e) { alert(`Problema de conexão: ${e.message}`) }
         setLoading(false)
     }
 
