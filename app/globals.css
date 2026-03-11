@@ -2,36 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 10, 10, 15;
-    --background-end-rgb: 0, 0, 0;
-    --brand-violet: 139, 92, 246;
-    /* #8b5cf6 */
-}
-
-/* Glassmorphism Classes */
-.glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-.glass-dark {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.text-gradient {
-    background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
 /* ─── Today Pulse Animation ──────────────────────────────── */
 @keyframes today-pulse {
 
