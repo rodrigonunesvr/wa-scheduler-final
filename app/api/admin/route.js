@@ -121,7 +121,7 @@ export async function POST(request) {
         }
 
         // --- Create Appointment (with overlap check) ---
-        const { customer_name, customer_phone, service_id, starts_at, ends_at, notes } = body
+        const { customer_name, customer_phone, service_id, starts_at, ends_at, notes, professional_id } = body
 
         const newStart = new Date(starts_at).getTime()
         const newEnd = new Date(ends_at).getTime()
@@ -178,6 +178,7 @@ export async function POST(request) {
             status: 'CONFIRMED'
         }
         if (notes) insertData.notes = notes
+        if (professional_id) insertData.professional_id = professional_id
 
         const { data, error } = await supabase
             .from('appointments')
