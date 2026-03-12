@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Today Pulse Animation ──────────────────────────────── */
+/* â”€â”€â”€ Today Pulse Animation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @keyframes today-pulse {
 
     0%,
@@ -19,7 +19,7 @@
     animation: today-pulse 2s ease-in-out infinite;
 }
 
-/* ─── Mobile Utilities ───────────────────────────────────── */
+/* â”€â”€â”€ Mobile Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 768px) {
     .mobile-hide {
         display: none !important;
@@ -76,7 +76,7 @@
     }
 }
 
-/* ─── Dark Mode ──────────────────────────────────────────── */
+/* â”€â”€â”€ Dark Mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .dark-mode {
     --bg-main: #0f172a;
     --bg-card: #1e293b;
@@ -85,6 +85,27 @@
     --text-primary: #f1f5f9;
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
+}
+
+/* Sidebar Adjustment for contrast */
+aside {
+    background-color: #0f172a !important;
+    /* Deep Navy para melhor contraste */
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+aside button {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+aside button:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+aside .active-nav {
+    background-color: #7c3aed !important;
+    color: white !important;
+    box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
 }
 
 .dark-mode .bg-slate-50 {
