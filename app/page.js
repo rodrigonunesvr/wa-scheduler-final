@@ -119,23 +119,23 @@ export default function AdminDashboard() {
             }
         })
 
-        // Efeito para aplicar a cor do Branding dinamicamente
-        useEffect(() => {
-            if (globalSettings.primary_color) {
-                document.documentElement.style.setProperty('--primary-dash', globalSettings.primary_color);
-                // Também criamos uma versão com transparência para fundos suaves
-                const r = parseInt(globalSettings.primary_color.slice(1, 3), 16);
-                const g = parseInt(globalSettings.primary_color.slice(3, 5), 16);
-                const b = parseInt(globalSettings.primary_color.slice(5, 7), 16);
-                document.documentElement.style.setProperty('--primary-dash-light', `rgba(${r}, ${g}, ${b}, 0.1)`);
-            }
-        }, [globalSettings.primary_color]);
-
         return () => {
             window.removeEventListener('resize', checkMobile)
             subscription.unsubscribe()
         }
-    }, [router, globalSettings.primary_color])
+    }, [router])
+
+    // Efeito para aplicar a cor do Branding dinamicamente
+    useEffect(() => {
+        if (globalSettings.primary_color) {
+            document.documentElement.style.setProperty('--primary-dash', globalSettings.primary_color);
+            // Também criamos uma versão com transparência para fundos suaves
+            const r = parseInt(globalSettings.primary_color.slice(1, 3), 16);
+            const g = parseInt(globalSettings.primary_color.slice(3, 5), 16);
+            const b = parseInt(globalSettings.primary_color.slice(5, 7), 16);
+            document.documentElement.style.setProperty('--primary-dash-light', `rgba(${r}, ${g}, ${b}, 0.1)`);
+        }
+    }, [globalSettings.primary_color]);
 
     const toggleDarkMode = () => {
         const newMode = !darkMode

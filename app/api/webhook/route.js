@@ -155,7 +155,7 @@ export async function POST(request) {
         // Fetch Settings for Niche and Global Info
         const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single()
         const niche = settings?.niche || 'salon'
-        const bizName = settings?.business_name || 'AgendaÃ'
+        const bizName = settings?.business_name || 'AgendaÍ'
         const welcome = settings?.welcome_message || ''
 
         // Fetch FAQs for bot knowledge
