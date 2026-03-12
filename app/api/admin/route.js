@@ -54,6 +54,16 @@ export async function GET(request) {
             return NextResponse.json(data || [])
         }
 
+        // --- FAQs (Bot knowledge) ---
+        if (type === 'faqs') {
+            const { data, error } = await supabase
+                .from('faqs')
+                .select('*')
+                .order('id', { ascending: false })
+            if (error) throw error
+            return NextResponse.json(data || [])
+        }
+
         // --- Default: appointments (includes all statuses for visual display) ---
         let query = supabase
             .from('appointments')
@@ -120,8 +130,20 @@ export async function POST(request) {
             return NextResponse.json(data)
         }
 
+        // --- Create FAQ ---
+        if (body.type === 'faq') {
+            const { question, answer } = body
+            const { data, error } = await supabase
+                .from('faqs')
+                .insert({ question, answer, active: true })
+                .select()
+                .single()
+            if (error) throw error
+            return NextResponse.json(data)
+        }
+
         // --- Create Appointment (with overlap check) ---
-        const { customer_name, customer_phone, service_id, starts_at, ends_at, notes } = body
+        const { customer_name, customer_phone, service_id, professional_id, starts_at, ends_at, notes } = body
 
         const newStart = new Date(starts_at).getTime()
         const newEnd = new Date(ends_at).getTime()
@@ -177,6 +199,7 @@ export async function POST(request) {
             ends_at,
             status: 'CONFIRMED'
         }
+        if (professional_id) insertData.professional_id = professional_id
         if (notes) insertData.notes = notes
 
         const { data, error } = await supabase
@@ -243,6 +266,15 @@ export async function DELETE(request) {
         if (type === 'schedule') {
             const { error } = await supabase
                 .from('schedule_overrides')
+                .delete()
+                .eq('id', id)
+            if (error) throw error
+            return NextResponse.json({ status: 'deleted' })
+        }
+
+        if (type === 'faq') {
+            const { error } = await supabase
+                .from('faqs')
                 .delete()
                 .eq('id', id)
             if (error) throw error

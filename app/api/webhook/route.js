@@ -152,8 +152,25 @@ export async function POST(request) {
         // 6.3 Determine if this is the start of the session (no assistant messages yet)
         const isFirstInteraction = !history.some(m => m.role === 'assistant')
 
-        // Fetch schedule overrides to determine open/closed days dynamically
-        const scheduleOverrides = await fetchScheduleOverrides()
+        // Fetch Settings for Niche and Global Info
+        const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single()
+        const niche = settings?.niche || 'salon'
+        const bizName = settings?.business_name || 'AgendaÍ'
+        const welcome = settings?.welcome_message || ''
+
+        // Fetch FAQs for bot knowledge
+        const { data: faqs } = await supabase.from('faqs').select('*').eq('active', true)
+        const faqsText = faqs && faqs.length > 0
+            ? `--- PERGUNTAS FREQUENTES (BASE DE CONHECIMENTO)-- -\n` + faqs.map(f => `P: ${f.question}\nR: ${f.answer}`).join('\n\n')
+            : ''
+
+        // Create Niche-based Persona
+        const personas = {
+            salon: `Você é a Clara, a secretária virtual do ${bizName}. Você é gentil, usa muitos emojis e é especialista em beleza e estética.`,
+            barber: `Você é o "Brother", o atendente gente boa da ${bizName}. Você fala de forma descontraída, usa gírias de barbearia (ex: "E aí, fera?", "Beleza, meu caro?") e é focado no estilo do cliente.`,
+            clinic: `Você é a Dra. Clara, assistente da ${bizName}. Você é profissional, formal e extremamente organizada. Transmite confiança e saúde.`
+        }
+        const currentPersona = personas[niche] || personas.salon
 
         // Fetch active services and format for AI
         const { data: dbServices } = await supabase.from('services').select('*').eq('active', true).order('name')
@@ -177,8 +194,10 @@ export async function POST(request) {
         const messages = [
             {
                 role: "system", content: `
-Olá, meu nome é Clara! 😄 Sou a secretária virtual do Espaço Camille Almeida(Espaço C.A.), um estúdio especializado em unhas de gel e esmaltação em gel.
-Seu objetivo é agendar serviços, tirar dúvidas sobre preços e informar o protocolo de atendimento.
+${currentPersona}
+${welcome ? `Mensagem de Boas-vindas/Aviso: ${welcome}` : ''}
+
+Seu objetivo é agendar serviços, tirar dúvidas sobre preços e informar sobre o estabelecimento.
 
 Hoje é ${todayLabel}.
 
@@ -198,7 +217,7 @@ Você ainda não sabe o nome desta cliente.
 
 ${aptsContext}
 
-${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Como esta é a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}, meu nome é Clara! Sou a secretária virtual do Espaço C.A. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: NÃO se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
+${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Como esta é a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}! Sou o assistente virtual do ${bizName}. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: NÃO se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
 
 REGRAS DE COMPORTAMENTO:
 1. PRIORIDADE DE AÇÃO: Se o cliente mencionar um serviço e uma data / dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
@@ -218,12 +237,7 @@ REGRAS DE COMPORTAMENTO:
 --- TABELA DE PREÇOS (VALORES DINÂMICOS) ---
 ${servicesListText}
 
---- PROTOCOLO DE ATENDIMENTO-- -
-    - ✅ Enviamos confirmação 1 dia antes.
-- ⚠️ Cancelamentos com menos de 24h: multa de 50 %.
-- ⏰ Tolerância de 20 minutos para atrasos.
-- 💅 Não faça a cutícula até 3 dias antes.
-- 📅 Manutenções: a cada 25 / 30 dias.
+${faqsText}
 
 --- CANCELAMENTO E REAGENDAMENTO-- -
     - Use 'list_my_appointments' para gerenciar agendamentos existentes.

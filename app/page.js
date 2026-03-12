@@ -1,7 +1,9 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle } from 'lucide-react'
+import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, Settings, LogOut } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 const whatsappLink = (phone, text = '') => { const base = `https://wa.me/${phone.replace(/\D/g, '')}`; return text ? `${base}?text=${encodeURIComponent(text)}` : base }
 
@@ -17,6 +19,8 @@ const DEFAULT_SERVICES = [
     { id: 'Esm. + Francesinha + Pó', name: 'Esm. + Francesinha + Pó', price: 45, duration: 60, active: true },
 ]
 let SERVICES = [...DEFAULT_SERVICES]
+const DEFAULT_PROFESSIONALS = [{ id: 'padrao', name: 'Profissional', role: 'Especialista', color: 'border-violet-500', active: true }]
+let PROFESSIONALS = [...DEFAULT_PROFESSIONALS]
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
@@ -69,6 +73,8 @@ export default function AdminDashboard() {
     const [blocks, setBlocks] = useState([])
     const [overrides, setOverrides] = useState([])
     const [globalServices, setGlobalServices] = useState(SERVICES)
+    const [globalProfessionals, setGlobalProfessionals] = useState(PROFESSIONALS)
+    const [globalSettings, setGlobalSettings] = useState({ business_name: 'AgendaÍ' })
     const [loading, setLoading] = useState(true)
     const [showNewModal, setShowNewModal] = useState(false)
     const [showBlockModal, setShowBlockModal] = useState(false)
@@ -82,6 +88,8 @@ export default function AdminDashboard() {
     const [searchQuery, setSearchQuery] = useState('')
     const [darkMode, setDarkMode] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
+    const [sessionLoading, setSessionLoading] = useState(true)
+    const router = useRouter()
 
     // Detecção de Mobile e Dark Mode inicial
     useEffect(() => {
@@ -95,8 +103,39 @@ export default function AdminDashboard() {
 
         if (window.innerWidth < 768) setSidebarOpen(false)
 
-        return () => window.removeEventListener('resize', checkMobile)
-    }, [])
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) {
+                router.push('/login')
+            } else {
+                setSessionLoading(false)
+            }
+        }
+        checkSession()
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (!session) {
+                router.push('/login')
+            }
+        })
+
+        // Efeito para aplicar a cor do Branding dinamicamente
+        useEffect(() => {
+            if (globalSettings.primary_color) {
+                document.documentElement.style.setProperty('--primary-dash', globalSettings.primary_color);
+                // Também criamos uma versão com transparência para fundos suaves
+                const r = parseInt(globalSettings.primary_color.slice(1, 3), 16);
+                const g = parseInt(globalSettings.primary_color.slice(3, 5), 16);
+                const b = parseInt(globalSettings.primary_color.slice(5, 7), 16);
+                document.documentElement.style.setProperty('--primary-dash-light', `rgba(${r}, ${g}, ${b}, 0.1)`);
+            }
+        }, [globalSettings.primary_color]);
+
+        return () => {
+            window.removeEventListener('resize', checkMobile)
+            subscription.unsubscribe()
+        }
+    }, [router, globalSettings.primary_color])
 
     const toggleDarkMode = () => {
         const newMode = !darkMode
@@ -118,14 +157,20 @@ export default function AdminDashboard() {
         const e = new Date(currentDate); e.setMonth(e.getMonth() + 2)
         const cacheBuster = `t=${Date.now()}`
         try {
-            const [aptRes, blkRes, schRes] = await Promise.all([
+            const [aptRes, blkRes, schRes, setRes] = await Promise.all([
                 fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}&${cacheBuster}`),
                 fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}&${cacheBuster}`),
-                fetch(`/api/admin?type=schedule&${cacheBuster}`)
+                fetch(`/api/admin?type=schedule&${cacheBuster}`),
+                fetch(`/api/settings?${cacheBuster}`)
             ])
             const aptData = await aptRes.json()
             const blkData = await blkRes.json()
             const schData = await schRes.json()
+
+            if (setRes.ok) {
+                const setData = await setRes.json()
+                setGlobalSettings(setData)
+            }
 
             try {
                 const svcRes = await fetch(`/api/services?${cacheBuster}`)
@@ -152,6 +197,24 @@ export default function AdminDashboard() {
             } catch (e) {
                 console.warn(e)
                 setGlobalServices(SERVICES)
+            }
+
+            try {
+                const profRes = await fetch(`/api/professionals?${cacheBuster}`)
+                if (profRes.ok) {
+                    const profData = await profRes.json()
+                    if (Array.isArray(profData) && profData.length > 0) {
+                        PROFESSIONALS = profData
+                        setGlobalProfessionals(profData)
+                    } else {
+                        setGlobalProfessionals(PROFESSIONALS)
+                    }
+                } else {
+                    setGlobalProfessionals(PROFESSIONALS)
+                }
+            } catch (e) {
+                console.warn(e)
+                setGlobalProfessionals(PROFESSIONALS)
             }
 
             const apts = Array.isArray(aptData) ? aptData : []
@@ -227,6 +290,15 @@ export default function AdminDashboard() {
         return ![0, 1].includes(date.getDay())
     }
 
+    if (sessionLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-violet-600">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-violet-600 mb-4"></div>
+                <p className="font-bold text-sm tracking-widest uppercase">Verificando Acesso...</p>
+            </div>
+        )
+    }
+
     // Monthly stats for summary cards
     const monthStart = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`
     const monthApts = confirmed.filter(a => a.starts_at >= monthStart)
@@ -244,22 +316,27 @@ export default function AdminDashboard() {
             {isMobile && sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
             {/* Sidebar */}
-            <aside className={`${isMobile ? 'sidebar-drawer' : sidebarOpen ? 'w-56' : 'w-16'} ${isMobile && sidebarOpen ? 'open' : ''} bg-gradient-to-b from-violet-700 to-purple-900 text-white transition-all duration-300 flex flex-col shrink-0 h-full`}>
+            <aside className={`${isMobile ? 'sidebar-drawer' : sidebarOpen ? 'w-56' : 'w-16'} ${isMobile && sidebarOpen ? 'open' : ''} bg-gradient-to-b from-primary-dash to-purple-950 text-white transition-all duration-300 flex flex-col shrink-0 h-full shadow-2xl z-40`}>
                 <div className="p-4 flex items-center justify-between border-b border-white/10">
                     <div className="flex items-center gap-3">
-                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-lg hover:bg-white/10 transition mobile-hide"><LayoutGrid size={20} /></button>
-                        {(sidebarOpen || isMobile) && <span className="font-extrabold text-lg tracking-tight">Espaço C.A.</span>}
+                        <img src="/logo.png" alt="AgendaÍ" className="w-8 h-8 rounded-lg object-contain shadow-lg" />
+                        {(sidebarOpen || isMobile) && <span className="font-extrabold text-lg tracking-tight truncate max-w-[130px] bg-clip-text text-transparent bg-gradient-to-r from-white to-violet-200" title={globalSettings.business_name}>{globalSettings.business_name}</span>}
                     </div>
                     {isMobile && <button onClick={() => setSidebarOpen(false)} className="p-1 text-white/50 hover:text-white"><X size={20} /></button>}
                 </div>
-                <nav className="flex-1 py-3 space-y-0.5 px-2">
-                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Horários' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
+                <nav className="flex-1 py-3 space-y-0.5 px-2 overflow-y-auto scrollbar-hide">
+                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Horários' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'equipe', icon: Award, label: 'Equipe' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'faqs', icon: MessageCircle, label: 'Bot FAQ' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }, { id: 'configuracoes', icon: Settings, label: 'Configurações' }].map(item => (
                         <button key={item.id} onClick={() => { setActivePage(item.id); setNewBadge(0); if (isMobile) setSidebarOpen(false) }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activePage === item.id ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}>
                             <item.icon size={18} />{(sidebarOpen || isMobile) && item.label}
-                            {item.id === 'agenda' && newBadge > 0 && (sidebarOpen || isMobile) && <span className="ml-auto bg-green-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">+{newBadge}</span>}
+                            {item.id === 'agenda' && newBadge > 0 && (sidebarOpen || isMobile) && <span className="ml-auto bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{newBadge}</span>}
+                            {item.id === 'agenda' && newBadge > 0 && !sidebarOpen && !isMobile && <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></div>}
                         </button>
                     ))}
+
+                    <button onClick={async () => await supabase.auth.signOut()} className="w-full mt-8 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-white/60 hover:bg-red-500/20 hover:text-red-300">
+                        <LogOut size={18} />{(sidebarOpen || isMobile) && 'Sair do Sistema'}
+                    </button>
                 </nav>
                 <div className="p-3 border-t border-white/10 space-y-3">
                     <button onClick={toggleDarkMode} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[11px] font-bold text-white/70 hover:bg-white/10 hover:text-white transition-all text-left">
@@ -292,7 +369,7 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="flex items-center shrink-0">
                                     <button onClick={() => nav(-1)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"><ChevronLeft size={18} /></button>
-                                    <button onClick={goToday} className="px-2 py-1 md:px-3 md:py-1.5 rounded-lg bg-violet-600 text-white text-[10px] md:text-xs font-bold hover:bg-violet-700 transition">HOJE</button>
+                                    <button onClick={goToday} className="px-2 py-1 md:px-3 md:py-1.5 rounded-lg bg-primary-dash text-white text-[10px] md:text-xs font-bold hover:bg-black transition">HOJE</button>
                                     <button onClick={() => nav(1)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"><ChevronRight size={18} /></button>
                                 </div>
                                 <span className="text-xs md:text-sm font-bold text-slate-700 ml-1 truncate">{headerLabel}</span>
@@ -317,7 +394,7 @@ export default function AdminDashboard() {
                                     <Lock size={12} className="text-slate-400" />
                                     <span className="hidden md:inline">Bloquear</span>
                                 </button>
-                                <button onClick={() => setShowNewModal(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-600 text-white text-[10px] md:text-xs font-bold hover:bg-violet-700 shadow-md shadow-violet-200 transition active:scale-95 shrink-0">
+                                <button onClick={() => setShowNewModal(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-dash text-white text-[10px] md:text-xs font-bold hover:bg-black shadow-md shadow-violet-200 transition active:scale-95 shrink-0">
                                     <Plus size={16} />
                                     <span className="hidden md:inline">Novo</span>
                                 </button>
@@ -328,7 +405,7 @@ export default function AdminDashboard() {
                         {viewMode === 'day' && (
                             <div className="px-4 pt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3">
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-violet-100 flex items-center justify-center"><Calendar className="text-violet-600" size={16} /></div>
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-primary-dash text-white opacity-90 flex items-center justify-center"><Calendar size={16} /></div>
                                     <div><p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-slate-400">Hoje</p><p className="text-lg md:text-xl font-black text-slate-800">{dayApts.length}</p></div>
                                 </div>
                                 <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3">
@@ -349,22 +426,38 @@ export default function AdminDashboard() {
                         <div className="flex-1 overflow-auto p-2 md:p-4">
                             {viewMode === 'month' && <MonthView currentDate={currentDate} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} isMobile={isMobile} isDayOpen={isDayOpen} />}
                             {viewMode === 'week' && <WeekView weekDates={weekDates} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} isMobile={isMobile} isDayOpen={isDayOpen} />}
-                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={filteredDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} isMobile={isMobile} />}
+                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={filteredDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} isMobile={isMobile} globalProfessionals={globalProfessionals} />}
                         </div>
                     </>
                 )}
                 {activePage === 'clientes' && <ClientsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
+                {activePage === 'equipe' && <ProfessionalsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} globalProfessionals={globalProfessionals} refreshGlobal={fetchAppointments} />}
                 {activePage === 'servicos' && <ServicesPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} globalServices={globalServices} refreshGlobal={fetchAppointments} />}
+                {activePage === 'faqs' && <FaqsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
                 {activePage === 'relatorios' && <ReportsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
                 {activePage === 'horarios' && <SchedulePage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} overrides={overrides} onRefresh={fetchAppointments} isDayOpen={isDayOpen} />}
+                {activePage === 'configuracoes' && <SettingsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} globalSettings={globalSettings} refreshGlobal={fetchAppointments} />}
             </main>
 
             {/* Modals */}
-            {showNewModal && <NewAppointmentModal selectedDate={selectedDate} onClose={() => setShowNewModal(false)} onSave={() => { setShowNewModal(false); setRefreshKey(k => k + 1) }} />}
+            {showNewModal && <NewAppointmentModal selectedDate={selectedDate} onClose={() => setShowNewModal(false)} onSave={() => { setShowNewModal(false); setRefreshKey(k => k + 1) }} globalProfessionals={globalProfessionals} />}
             {showBlockModal && <BlockModal selectedDate={selectedDate} onClose={() => setShowBlockModal(false)} onSave={() => { setShowBlockModal(false); setRefreshKey(k => k + 1) }} />}
-            {actionApt && actionType === 'view' && <AppointmentDetailModal apt={actionApt} onClose={closeAction} onCancel={() => setActionType('cancel')} onReschedule={() => setActionType('reschedule')} onSaveNotes={async (id, notes) => { await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, notes }) }); setRefreshKey(k => k + 1) }} />}
+            {actionApt && actionType === 'view' && <AppointmentDetailModal apt={actionApt} onClose={closeAction} onCancel={() => setActionType('cancel')} onReschedule={() => setActionType('reschedule')} onSaveNotes={async (id, notes) => { await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, notes }) }); setRefreshKey(k => k + 1) }} globalProfessionals={globalProfessionals} />}
             {actionApt && actionType === 'cancel' && <CancelConfirmModal apt={actionApt} onClose={closeAction} onConfirm={() => doCancelAppointment(actionApt.id)} />}
             {actionApt && actionType === 'reschedule' && <RescheduleModal apt={actionApt} onClose={closeAction} onConfirm={doReschedule} />}
+
+            <style jsx global>{`
+                :root {
+                    --primary-dash: #8b5cf6;
+                    --primary-dash-light: rgba(139, 92, 246, 0.1);
+                }
+                .bg-primary-dash { background-color: var(--primary-dash) !important; }
+                .text-primary-dash { color: var(--primary-dash) !important; }
+                .border-primary-dash { border-color: var(--primary-dash) !important; }
+                .hover\:bg-primary-dash:hover { background-color: var(--primary-dash) !important; opacity: 0.9; }
+                .from-primary-dash { --tw-gradient-from: var(--primary-dash) !important; --tw-gradient-to: rgb(0 0 0 / 0) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+                .to-primary-dash-dark { --tw-gradient-to: #4c1d95 !important; } /* Fallback or calculate */
+            `}</style>
         </div >
     )
 }
@@ -386,9 +479,9 @@ function MonthView({ currentDate, selectedDate, setSelectedDate, getCount, isMob
                     const count = getCount(dateStr)
                     return (
                         <button key={i} onClick={() => !isClosed && isThisMonth && setSelectedDate(dateStr)} disabled={isClosed || !isThisMonth}
-                            className={`relative h-16 md:h-24 p-1 md:p-2 border-b border-r border-slate-50 text-left transition-all ${!isThisMonth ? 'opacity-30' : isClosed ? 'bg-slate-50 opacity-40 cursor-not-allowed' : 'hover:bg-violet-50 cursor-pointer'}`}>
-                            <span className={`text-[10px] md:text-sm font-bold ${isToday(date) ? 'bg-violet-600 text-white w-5 h-5 md:w-7 md:h-7 rounded-full flex items-center justify-center today-pulse' : 'text-slate-700'}`}>{date.getDate()}</span>
-                            {count > 0 && <div className="mt-0.5 md:mt-1"><span className="bg-violet-100 text-violet-700 text-[8px] md:text-[10px] font-bold px-1 md:px-1.5 py-0.5 rounded">{count}{!isMobile && ' agend.'}</span></div>}
+                            className={`relative h-16 md:h-24 p-1 md:p-2 border-b border-r border-slate-50 text-left transition-all ${!isThisMonth ? 'opacity-30' : isClosed ? 'bg-slate-50 opacity-40 cursor-not-allowed' : 'hover:bg-primary-dash-light cursor-pointer'}`}>
+                            <span className={`text-[10px] md:text-sm font-bold ${isToday(date) ? 'bg-primary-dash text-white w-5 h-5 md:w-7 md:h-7 rounded-full flex items-center justify-center today-pulse shadow-lg' : 'text-slate-700'}`}>{date.getDate()}</span>
+                            {count > 0 && <div className="mt-0.5 md:mt-1"><span className="bg-primary-dash-light text-primary-dash text-[8px] md:text-[10px] font-bold px-1 md:px-1.5 py-0.5 rounded shadow-sm border border-primary-dash/10">{count}{!isMobile && ' agend.'}</span></div>}
                         </button>
                     )
                 })}
@@ -398,7 +491,21 @@ function MonthView({ currentDate, selectedDate, setSelectedDate, getCount, isMob
 }
 
 // ─── Week View ─────────────────────────────────────────────
-function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile, isDayOpen }) {
+function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile, isDayOpen, globalProfessionals }) {
+    const getSlotColor = (apt) => {
+        if (apt.status === 'CANCELLED') return { bg: 'bg-red-50', border: 'border-red-400', text: 'text-red-700' }
+        const prof = (globalProfessionals || []).find(p => p.id === apt.professional_id)
+        let c = 'violet'
+        if (prof?.color) {
+            if (prof.color.includes('pink')) c = 'pink'
+            else if (prof.color.includes('blue')) c = 'blue'
+            else if (prof.color.includes('emerald')) c = 'emerald'
+            else if (prof.color.includes('amber')) c = 'amber'
+            else if (prof.color.includes('rose')) c = 'rose'
+        }
+        return { bg: `bg-${c}-100`, border: `border-${c}-500`, text: `text-${c}-700` }
+    }
+
     if (isMobile) {
         return (
             <div className="space-y-3">
@@ -419,12 +526,15 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
                             </div>
                             {!isClosed && dayApts.length > 0 && (
                                 <div className="flex gap-1.5 overflow-x-auto pb-1">
-                                    {dayApts.map(apt => (
-                                        <div key={apt.id} className="shrink-0 w-24 p-2 bg-violet-50 rounded-lg border-l-2 border-violet-500">
-                                            <p className="text-[9px] font-bold text-violet-700">{toSPTime(apt.starts_at)}</p>
-                                            <p className="text-[9px] font-semibold text-slate-700 truncate">{apt.customer_name}</p>
-                                        </div>
-                                    ))}
+                                    {dayApts.map(apt => {
+                                        const c = getSlotColor(apt)
+                                        return (
+                                            <div key={apt.id} className={`shrink-0 w-24 p-2 ${c.bg} rounded-lg border-l-2 ${c.border}`}>
+                                                <p className={`text-[9px] font-bold ${c.text}`}>{toSPTime(apt.starts_at)}</p>
+                                                <p className="text-[9px] font-semibold text-slate-700 truncate">{apt.customer_name}</p>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -442,10 +552,10 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
                     const count = getCount(dateStr)
                     return (
                         <button key={i} onClick={() => !isClosed && setSelectedDate(dateStr)} disabled={isClosed}
-                            className={`py-4 text-center border-r border-slate-100 last:border-r-0 transition-all ${isClosed ? 'bg-slate-50 opacity-40 cursor-not-allowed' : 'hover:bg-violet-50 cursor-pointer'}`}>
+                            className={`py-4 text-center border-r border-slate-100 last:border-r-0 transition-all ${isClosed ? 'bg-slate-50 opacity-40 cursor-not-allowed' : 'hover:bg-primary-dash-light cursor-pointer'}`}>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{DAY_NAMES[date.getDay()]}</p>
-                            <p className={`text-2xl font-black mb-1 ${isToday(date) ? 'text-violet-600 today-pulse inline-block px-2' : 'text-slate-700'}`}>{date.getDate()}</p>
-                            {count > 0 && <span className="inline-block mt-1 bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{count} agend.</span>}
+                            <p className={`text-2xl font-black mb-1 ${isToday(date) ? 'text-primary-dash today-pulse inline-block px-2' : 'text-slate-700'}`}>{date.getDate()}</p>
+                            {count > 0 && <span className="inline-block mt-1 bg-primary-dash-light text-primary-dash text-[10px] font-bold px-2 py-0.5 rounded-full border border-primary-dash/10">{count} agend.</span>}
                             {isClosed && <span className="block text-[10px] text-slate-400 mt-1">Fechado</span>}
                         </button>
                     )
@@ -460,9 +570,10 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
                         <div key={dayIdx} className={`border-r border-slate-100 last:border-r-0 min-h-[200px] p-1.5 ${isClosed ? 'bg-slate-50/50' : ''}`}>
                             {dayApts.slice(0, 5).map(apt => {
                                 const svcs = parseServices(apt.service_id)
+                                const c = getSlotColor(apt)
                                 return (
-                                    <div key={apt.id} onClick={() => setSelectedDate(dateStr)} className="mb-1 px-2 py-1.5 bg-violet-100 rounded-lg cursor-pointer hover:bg-violet-200 transition-colors" style={{ borderLeft: '3px solid rgb(139 92 246)' }}>
-                                        <p className="text-[10px] font-bold text-violet-700">{toSPTime(apt.starts_at)}</p>
+                                    <div key={apt.id} onClick={() => setSelectedDate(dateStr)} className={`mb-1 px-2 py-1.5 ${c.bg} rounded-lg cursor-pointer hover:opacity-80 transition-opacity border-l-[3px] ${c.border}`}>
+                                        <p className={`text-[10px] font-bold ${c.text}`}>{toSPTime(apt.starts_at)}</p>
                                         <p className="text-[10px] font-semibold text-slate-700 truncate">{apt.customer_name}</p>
                                         <p className="text-[9px] text-slate-500 truncate">{svcs.join(', ')}</p>
                                     </div>
@@ -478,7 +589,7 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
 }
 
 // ─── Day View (with blocks + status colors) ───────────────
-function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue, onDeleteBlock, isMobile }) {
+function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue, onDeleteBlock, isMobile, globalProfessionals }) {
     const SLOT_HEIGHT = 48
     const GRID_START = 7 * 60 // 07:00 in minutes
 
@@ -515,12 +626,19 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
         }
     })
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case 'CONFIRMED': return 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
-            case 'CANCELLED': return 'bg-gradient-to-r from-red-400 to-red-500 text-white opacity-50'
-            default: return 'bg-gradient-to-r from-slate-400 to-slate-500 text-white opacity-60'
+    const getStatusStyle = (apt) => {
+        if (apt.status === 'CANCELLED') return 'bg-gradient-to-r from-red-400 to-red-500 text-white opacity-50'
+        if (apt.status !== 'CONFIRMED') return 'bg-gradient-to-r from-slate-400 to-slate-500 text-white opacity-60'
+
+        const prof = (globalProfessionals || []).find(p => p.id === apt.professional_id)
+        if (prof?.color) {
+            if (prof.color.includes('pink')) return 'bg-gradient-to-r from-pink-500 to-pink-600 text-white'
+            if (prof.color.includes('blue')) return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+            if (prof.color.includes('emerald')) return 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
+            if (prof.color.includes('amber')) return 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+            if (prof.color.includes('rose')) return 'bg-gradient-to-r from-rose-500 to-rose-600 text-white'
         }
+        return 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
     }
 
     return (
@@ -609,7 +727,7 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                     return (
                         <div key={apt.id}
                             onClick={() => !isCancelled && onAction(apt, 'view')}
-                            className={`absolute ${getStatusStyle(apt.status)} rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-all ${isCancelled ? 'cursor-default' : 'cursor-pointer'} group z-10 overflow-hidden`}
+                            className={`absolute ${getStatusStyle(apt)} rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-all ${isCancelled ? 'cursor-default' : 'cursor-pointer'} group z-10 overflow-hidden`}
                             style={{ top: `${topPx + 2}px`, height: `${heightPx}px`, left: '68px', right: '8px' }}>
                             <div className="flex items-start justify-between h-full">
                                 <div className="flex-1 min-w-0">
@@ -649,13 +767,15 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
 }
 
 // ─── Appointment Detail Modal ──────────────────────────────
-function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNotes }) {
+function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNotes, globalProfessionals }) {
     const svcs = parseServices(apt.service_id)
     const total = calcTotal(svcs)
     const dur = calcDuration(svcs)
     const [notes, setNotes] = useState(apt.notes || '')
     const [editingNotes, setEditingNotes] = useState(false)
     const [savingNotes, setSavingNotes] = useState(false)
+
+    const prof = (globalProfessionals || []).find(p => p.id === apt.professional_id)
 
     const handleSaveNotes = async () => {
         setSavingNotes(true)
@@ -703,7 +823,13 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Horário</span>
                             <span className="text-sm font-bold text-slate-800">{toSPTime(apt.starts_at)} ({dur}min)</span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        {prof && (
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 pt-2">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Profissional</span>
+                                <span className="text-sm font-bold text-slate-800">{prof.name}</span>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between pt-2">
                             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Serviços</span>
                             <div className="flex flex-wrap gap-1 justify-end">
                                 {svcs.map((s, i) => <span key={i} className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{s}</span>)}
@@ -920,8 +1046,10 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
 }
 
 // ─── New Appointment Modal ─────────────────────────────────
-function NewAppointmentModal({ selectedDate, onClose, onSave }) {
-    const [form, setForm] = useState({ customer_name: '', customer_phone: '', services: [], date: selectedDate, time: '09:00', notes: '' })
+function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessionals }) {
+    const actProfs = (globalProfessionals || []).filter(p => p.active)
+    const defProfId = actProfs.length > 0 ? actProfs[0].id : ''
+    const [form, setForm] = useState({ customer_name: '', customer_phone: '', services: [], professional_id: defProfId, date: selectedDate, time: '09:00', notes: '' })
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
 
@@ -941,7 +1069,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
         try {
             const res = await fetch('/api/admin', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ customer_name: form.customer_name, customer_phone: form.customer_phone, service_id: JSON.stringify(form.services), starts_at: startsAt, ends_at: endsAt, notes: form.notes || undefined })
+                body: JSON.stringify({ customer_name: form.customer_name, customer_phone: form.customer_phone, service_id: JSON.stringify(form.services), professional_id: form.professional_id, starts_at: startsAt, ends_at: endsAt, notes: form.notes || undefined })
             })
             const data = await res.json()
             if (data.error) throw new Error(data.error)
@@ -999,6 +1127,13 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
                             <span className="text-lg font-black text-violet-700">R$ {totalPrice}</span>
                         </div>
                     )}
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Profissional Responsável</label>
+                        <select required value={form.professional_id} onChange={e => setForm({ ...form, professional_id: e.target.value })}
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium appearance-none cursor-pointer">
+                            {actProfs.map(p => <option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}
+                        </select>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Data</label>
@@ -1298,13 +1433,13 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                     )}
                     <div>
                         <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-                            <Scissors className="text-violet-500" size={24} />
+                            <Scissors className="text-primary-dash" size={24} />
                             Serviços Dinâmicos
                         </h2>
                         <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8">Gerencie o catálogo do bot e do sistema.</p>
                     </div>
                 </div>
-                <button onClick={() => setIsAdding(!isAdding)} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-violet-500/30 transition-all active:scale-95">
+                <button onClick={() => setIsAdding(!isAdding)} className="flex items-center gap-2 bg-primary-dash hover:bg-black text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary-dash/20 transition-all active:scale-95">
                     {isAdding ? <X size={16} /> : <Plus size={16} />}
                     <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Novo Serviço'}</span>
                 </button>
@@ -1312,8 +1447,8 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
 
             <div className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
                 {isAdding && (
-                    <div className="bg-white rounded-2xl border border-violet-200 shadow-xl shadow-violet-500/5 p-5 md:p-6 mb-6 transform transition-all animate-in fade-in slide-in-from-top-4">
-                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><Plus className="text-violet-500" size={16} /> Adicionar Novo Serviço</h3>
+                    <div className="bg-white rounded-2xl border border-primary-dash/20 shadow-xl shadow-primary-dash/5 p-5 md:p-6 mb-6 transform transition-all animate-in fade-in slide-in-from-top-4">
+                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><Plus className="text-primary-dash" size={16} /> Adicionar Novo Serviço</h3>
                         <form onSubmit={handleAdd} className="space-y-4">
                             <div>
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nome do Serviço</label>
@@ -1400,15 +1535,233 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
 
                                     <div className="flex items-center gap-4 md:gap-6">
                                         <div className="text-right hidden sm:block">
-                                            <div className="text-lg font-black text-violet-600">R$ {svc.price}</div>
+                                            <div className="text-lg font-black text-primary-dash">R$ {svc.price}</div>
                                             <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1 justify-end"><Clock size={12} /> {svc.duration} min</div>
                                         </div>
                                         <div className="text-right sm:hidden">
-                                            <div className="text-sm font-black text-violet-600">R$ {svc.price}</div>
+                                            <div className="text-sm font-black text-primary-dash">R$ {svc.price}</div>
                                             <div className="text-[10px] text-slate-500">{svc.duration}m</div>
                                         </div>
 
-                                        <button onClick={() => startEdit(svc)} className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:text-violet-600 hover:bg-violet-50 hover:border-violet-200 transition-all shadow-sm">
+                                        <button onClick={() => startEdit(svc)} className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:text-primary-dash hover:bg-primary-dash-light hover:border-primary-dash/30 transition-all shadow-sm">
+                                            <Edit2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─── Professionals Page ──────────────────────────────────────
+function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshGlobal }) {
+    const [professionals, setProfessionals] = useState(globalProfessionals || [])
+    const [editing, setEditing] = useState(null)
+    const [editForm, setEditForm] = useState({})
+    const [isAdding, setIsAdding] = useState(false)
+    const [addForm, setAddForm] = useState({ name: '', role: 'Especialista', color: 'border-violet-500', active: true })
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        setProfessionals(globalProfessionals || [])
+    }, [globalProfessionals])
+
+    const startEdit = (prof) => {
+        setEditing(prof.id)
+        setEditForm({ name: prof.name, role: prof.role, color: prof.color, active: prof.active })
+    }
+
+    const saveEdit = async (id) => {
+        setLoading(true)
+        try {
+            const isDefault = !id.includes('-');
+            const res = await fetch('/api/professionals', {
+                method: isDefault ? 'POST' : 'PATCH', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...(isDefault ? {} : { id }), ...editForm })
+            })
+            if (!res.ok) {
+                const err = await res.json()
+                alert(`Erro ao salvar profissional no BD.\nDetalhe: ${err.error || res.statusText}`)
+            } else {
+                refreshGlobal()
+                setEditing(null)
+            }
+        } catch (e) { alert(`Erro de Conexão: ${e.message}`) }
+        setLoading(false)
+    }
+
+    const handleAdd = async (e) => {
+        e.preventDefault()
+        setLoading(true)
+        try {
+            const res = await fetch('/api/professionals', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(addForm)
+            })
+            if (!res.ok) {
+                const err = await res.json()
+                alert(`Supabase recusou a inserção.\nErro: ${err.error || res.statusText}`)
+            } else {
+                setIsAdding(false)
+                setAddForm({ name: '', role: 'Especialista', color: 'border-violet-500', active: true })
+                refreshGlobal()
+            }
+        } catch (e) { alert(`Erro de Rede: ${e.message}`) }
+        setLoading(false)
+    }
+
+    const toggleActive = async (prof) => {
+        setLoading(true)
+        try {
+            const isDefault = !prof.id.includes('-');
+            const body = isDefault
+                ? { name: prof.name, role: prof.role, color: prof.color, active: !prof.active }
+                : { id: prof.id, active: !prof.active }
+
+            const res = await fetch('/api/professionals', {
+                method: isDefault ? 'POST' : 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+
+            if (!res.ok) {
+                const err = await res.json()
+                alert(`Ação falhou!\nErro BD: ${err.error || res.statusText}`)
+            } else {
+                refreshGlobal()
+            }
+        } catch (e) { alert(`Problema de conexão: ${e.message}`) }
+        setLoading(false)
+    }
+
+    const colors = ['border-violet-500', 'border-pink-500', 'border-blue-500', 'border-emerald-500', 'border-amber-500', 'border-rose-500']
+
+    return (
+        <div className="flex flex-col h-full bg-slate-50">
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex items-center justify-between shrink-0 shadow-sm z-10">
+                <div className="flex items-center gap-3">
+                    {isMobile && (
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+                            <LayoutGrid size={20} />
+                        </button>
+                    )}
+                    <div>
+                        <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                            <Award className="text-violet-500" size={24} />
+                            Gestão de Equipe
+                        </h2>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8">Adicione os profissionais que atendem no estabelecimento.</p>
+                    </div>
+                </div>
+                <button onClick={() => setIsAdding(!isAdding)} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-violet-500/30 transition-all active:scale-95">
+                    {isAdding ? <X size={16} /> : <Plus size={16} />}
+                    <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Novo Profissional'}</span>
+                </button>
+            </header>
+
+            <div className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
+                {isAdding && (
+                    <div className="bg-white rounded-2xl border border-violet-200 shadow-xl shadow-violet-500/5 p-5 md:p-6 mb-6 transform transition-all animate-in fade-in slide-in-from-top-4">
+                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><Plus className="text-violet-500" size={16} /> Adicionar Membro da Equipe</h3>
+                        <form onSubmit={handleAdd} className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nome do Profissional</label>
+                                <input type="text" required value={addForm.name} onChange={e => setAddForm({ ...addForm, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all" placeholder="Ex: Joana Silva" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Cargo / Especialidade</label>
+                                    <input type="text" required value={addForm.role} onChange={e => setAddForm({ ...addForm, role: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all" placeholder="Ex: Manicure, Cabeleireira" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Cor no Calendário</label>
+                                    <select value={addForm.color} onChange={e => setAddForm({ ...addForm, color: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all appearance-none cursor-pointer">
+                                        <option value="border-violet-500">Roxo</option>
+                                        <option value="border-pink-500">Rosa</option>
+                                        <option value="border-blue-500">Azul</option>
+                                        <option value="border-emerald-500">Verde</option>
+                                        <option value="border-amber-500">Amarelo</option>
+                                        <option value="border-rose-500">Vermelho</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="pt-2">
+                                <button type="submit" disabled={loading} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-black transition-colors disabled:opacity-50">
+                                    {loading ? 'Salvando...' : 'Cadastrar Profissional'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-3">
+                    {professionals.length === 0 && !loading && (
+                        <div className="p-10 text-center bg-white rounded-2xl border border-slate-200 border-dashed">
+                            <Users className="mx-auto text-slate-300 mb-3" size={32} />
+                            <p className="text-slate-500 font-medium">Equipe vazia.</p>
+                            <p className="text-xs text-slate-400 mt-1">Sua agenda precisa de pelo menos uma profissional.</p>
+                        </div>
+                    )}
+                    {professionals.map(prof => (
+                        <div key={prof.id} className={`bg-white rounded-2xl border-l-4 transition-all ${!prof.active ? 'border-l-slate-300 border-slate-200 opacity-60 bg-slate-50' : `${prof.color} border-y border-r border-slate-200 hover:shadow-md`}`}>
+                            {editing === prof.id ? (
+                                <div className="p-4 md:p-5">
+                                    <div className="flex flex-col md:flex-row gap-3">
+                                        <div className="flex-1">
+                                            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Nome</label>
+                                            <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-violet-200 font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-violet-100" />
+                                        </div>
+                                        <div className="flex items-end gap-3">
+                                            <div className="flex-1 w-32">
+                                                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Cargo</label>
+                                                <input type="text" value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-violet-200 font-medium outline-none focus:ring-2 focus:ring-violet-100" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Cor</label>
+                                                <select value={editForm.color} onChange={e => setEditForm({ ...editForm, color: e.target.value })} className="w-24 px-3 py-2 rounded-lg border border-violet-200 font-medium text-xs outline-none focus:ring-2 focus:ring-violet-100">
+                                                    <option value="border-violet-500">Roxo</option>
+                                                    <option value="border-pink-500">Rosa</option>
+                                                    <option value="border-blue-500">Azul</option>
+                                                    <option value="border-emerald-500">Verde</option>
+                                                    <option value="border-amber-500">Amarelo</option>
+                                                    <option value="border-rose-500">Vermelho</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => saveEdit(prof.id)} disabled={loading} className="bg-green-500 text-white p-2.5 rounded-lg hover:bg-green-600 transition-colors shadow-sm"><Save size={16} /></button>
+                                                <button onClick={() => setEditing(null)} className="bg-slate-100 text-slate-500 p-2.5 rounded-lg hover:bg-slate-200 transition-colors"><X size={16} /></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between p-4 md:p-5">
+                                    <div className="flex items-center gap-4">
+                                        <button
+                                            onClick={() => toggleActive(prof)}
+                                            disabled={loading}
+                                            className={`w-10 h-6 rounded-full p-1 transition-colors ${prof.active ? 'bg-green-500' : 'bg-slate-300'}`}
+                                            title={prof.active ? 'Suspender da Agenda' : 'Reativar na Agenda'}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full bg-white transition-transform ${prof.active ? 'translate-x-4' : 'translate-x-0'}`} />
+                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-400 border-2 ${prof.color.replace('border-', 'border-').replace('text-', '')}`}>
+                                                {prof.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <h4 className={`font-bold text-base md:text-lg ${prof.active ? 'text-slate-800' : 'text-slate-500 line-through'}`}>{prof.name}</h4>
+                                                <span className="text-xs font-semibold text-slate-500">{prof.role}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-4 md:gap-6">
+                                        <button onClick={() => startEdit(prof)} className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:text-violet-600 hover:bg-violet-50 hover:border-violet-200 transition-all shadow-sm">
                                             <Edit2 size={16} />
                                         </button>
                                     </div>
@@ -1574,6 +1927,9 @@ function DonutChart({ data }) {
 // ─── Reports Page ──────────────────────────────────────────
 function ReportsPage({ isMobile, onOpenMenu }) {
     const [period, setPeriod] = useState(30); // days
+    const [startDate, setStartDate] = useState(fmt(new Date(new Date().setDate(new Date().getDate() - 30))));
+    const [endDate, setEndDate] = useState(fmt(new Date()));
+    const [isCustom, setIsCustom] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [allHistoricalApts, setAllHistoricalApts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -1601,33 +1957,47 @@ function ReportsPage({ isMobile, onOpenMenu }) {
     }
 
     const today = new Date();
+    today.setHours(23, 59, 59, 999);
 
-    // Filter appointments by selected period
-    // If period is Infinity (Todo o período), just take all.
-    const startPeriod = new Date();
-    startPeriod.setDate(today.getDate() - period);
-    startPeriod.setHours(0, 0, 0, 0);
-
-    const filteredApts = allHistoricalApts.filter(a => {
-        if (period === 9999) return true; // Todo o Período
-        const d = new Date(a.starts_at);
-        return d >= startPeriod && d <= today;
-    });
+    let filteredApts = []
+    if (isCustom) {
+        const s = new Date(startDate + 'T00:00:00');
+        const e = new Date(endDate + 'T23:59:59');
+        filteredApts = allHistoricalApts.filter(a => {
+            const d = new Date(a.starts_at);
+            return d >= s && d <= e;
+        });
+    } else {
+        const startPeriod = new Date();
+        startPeriod.setDate(today.getDate() - (period === 9999 ? 3650 : period));
+        startPeriod.setHours(0, 0, 0, 0);
+        filteredApts = allHistoricalApts.filter(a => {
+            if (period === 9999) return true;
+            const d = new Date(a.starts_at);
+            return d >= startPeriod && d <= today;
+        });
+    }
 
     const totalRevenue = filteredApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0);
     const totalApts = filteredApts.length;
     const ticketMedio = totalApts > 0 ? (totalRevenue / totalApts).toFixed(0) : 0;
 
-    // Previous period for comparison
-    const startPrevContext = new Date(startPeriod);
-    startPrevContext.setDate(startPrevContext.getDate() - period);
-    const prevApts = allHistoricalApts.filter(a => {
-        if (period === 9999) return false; // Sem comparação
-        const d = new Date(a.starts_at);
-        return d >= startPrevContext && d < startPeriod;
-    });
-    const prevRevenue = prevApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0);
-    const growth = period === 9999 ? 0 : (prevRevenue === 0 ? 100 : (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1));
+    // Growth comparison (only for preset periods)
+    let growth = 0;
+    if (!isCustom && period !== 9999) {
+        const startPeriod = new Date();
+        startPeriod.setDate(today.getDate() - period);
+        startPeriod.setHours(0, 0, 0, 0);
+
+        const startPrevContext = new Date(startPeriod);
+        startPrevContext.setDate(startPrevContext.getDate() - period);
+        const prevApts = allHistoricalApts.filter(a => {
+            const d = new Date(a.starts_at);
+            return d >= startPrevContext && d < startPeriod;
+        });
+        const prevRevenue = prevApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0);
+        growth = (prevRevenue === 0 ? 100 : (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1));
+    }
 
     // Daily Chart Data (Aggregate by Date)
     const datesMap = {};
@@ -1672,7 +2042,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
 
     return (
         <div className="flex flex-col h-full bg-slate-50/50">
-            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 shadow-sm z-10">
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0 shadow-sm z-10">
                 <div className="flex items-center gap-3">
                     {isMobile && (
                         <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg">
@@ -1680,26 +2050,80 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                         </button>
                     )}
                     <div>
-                        <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-600" size={24} /> Relatórios Avançados</h2>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Inteligência de negócio e acompanhamento financeiro.</p>
+                        <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-600" size={24} /> Relatórios Financeiros</h2>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Inteligência de negócio e acompanhamento de faturamento.</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
-                    {[{ label: '7 Dias', val: 7 }, { label: '15 Dias', val: 15 }, { label: '30 Dias', val: 30 }, { label: '90 Dias', val: 90 }, { label: 'Todo Histórico', val: 9999 }].map(f => (
-                        <button key={f.val} onClick={() => setPeriod(f.val)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${period === f.val ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/30' : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-300 hover:text-violet-600'}`}>
-                            {f.label}
+
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                    <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-2xl shadow-inner border border-slate-200">
+                        {[{ label: 'Últimos 7 Dias', val: 7 }, { label: 'Últimos 15 Dias', val: 15 }, { label: 'Últimos 30 Dias', val: 30 }].map(f => (
+                            <button key={f.val} onClick={() => { setPeriod(f.val); setIsCustom(false); }}
+                                className={`px-4 py-2 rounded-xl text-[11px] font-black transition-all whitespace-nowrap ${!isCustom && period === f.val ? 'bg-violet-600 text-white shadow-lg shadow-violet-200 scale-105' : 'text-slate-500 hover:bg-white hover:text-slate-700'}`}>
+                                {f.label}
+                            </button>
+                        ))}
+                        <div className="w-[1px] h-6 bg-slate-200 mx-1" />
+                        <button onClick={() => { setPeriod(9999); setIsCustom(false); }}
+                            className={`px-3 py-2 rounded-xl text-[11px] font-black transition-all whitespace-nowrap ${!isCustom && period === 9999 ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}>
+                            Tudo
                         </button>
-                    ))}
-                    <button onClick={() => {
-                        const rows = [['Data', 'Cliente', 'Telefone', 'Serviço', 'Status', 'Valor']]
-                        filteredApts.forEach(a => rows.push([toSPDate(a.starts_at), a.customer_name, a.customer_phone, parseServices(a.service_id).join(' + '), a.status, calcTotal(parseServices(a.service_id))]))
-                        const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
-                        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-                        const a = document.createElement('a'); a.href = url; a.download = `relatorio_${period}d_${fmt(new Date())}.csv`; a.click();
-                    }} className="ml-2 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors whitespace-nowrap">
-                        <Download size={14} /> Exportar
-                    </button>
+                        <button onClick={() => setIsCustom(true)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-black transition-all whitespace-nowrap ${isCustom ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white hover:text-slate-700'}`}>
+                            <Calendar size={14} /> Selecionar Datas
+                        </button>
+                    </div>
+
+                    {isCustom && (
+                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
+                            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="text-[10px] font-bold px-2 py-1.5 rounded-lg border border-slate-200 focus:border-violet-400 outline-none" />
+                            <span className="text-[10px] text-slate-400 font-bold">até</span>
+                            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-[10px] font-bold px-2 py-1.5 rounded-lg border border-slate-200 focus:border-violet-400 outline-none" />
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-2 ml-auto">
+                        <button onClick={() => {
+                            // Link para injetar jspdf e gerar PDF via CDN (fallback seguro sem npm install)
+                            const script = document.createElement('script');
+                            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                            script.onload = () => {
+                                const autotable = document.createElement('script');
+                                autotable.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js';
+                                autotable.onload = () => {
+                                    const { jsPDF } = window.jspdf;
+                                    const doc = new jsPDF();
+                                    doc.setFontSize(20);
+                                    doc.text('Relatório Financeiro - Agendaí', 15, 20);
+                                    doc.setFontSize(10);
+                                    doc.text(`Período: ${isCustom ? startDate + ' a ' + endDate : 'Últimos ' + period + ' dias'}`, 15, 28);
+                                    doc.text(`Faturamento Total: R$ ${totalRevenue}`, 15, 34);
+                                    doc.text(`Total de Atendimentos: ${totalApts}`, 15, 40);
+
+                                    const rows = filteredApts.map(a => [
+                                        toSPDate(a.starts_at).split('-').reverse().join('/'),
+                                        a.customer_name || 'Desconhecido',
+                                        parseServices(a.service_id).join(' + '),
+                                        a.status === 'CONFIRMED' ? 'Confirmado' : 'Cancelado',
+                                        `R$ ${calcTotal(parseServices(a.service_id))}`
+                                    ]);
+
+                                    doc.autoTable({
+                                        startY: 45,
+                                        head: [['Data', 'Cliente', 'Serviços', 'Status', 'Valor']],
+                                        body: rows,
+                                        headStyles: { fillColor: [139, 92, 246] }
+                                    });
+
+                                    doc.save(`relatorio_${new Date().getTime()}.pdf`);
+                                };
+                                document.head.appendChild(autotable);
+                            };
+                            document.head.appendChild(script);
+                        }} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-lg shadow-violet-500/20 transition-all active:scale-95">
+                            <FileText size={16} /> Gerar PDF
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -2048,3 +2472,258 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
         </>
     )
 }
+
+// ─── Settings Page ─────────────────────────────────────────
+// ─── Faqs Page (Bot Knowledge) ─────────────────────────────
+function FaqsPage({ isMobile, onOpenMenu }) {
+    const [faqs, setFaqs] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+    const [isAdding, setIsAdding] = useState(false)
+    const [newFaq, setNewFaq] = useState({ question: '', answer: '', active: true })
+
+    const fetchFaqs = async () => {
+        try {
+            const res = await fetch('/api/admin?type=faqs&t=' + Date.now())
+            if (res.ok) setFaqs(await res.json())
+        } catch (e) { console.error(e) }
+        setLoading(false)
+    }
+
+    useEffect(() => { fetchFaqs() }, [])
+
+    const handleAdd = async (e) => {
+        e.preventDefault()
+        setSaving(true)
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'faq', ...newFaq })
+            })
+            if (res.ok) {
+                setIsAdding(false)
+                setNewFaq({ question: '', answer: '', active: true })
+                fetchFaqs()
+            }
+        } catch (e) { alert(e.message) }
+        setSaving(false)
+    }
+
+    const deleteFaq = async (id) => {
+        if (!confirm('Excluir esta resposta do Bot?')) return
+        try {
+            await fetch(`/api/admin?id=${id}&type=faq`, { method: 'DELETE' })
+            fetchFaqs()
+        } catch (e) { alert(e.message) }
+    }
+
+    return (
+        <div className="flex flex-col h-full bg-slate-50">
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex items-center justify-between shrink-0 shadow-sm">
+                <div className="flex items-center gap-3">
+                    {isMobile && (
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+                            <LayoutGrid size={20} />
+                        </button>
+                    )}
+                    <div>
+                        <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                            <MessageCircle className="text-primary-dash" size={24} />
+                            Base de Conhecimento
+                        </h2>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Perguntas e respostas que o robô usará no WhatsApp.</p>
+                    </div>
+                </div>
+                <button onClick={() => setIsAdding(!isAdding)} className="flex items-center gap-2 bg-primary-dash text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary-dash/20 transition-all active:scale-95">
+                    {isAdding ? <X size={16} /> : <Plus size={16} />}
+                    <span className="hidden sm:inline">{isAdding ? 'Fechar' : 'Nova Pergunta'}</span>
+                </button>
+            </header>
+
+            <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+                {isAdding && (
+                    <div className="max-w-3xl bg-white rounded-2xl border border-primary-dash/20 shadow-xl p-5 md:p-6 mb-6 animate-in fade-in slide-in-from-top-4">
+                        <form onSubmit={handleAdd} className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Pergunta (como o cliente pergunta)</label>
+                                <input type="text" required value={newFaq.question} onChange={e => setNewFaq({ ...newFaq, question: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" placeholder="Ex: Tem estacionamento?" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Resposta do Bot</label>
+                                <textarea required value={newFaq.answer} onChange={e => setNewFaq({ ...newFaq, answer: e.target.value })} rows={3}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium resize-none" placeholder="Ex: Sim, possuímos convênio com o estacionamento ao lado..." />
+                            </div>
+                            <button type="submit" disabled={saving} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-black transition-colors disabled:opacity-50">
+                                {saving ? <RefreshCw className="animate-spin" size={18} /> : 'Salvar no Cérebro do Bot'}
+                            </button>
+                        </form>
+                    </div>
+                )}
+
+                <div className="max-w-3xl space-y-3">
+                    {loading ? (
+                        <div className="text-center py-12"><RefreshCw className="animate-spin mx-auto text-slate-300" /></div>
+                    ) : faqs.length === 0 ? (
+                        <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+                            <MessageCircle className="mx-auto text-slate-200 mb-3" size={48} />
+                            <p className="text-slate-400 font-medium text-sm">Nenhuma FAQ configurada ainda.</p>
+                        </div>
+                    ) : faqs.map(f => (
+                        <div key={f.id} className="bg-white rounded-2xl border border-slate-200 p-5 hover:border-primary-dash/40 transition-colors group relative overflow-hidden">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="space-y-1">
+                                    <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary-dash" />
+                                        {f.question}
+                                    </h4>
+                                    <p className="text-sm text-slate-500 leading-relaxed font-medium pl-3.5">{f.answer}</p>
+                                </div>
+                                <button onClick={() => deleteFaq(f.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
+    const [name, setName] = useState(globalSettings.business_name || '')
+    const [niche, setNiche] = useState(globalSettings.niche || 'salon')
+    const [color, setColor] = useState(globalSettings.primary_color || '#8b5cf6')
+    const [welcome, setWelcome] = useState(globalSettings.welcome_message || '')
+    const [saving, setSaving] = useState(false)
+    const [message, setMessage] = useState('')
+
+    useEffect(() => {
+        if (globalSettings.business_name && globalSettings.business_name !== 'Carregando...') {
+            setName(globalSettings.business_name)
+            setNiche(globalSettings.niche || 'salon')
+            setColor(globalSettings.primary_color || '#8b5cf6')
+            setWelcome(globalSettings.welcome_message || '')
+        }
+    }, [globalSettings])
+
+    const handleSave = async (e) => {
+        e.preventDefault()
+        setSaving(true)
+        setMessage('')
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_name: name,
+                    niche: niche,
+                    primary_color: color,
+                    welcome_message: welcome
+                })
+            })
+            if (!res.ok) throw new Error('Erro ao salvar')
+            setMessage('Configurações salvas com sucesso!')
+            refreshGlobal()
+
+            // Forçamos a atualização da cor no root para refletir instantaneamente
+            document.documentElement.style.setProperty('--primary-dash', color);
+
+        } catch (e) {
+            setMessage('Erro: ' + e.message)
+        }
+        setSaving(false)
+        setTimeout(() => setMessage(''), 3000)
+    }
+
+    return (
+        <div className="flex flex-col h-full bg-slate-50">
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                    {isMobile && (
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500">
+                            <LayoutGrid size={20} />
+                        </button>
+                    )}
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Settings className="text-violet-500" size={20} /> Configurações</h2>
+                </div>
+            </header>
+            <div className="flex-1 overflow-auto p-4 md:p-6">
+                <div className="max-w-2xl bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="p-5 md:p-6">
+                        <h3 className="text-base font-bold text-slate-800 mb-1">Informações do Estabelecimento</h3>
+                        <p className="text-sm text-slate-500 mb-6">Personalize os dados que aparecerão para o seu salão (White-label).</p>
+
+                        <form onSubmit={handleSave} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nome da Empresa</label>
+                                    <input type="text" required value={name} onChange={e => setName(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all" placeholder="Ex: Espaço C.A." />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nicho de Atuação</label>
+                                    <select value={niche} onChange={e => setNiche(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all bg-white">
+                                        <option value="salon">Salão de Beleza / Estética</option>
+                                        <option value="barber">Barbearia Profissional</option>
+                                        <option value="clinic">Clínica Médica / Odonto</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Cor Principal (Branding)</label>
+                                    <div className="flex items-center gap-3">
+                                        <input type="color" value={color} onChange={e => setColor(e.target.value)}
+                                            className="w-12 h-12 rounded-lg border-2 border-slate-200 p-1 cursor-pointer" />
+                                        <input type="text" value={color} onChange={e => setColor(e.target.value)}
+                                            className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-sm font-mono" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Identidade Visual</label>
+                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: color }}>
+                                            {name.charAt(0)}
+                                        </div>
+                                        <span className="text-xs text-slate-400 font-medium italic">Pré-visualização do círculo de marca</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr className="border-slate-100" />
+
+                            <div>
+                                <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2"><Bot size={18} className="text-violet-500" /> Atendimento do Robô</h3>
+                                <p className="text-xs text-slate-500 mb-4">Como o robô deve recepcionar seus clientes no WhatsApp.</p>
+
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Mensagem de Boas-vindas</label>
+                                <textarea value={welcome} onChange={e => setWelcome(e.target.value)} rows={3}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all resize-none"
+                                    placeholder="Ex: Olá! Seja bem-vindo ao Espaço C.A. Como posso te ajudar hoje?" />
+                                <p className="text-[10px] text-slate-400 mt-1 italic">Dica: O robô usará isso como base para iniciar as conversas.</p>
+                            </div>
+
+                            {message && (
+                                <div className={`px-4 py-3 animate-in fade-in slide-in-from-top-2 rounded-xl border text-sm font-medium ${message.includes('Erro') ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-700 border-green-100'}`}>
+                                    {message}
+                                </div>
+                            )}
+
+                            <div className="pt-2">
+                                <button type="submit" disabled={saving} className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-slate-800 text-white font-bold hover:bg-black disabled:opacity-50 transition-all shadow-xl active:scale-95">
+                                    {saving ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
+                                    {saving ? 'Guardando...' : 'Salvar Alterações'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
