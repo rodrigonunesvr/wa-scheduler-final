@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, Settings, LogOut } from 'lucide-react'
@@ -10,20 +10,20 @@ const whatsappLink = (phone, text = '') => { const base = `https://wa.me/${phone
 const DEFAULT_SERVICES = [
     { id: 'Fibra ou Molde F1', name: 'Fibra ou Molde F1', price: 190, duration: 120, active: true },
     { id: 'Banho de Gel', name: 'Banho de Gel', price: 150, duration: 90, active: true },
-    { id: 'Manutenção', name: 'Manutenção', price: 150, duration: 90, active: true },
-    { id: 'Manutenção (outra prof.)', name: 'Manutenção (outra prof.)', price: 170, duration: 90, active: true },
-    { id: 'Remoção', name: 'Remoção', price: 45, duration: 30, active: true },
-    { id: 'Esmaltação Básica', name: 'Esmaltação Básica', price: 20, duration: 30, active: true },
-    { id: 'Esmaltação Premium', name: 'Esmaltação Premium', price: 25, duration: 45, active: true },
-    { id: 'Esm. ou Pó + Francesinha', name: 'Esm. ou Pó + Francesinha', price: 35, duration: 45, active: true },
-    { id: 'Esm. + Francesinha + Pó', name: 'Esm. + Francesinha + Pó', price: 45, duration: 60, active: true },
+    { id: 'Manuten��o', name: 'Manuten��o', price: 150, duration: 90, active: true },
+    { id: 'Manuten��o (outra prof.)', name: 'Manuten��o (outra prof.)', price: 170, duration: 90, active: true },
+    { id: 'Remo��o', name: 'Remo��o', price: 45, duration: 30, active: true },
+    { id: 'Esmalta��o B�sica', name: 'Esmalta��o B�sica', price: 20, duration: 30, active: true },
+    { id: 'Esmalta��o Premium', name: 'Esmalta��o Premium', price: 25, duration: 45, active: true },
+    { id: 'Esm. ou P� + Francesinha', name: 'Esm. ou P� + Francesinha', price: 35, duration: 45, active: true },
+    { id: 'Esm. + Francesinha + P�', name: 'Esm. + Francesinha + P�', price: 45, duration: 60, active: true },
 ]
 let SERVICES = [...DEFAULT_SERVICES]
 const DEFAULT_PROFESSIONALS = [{ id: 'padrao', name: 'Profissional', role: 'Especialista', color: 'border-violet-500', active: true }]
 let PROFESSIONALS = [...DEFAULT_PROFESSIONALS]
 
-const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'S�b']
+const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Mar�o', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
 const TIME_SLOTS = []
 for (let h = 7; h <= 19; h++) {
@@ -31,7 +31,7 @@ for (let h = 7; h <= 19; h++) {
     TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`)
 }
 
-// ─── Timezone-safe helpers (Brazil = UTC-3, no DST) ────────
+// --- Timezone-safe helpers (Brazil = UTC-3, no DST) --------
 function toSPDate(isoStr) { return new Date(isoStr).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) }
 function toSPTime(isoStr) { return new Date(isoStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }) }
 function toSPFull(isoStr) { return new Date(isoStr).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo' }) }
@@ -65,7 +65,7 @@ function getMonthDates(year, month) {
     return Array.from({ length: 42 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d })
 }
 
-// ─── Main ──────────────────────────────────────────────────
+// --- Main --------------------------------------------------
 export default function AdminDashboard() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState(fmt(new Date()))
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
     const [overrides, setOverrides] = useState([])
     const [globalServices, setGlobalServices] = useState(SERVICES)
     const [globalProfessionals, setGlobalProfessionals] = useState(PROFESSIONALS)
-    const [globalSettings, setGlobalSettings] = useState({ business_name: 'AgendaÍ' })
+    const [globalSettings, setGlobalSettings] = useState({ business_name: 'Agenda�' })
     const [loading, setLoading] = useState(true)
     const [showNewModal, setShowNewModal] = useState(false)
     const [showBlockModal, setShowBlockModal] = useState(false)
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
     const [sessionLoading, setSessionLoading] = useState(true)
     const router = useRouter()
 
-    // Detecção de Mobile e Dark Mode inicial
+    // Detec��o de Mobile e Dark Mode inicial
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768)
         checkMobile()
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
         useEffect(() => {
             if (globalSettings.primary_color) {
                 document.documentElement.style.setProperty('--primary-dash', globalSettings.primary_color);
-                // Também criamos uma versão com transparência para fundos suaves
+                // Tamb�m criamos uma vers�o com transpar�ncia para fundos suaves
                 const r = parseInt(globalSettings.primary_color.slice(1, 3), 16);
                 const g = parseInt(globalSettings.primary_color.slice(3, 5), 16);
                 const b = parseInt(globalSettings.primary_color.slice(5, 7), 16);
@@ -307,7 +307,7 @@ export default function AdminDashboard() {
     const headerLabel = viewMode === 'month'
         ? `${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}`
         : viewMode === 'week'
-            ? `${weekDates[0].getDate()} — ${weekDates[6].getDate()} de ${MONTH_NAMES[weekDates[0].getMonth()]} ${weekDates[0].getFullYear()}`
+            ? `${weekDates[0].getDate()} � ${weekDates[6].getDate()} de ${MONTH_NAMES[weekDates[0].getMonth()]} ${weekDates[0].getFullYear()}`
             : new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 
     return (
@@ -319,13 +319,13 @@ export default function AdminDashboard() {
             <aside className={`${isMobile ? 'sidebar-drawer' : sidebarOpen ? 'w-56' : 'w-16'} ${isMobile && sidebarOpen ? 'open' : ''} bg-gradient-to-b from-primary-dash to-purple-950 text-white transition-all duration-300 flex flex-col shrink-0 h-full shadow-2xl z-40`}>
                 <div className="p-4 flex items-center justify-between border-b border-white/10">
                     <div className="flex items-center gap-3">
-                        <img src="/logo.png" alt="AgendaÍ" className="w-8 h-8 rounded-lg object-contain shadow-lg" />
+                        <img src="/logo.png" alt="Agenda�" className="w-8 h-8 rounded-lg object-contain shadow-lg" />
                         {(sidebarOpen || isMobile) && <span className="font-extrabold text-lg tracking-tight truncate max-w-[130px] bg-clip-text text-transparent bg-gradient-to-r from-white to-violet-200" title={globalSettings.business_name}>{globalSettings.business_name}</span>}
                     </div>
                     {isMobile && <button onClick={() => setSidebarOpen(false)} className="p-1 text-white/50 hover:text-white"><X size={20} /></button>}
                 </div>
                 <nav className="flex-1 py-3 space-y-0.5 px-2 overflow-y-auto scrollbar-hide">
-                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Horários' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'equipe', icon: Award, label: 'Equipe' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'faqs', icon: MessageCircle, label: 'Bot FAQ' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }, { id: 'configuracoes', icon: Settings, label: 'Configurações' }].map(item => (
+                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Hor�rios' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'equipe', icon: Award, label: 'Equipe' }, { id: 'servicos', icon: Scissors, label: 'Servi�os' }, { id: 'faqs', icon: MessageCircle, label: 'Bot FAQ' }, { id: 'relatorios', icon: BarChart3, label: 'Relat�rios' }, { id: 'configuracoes', icon: Settings, label: 'Configura��es' }].map(item => (
                         <button key={item.id} onClick={() => { setActivePage(item.id); setNewBadge(0); if (isMobile) setSidebarOpen(false) }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activePage === item.id ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}>
                             <item.icon size={18} />{(sidebarOpen || isMobile) && item.label}
@@ -362,7 +362,7 @@ export default function AdminDashboard() {
                                     </button>
                                 )}
                                 <div className="flex bg-slate-100 rounded-xl p-0.5 shrink-0">
-                                    {['dia', 'semana', 'mês'].map((v, i) => {
+                                    {['dia', 'semana', 'm�s'].map((v, i) => {
                                         const mode = ['day', 'week', 'month'][i]
                                         return <button key={mode} onClick={() => setViewMode(mode)} className={`px-2 md:px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition-all ${viewMode === mode ? 'bg-white shadow text-violet-700' : 'text-slate-500'}`}>{v.charAt(0).toUpperCase() + v.slice(1)}</button>
                                     })}
@@ -386,7 +386,7 @@ export default function AdminDashboard() {
                                         <button onClick={() => setShowCancelled(!showCancelled)}
                                             className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition-all border-2 ${showCancelled ? 'border-slate-200 text-slate-500' : 'border-red-200 bg-red-50 text-red-600'}`}>
                                             {showCancelled ? <EyeOff size={13} /> : <Eye size={13} />}
-                                            <span className="hidden md:inline">{showCancelled ? 'Ocultar' : 'Mostrar'} ✕</span>
+                                            <span className="hidden md:inline">{showCancelled ? 'Ocultar' : 'Mostrar'} ?</span>
                                         </button>
                                     </>
                                 )}
@@ -414,11 +414,11 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3 mobile-hide md:flex">
                                     <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center"><TrendingUp className="text-blue-600" size={18} /></div>
-                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Mês</p><p className="text-xl font-black text-blue-600">{monthApts.length}</p></div>
+                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">M�s</p><p className="text-xl font-black text-blue-600">{monthApts.length}</p></div>
                                 </div>
                                 <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3 mobile-hide md:flex">
                                     <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center"><FileText className="text-amber-600" size={18} /></div>
-                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fatur. Mês</p><p className="text-xl font-black text-amber-600 truncate">R$ {monthRevenue}</p></div>
+                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fatur. M�s</p><p className="text-xl font-black text-amber-600 truncate">R$ {monthRevenue}</p></div>
                                 </div>
                             </div>
                         )}
@@ -462,7 +462,7 @@ export default function AdminDashboard() {
     )
 }
 
-// ─── Month View ────────────────────────────────────────────
+// --- Month View --------------------------------------------
 function MonthView({ currentDate, selectedDate, setSelectedDate, getCount, isMobile, isDayOpen }) {
     const dates = getMonthDates(currentDate.getFullYear(), currentDate.getMonth())
     const thisMonth = currentDate.getMonth()
@@ -490,7 +490,7 @@ function MonthView({ currentDate, selectedDate, setSelectedDate, getCount, isMob
     )
 }
 
-// ─── Week View ─────────────────────────────────────────────
+// --- Week View ---------------------------------------------
 function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile, isDayOpen, globalProfessionals }) {
     const getSlotColor = (apt) => {
         if (apt.status === 'CANCELLED') return { bg: 'bg-red-50', border: 'border-red-400', text: 'text-red-700' }
@@ -588,7 +588,7 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
     )
 }
 
-// ─── Day View (with blocks + status colors) ───────────────
+// --- Day View (with blocks + status colors) ---------------
 function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue, onDeleteBlock, isMobile, globalProfessionals }) {
     const SLOT_HEIGHT = 48
     const GRID_START = 7 * 60 // 07:00 in minutes
@@ -695,7 +695,7 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                                 <div className="flex items-center gap-2">
                                     <Lock size={14} className="text-slate-600" />
                                     <span className="font-bold text-sm text-slate-700">{blk.title || 'Bloqueado'}</span>
-                                    <span className="text-xs text-slate-500">{time} — {endTime.split(':').slice(0, 2).join(':')}</span>
+                                    <span className="text-xs text-slate-500">{time} � {endTime.split(':').slice(0, 2).join(':')}</span>
                                 </div>
                                 <button onClick={() => onDeleteBlock(blk.id)}
                                     className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-all" title="Remover bloqueio">
@@ -743,7 +743,7 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                                     <div className="flex flex-wrap gap-1 mt-1.5">
                                         {svcs.map((s, i) => <span key={i} className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>)}
                                     </div>
-                                    <p className="text-white/70 text-[10px] mt-1">{time} — {endH}:{endM} ({dur}min) • R$ {total}</p>
+                                    <p className="text-white/70 text-[10px] mt-1">{time} � {endH}:{endM} ({dur}min) � R$ {total}</p>
                                 </div>
                                 {!isCancelled && (
                                     <div className="opacity-0 group-hover:opacity-100 flex flex-col gap-1 transition-opacity ml-2">
@@ -766,7 +766,7 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
     )
 }
 
-// ─── Appointment Detail Modal ──────────────────────────────
+// --- Appointment Detail Modal ------------------------------
 function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNotes, globalProfessionals }) {
     const svcs = parseServices(apt.service_id)
     const total = calcTotal(svcs)
@@ -807,7 +807,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                             <div className="text-sm text-slate-500 flex flex-col md:flex-row md:items-center gap-2 mt-2">
                                 <span className="flex items-center justify-center md:justify-start gap-1"><Phone size={12} /> {apt.customer_phone}</span>
                                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                    <a href={whatsappLink(apt.customer_phone, `Olá ${apt.customer_name}, tudo bem? Passando para lembrar e confirmar o seu agendamento de ${svcs.join(' + ')}, dia ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })} às ${toSPTime(apt.starts_at)}. Podemos confirmar?`)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
+                                    <a href={whatsappLink(apt.customer_phone, `Ol� ${apt.customer_name}, tudo bem? Passando para lembrar e confirmar o seu agendamento de ${svcs.join(' + ')}, dia ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })} �s ${toSPTime(apt.starts_at)}. Podemos confirmar?`)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
                                         <MessageCircle size={10} /> Lembrar / Confirmar
                                     </a>
                                     <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors">
@@ -820,7 +820,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
 
                     <div className="bg-slate-50 rounded-xl p-4 space-y-3">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Horário</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hor�rio</span>
                             <span className="text-sm font-bold text-slate-800">{toSPTime(apt.starts_at)} ({dur}min)</span>
                         </div>
                         {prof && (
@@ -830,7 +830,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                             </div>
                         )}
                         <div className="flex items-center justify-between pt-2">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Serviços</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Servi�os</span>
                             <div className="flex flex-wrap gap-1 justify-end">
                                 {svcs.map((s, i) => <span key={i} className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{s}</span>)}
                             </div>
@@ -844,12 +844,12 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                     {/* Notes Section */}
                     <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1"><FileText size={12} /> Observações</span>
+                            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1"><FileText size={12} /> Observa��es</span>
                             {!editingNotes && <button onClick={() => setEditingNotes(true)} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"><Edit2 size={11} /> Editar</button>}
                         </div>
                         {editingNotes ? (
                             <div className="space-y-2">
-                                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} placeholder="Ex: cliente alérgica a acetona, quer francesinha rosa..."
+                                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} placeholder="Ex: cliente al�rgica a acetona, quer francesinha rosa..."
                                     className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm resize-none" />
                                 <div className="flex gap-2">
                                     <button onClick={() => { setEditingNotes(false); setNotes(apt.notes || '') }} className="flex-1 py-2 rounded-lg border border-slate-200 text-slate-500 text-xs font-bold hover:bg-slate-50">Cancelar</button>
@@ -857,7 +857,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-sm text-amber-800">{notes || 'Nenhuma observação'}</p>
+                            <p className="text-sm text-amber-800">{notes || 'Nenhuma observa��o'}</p>
                         )}
                     </div>
 
@@ -878,7 +878,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
     )
 }
 
-// ─── Cancel Confirmation Modal ─────────────────────────────
+// --- Cancel Confirmation Modal -----------------------------
 function CancelConfirmModal({ apt, onClose, onConfirm }) {
     const [confirming, setConfirming] = useState(false)
     const svcs = parseServices(apt.service_id)
@@ -900,7 +900,7 @@ function CancelConfirmModal({ apt, onClose, onConfirm }) {
                         </div>
                         <div>
                             <h3 className="text-lg font-extrabold">Confirmar Cancelamento</h3>
-                            <p className="text-white/80 text-sm">Esta ação não pode ser desfeita</p>
+                            <p className="text-white/80 text-sm">Esta a��o n�o pode ser desfeita</p>
                         </div>
                     </div>
                 </div>
@@ -908,10 +908,10 @@ function CancelConfirmModal({ apt, onClose, onConfirm }) {
                 {/* Appointment Summary */}
                 <div className="p-6 space-y-4">
                     <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-2">
-                        <p className="text-sm text-slate-600">Você está prestes a cancelar:</p>
+                        <p className="text-sm text-slate-600">Voc� est� prestes a cancelar:</p>
                         <div className="bg-white rounded-lg p-3 border border-red-100">
                             <p className="font-bold text-slate-800">{apt.customer_name}</p>
-                            <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} às {toSPTime(apt.starts_at)}</p>
+                            <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} �s {toSPTime(apt.starts_at)}</p>
                             <p className="text-sm text-slate-500">{svcs.join(' + ')}</p>
                             <p className="text-sm font-bold text-red-600 mt-1">Valor: R$ {total}</p>
                         </div>
@@ -933,7 +933,7 @@ function CancelConfirmModal({ apt, onClose, onConfirm }) {
     )
 }
 
-// ─── Reschedule Modal ──────────────────────────────────────
+// --- Reschedule Modal --------------------------------------
 function RescheduleModal({ apt, onClose, onConfirm }) {
     const svcs = parseServices(apt.service_id)
     const total = calcTotal(svcs)
@@ -969,7 +969,7 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
                         <div className="bg-slate-50 rounded-xl p-4 space-y-3">
                             <p className="font-bold text-slate-800 text-sm">{apt.customer_name}</p>
                             <p className="text-sm text-slate-500 flex items-center gap-1"><Phone size={12} /> <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="hover:text-green-600 hover:underline transition-colors">{apt.customer_phone}</a> <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full hover:bg-green-100 transition-colors">WhatsApp <ExternalLink size={9} /></a></p>
-                            <p className="text-sm text-slate-500">{svcs.join(' + ')} — R$ {total}</p>
+                            <p className="text-sm text-slate-500">{svcs.join(' + ')} � R$ {total}</p>
 
                             <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
                                 <div>
@@ -1014,13 +1014,13 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
                     <div className="bg-slate-50 rounded-xl p-4">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Agendamento atual</p>
                         <p className="font-bold text-slate-800">{apt.customer_name}</p>
-                        <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} às {toSPTime(apt.starts_at)}</p>
-                        <p className="text-sm text-slate-500">{svcs.join(' + ')} — R$ {total}</p>
+                        <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} �s {toSPTime(apt.starts_at)}</p>
+                        <p className="text-sm text-slate-500">{svcs.join(' + ')} � R$ {total}</p>
                     </div>
 
                     {/* New date/time */}
                     <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Nova data e horário</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Nova data e hor�rio</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Data</label>
@@ -1028,7 +1028,7 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
                                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm font-medium" />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Horário</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Hor�rio</label>
                                 <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
                                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm font-medium" />
                             </div>
@@ -1045,7 +1045,7 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
     )
 }
 
-// ─── New Appointment Modal ─────────────────────────────────
+// --- New Appointment Modal ---------------------------------
 function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessionals }) {
     const actProfs = (globalProfessionals || []).filter(p => p.active)
     const defProfId = actProfs.length > 0 ? actProfs[0].id : ''
@@ -1059,7 +1059,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessional
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (form.services.length === 0) { setError('Selecione ao menos um serviço.'); return }
+        if (form.services.length === 0) { setError('Selecione ao menos um servi�o.'); return }
         setSaving(true); setError('')
 
         const startsAt = toISO_SP(form.date, form.time)
@@ -1099,7 +1099,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessional
                         </div>
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Serviços (selecione um ou mais)</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Servi�os (selecione um ou mais)</label>
                         <div className="space-y-1.5">
                             {SERVICES.map(s => {
                                 const sel = form.services.includes(s.id)
@@ -1123,12 +1123,12 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessional
                     </div>
                     {form.services.length > 0 && (
                         <div className="bg-violet-50 border border-violet-200 rounded-xl px-4 py-3 flex items-center justify-between">
-                            <div><span className="text-xs font-bold text-violet-600">{form.services.length} serviço{form.services.length > 1 ? 's' : ''}</span><span className="text-xs text-violet-400 ml-2">• {totalDuration}min</span></div>
+                            <div><span className="text-xs font-bold text-violet-600">{form.services.length} servi�o{form.services.length > 1 ? 's' : ''}</span><span className="text-xs text-violet-400 ml-2">� {totalDuration}min</span></div>
                             <span className="text-lg font-black text-violet-700">R$ {totalPrice}</span>
                         </div>
                     )}
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Profissional Responsável</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Profissional Respons�vel</label>
                         <select required value={form.professional_id} onChange={e => setForm({ ...form, professional_id: e.target.value })}
                             className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium appearance-none cursor-pointer">
                             {actProfs.map(p => <option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}
@@ -1141,20 +1141,20 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessional
                                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Horário</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Hor�rio</label>
                             <input type="time" required value={form.time} onChange={e => setForm({ ...form, time: e.target.value })}
                                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
                         </div>
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Observações (opcional)</label>
-                        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Ex: alérgica a acetona, quer francesinha rosa..."
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Observa��es (opcional)</label>
+                        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Ex: al�rgica a acetona, quer francesinha rosa..."
                             className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm resize-none" />
                     </div>
                     {error && <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl border border-red-100">{error}</div>}
                     <button type="submit" disabled={saving}
                         className="w-full py-3 rounded-xl bg-violet-600 text-white font-bold hover:bg-violet-700 disabled:opacity-50 transition-all shadow-lg shadow-violet-200 active:scale-[0.99]">
-                        {saving ? 'Salvando...' : `Confirmar — R$ ${totalPrice}`}
+                        {saving ? 'Salvando...' : `Confirmar � R$ ${totalPrice}`}
                     </button>
                 </form>
             </div>
@@ -1162,7 +1162,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessional
     )
 }
 
-// ─── Clients Page ──────────────────────────────────────────
+// --- Clients Page ------------------------------------------
 function ClientsPage({ isMobile, onOpenMenu }) {
     const [customers, setCustomers] = useState([])
     const [loading, setLoading] = useState(true)
@@ -1244,10 +1244,10 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                                         <th className="text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Cliente</th>
                                         <th className="text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Telefone</th>
                                         <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">Agendamentos</th>
-                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">Próximos</th>
+                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">Pr�ximos</th>
                                         <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Total Gasto</th>
-                                        <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">Última Visita</th>
-                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Ações</th>
+                                        <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">�ltima Visita</th>
+                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">A��es</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1272,17 +1272,17 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                                                 <td className="px-5 py-3 text-center">
                                                     {stats.upcoming > 0
                                                         ? <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg">{stats.upcoming}</span>
-                                                        : <span className="text-xs text-slate-400">—</span>}
+                                                        : <span className="text-xs text-slate-400">�</span>}
                                                 </td>
                                                 <td className="px-5 py-3 text-right">
                                                     <span className="text-sm font-bold text-green-600">R$ {stats.totalSpent.toFixed(0)}</span>
                                                 </td>
                                                 <td className="px-5 py-3 text-right text-sm text-slate-500">
-                                                    {stats.lastVisit ? toSPDate(stats.lastVisit.starts_at).split('-').reverse().join('/') : '—'}
+                                                    {stats.lastVisit ? toSPDate(stats.lastVisit.starts_at).split('-').reverse().join('/') : '�'}
                                                 </td>
                                                 <td className="px-5 py-3 text-center">
                                                     <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1 text-xs font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-2.5 py-1 rounded-lg hover:bg-violet-100 transition-colors">
-                                                        <History size={12} /> Histórico
+                                                        <History size={12} /> Hist�rico
                                                     </button>
                                                 </td>
                                             </tr>
@@ -1304,8 +1304,8 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between p-5 border-b border-slate-100">
                             <div>
-                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><History className="text-violet-500" size={18} /> Histórico</h3>
-                                <p className="text-sm text-slate-500">{historyCustomer?.name || 'Cliente'} • {historyPhone}</p>
+                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><History className="text-violet-500" size={18} /> Hist�rico</h3>
+                                <p className="text-sm text-slate-500">{historyCustomer?.name || 'Cliente'} � {historyPhone}</p>
                             </div>
                             <button onClick={() => setHistoryPhone(null)} className="p-2 rounded-lg hover:bg-slate-100"><X size={18} /></button>
                         </div>
@@ -1341,7 +1341,7 @@ function ClientsPage({ isMobile, onOpenMenu }) {
     )
 }
 
-// ─── Services Page ─────────────────────────────────────────
+// --- Services Page -----------------------------------------
 function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
     const [services, setServices] = useState(globalServices || [])
     const [editing, setEditing] = useState(null)
@@ -1369,12 +1369,12 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
             })
             if (!res.ok) {
                 const err = await res.json()
-                alert(`Erro ao salvar no banco de dados do Supabase.\nDetalhe: ${err.error || res.statusText}\nSua tabela 'services' pode estar ausente ou bloqueada por segurança RLS.`)
+                alert(`Erro ao salvar no banco de dados do Supabase.\nDetalhe: ${err.error || res.statusText}\nSua tabela 'services' pode estar ausente ou bloqueada por seguran�a RLS.`)
             } else {
                 refreshGlobal()
                 setEditing(null)
             }
-        } catch (e) { alert(`Erro de Conexão: ${e.message}`) }
+        } catch (e) { alert(`Erro de Conex�o: ${e.message}`) }
         setLoading(false)
     }
 
@@ -1388,7 +1388,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
             })
             if (!res.ok) {
                 const err = await res.json()
-                alert(`Supabase recusou a inserção do serviço.\nErro: ${err.error || res.statusText}\nVocê executou o script SQL de criação da tabela 'services' e removeu o bloqueio RLS?`)
+                alert(`Supabase recusou a inser��o do servi�o.\nErro: ${err.error || res.statusText}\nVoc� executou o script SQL de cria��o da tabela 'services' e removeu o bloqueio RLS?`)
             } else {
                 setIsAdding(false)
                 setAddForm({ name: '', price: '', duration: '', active: true })
@@ -1414,11 +1414,11 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
 
             if (!res.ok) {
                 const err = await res.json()
-                alert(`Ocultação falhou!\nErro BD: ${err.error || res.statusText}\nA tabela "services" do seu Supabase não permite acesso. Crie a tabela e desabilite a segurança RLS.`)
+                alert(`Oculta��o falhou!\nErro BD: ${err.error || res.statusText}\nA tabela "services" do seu Supabase n�o permite acesso. Crie a tabela e desabilite a seguran�a RLS.`)
             } else {
                 refreshGlobal()
             }
-        } catch (e) { alert(`Problema de conexão: ${e.message}`) }
+        } catch (e) { alert(`Problema de conex�o: ${e.message}`) }
         setLoading(false)
     }
 
@@ -1434,36 +1434,36 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                     <div>
                         <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
                             <Scissors className="text-primary-dash" size={24} />
-                            Serviços Dinâmicos
+                            Servi�os Din�micos
                         </h2>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8">Gerencie o catálogo do bot e do sistema.</p>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8">Gerencie o cat�logo do bot e do sistema.</p>
                     </div>
                 </div>
                 <button onClick={() => setIsAdding(!isAdding)} className="flex items-center gap-2 bg-primary-dash hover:bg-black text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary-dash/20 transition-all active:scale-95">
                     {isAdding ? <X size={16} /> : <Plus size={16} />}
-                    <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Novo Serviço'}</span>
+                    <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Novo Servi�o'}</span>
                 </button>
             </header>
 
             <div className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
                 {isAdding && (
                     <div className="bg-white rounded-2xl border border-primary-dash/20 shadow-xl shadow-primary-dash/5 p-5 md:p-6 mb-6 transform transition-all animate-in fade-in slide-in-from-top-4">
-                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><Plus className="text-primary-dash" size={16} /> Adicionar Novo Serviço</h3>
+                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><Plus className="text-primary-dash" size={16} /> Adicionar Novo Servi�o</h3>
                         <form onSubmit={handleAdd} className="space-y-4">
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nome do Serviço</label>
-                                <input type="text" required value={addForm.name} onChange={e => setAddForm({ ...addForm, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all" placeholder="Ex: Cílios Volume Russo" />
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nome do Servi�o</label>
+                                <input type="text" required value={addForm.name} onChange={e => setAddForm({ ...addForm, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all" placeholder="Ex: C�lios Volume Russo" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Preço Base (R$)</label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Pre�o Base (R$)</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">R$</span>
                                         <input type="number" required value={addForm.price} onChange={e => setAddForm({ ...addForm, price: e.target.value })} className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-bold transition-all" placeholder="0.00" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Duração (Minutos)</label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Dura��o (Minutos)</label>
                                     <div className="relative">
                                         <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input type="number" required value={addForm.duration} onChange={e => setAddForm({ ...addForm, duration: e.target.value })} className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all" placeholder="60" />
@@ -1472,7 +1472,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                             </div>
                             <div className="pt-2">
                                 <button type="submit" disabled={loading} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-black transition-colors disabled:opacity-50">
-                                    {loading ? 'Salvando...' : 'Criar Serviço'}
+                                    {loading ? 'Salvando...' : 'Criar Servi�o'}
                                 </button>
                             </div>
                         </form>
@@ -1483,8 +1483,8 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                     {services.length === 0 && !loading && (
                         <div className="p-10 text-center bg-white rounded-2xl border border-slate-200 border-dashed">
                             <Scissors className="mx-auto text-slate-300 mb-3" size={32} />
-                            <p className="text-slate-500 font-medium">Você ainda não tem serviços no Banco de Dados.</p>
-                            <p className="text-xs text-slate-400 mt-1">Clique em "Novo Serviço" para começar a preencher o catálogo do Bot.</p>
+                            <p className="text-slate-500 font-medium">Voc� ainda n�o tem servi�os no Banco de Dados.</p>
+                            <p className="text-xs text-slate-400 mt-1">Clique em "Novo Servi�o" para come�ar a preencher o cat�logo do Bot.</p>
                         </div>
                     )}
                     {services.map(svc => (
@@ -1519,7 +1519,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                                             onClick={() => toggleActive(svc)}
                                             disabled={loading}
                                             className={`w-10 h-6 rounded-full p-1 transition-colors ${svc.active ? 'bg-green-500' : 'bg-slate-300'}`}
-                                            title={svc.active ? 'Desativar Serviço' : 'Ativar Serviço'}
+                                            title={svc.active ? 'Desativar Servi�o' : 'Ativar Servi�o'}
                                         >
                                             <div className={`w-4 h-4 rounded-full bg-white transition-transform ${svc.active ? 'translate-x-4' : 'translate-x-0'}`} />
                                         </button>
@@ -1557,7 +1557,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
     )
 }
 
-// ─── Professionals Page ──────────────────────────────────────
+// --- Professionals Page --------------------------------------
 function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshGlobal }) {
     const [professionals, setProfessionals] = useState(globalProfessionals || [])
     const [editing, setEditing] = useState(null)
@@ -1590,7 +1590,7 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
                 refreshGlobal()
                 setEditing(null)
             }
-        } catch (e) { alert(`Erro de Conexão: ${e.message}`) }
+        } catch (e) { alert(`Erro de Conex�o: ${e.message}`) }
         setLoading(false)
     }
 
@@ -1604,7 +1604,7 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
             })
             if (!res.ok) {
                 const err = await res.json()
-                alert(`Supabase recusou a inserção.\nErro: ${err.error || res.statusText}`)
+                alert(`Supabase recusou a inser��o.\nErro: ${err.error || res.statusText}`)
             } else {
                 setIsAdding(false)
                 setAddForm({ name: '', role: 'Especialista', color: 'border-violet-500', active: true })
@@ -1630,11 +1630,11 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
 
             if (!res.ok) {
                 const err = await res.json()
-                alert(`Ação falhou!\nErro BD: ${err.error || res.statusText}`)
+                alert(`A��o falhou!\nErro BD: ${err.error || res.statusText}`)
             } else {
                 refreshGlobal()
             }
-        } catch (e) { alert(`Problema de conexão: ${e.message}`) }
+        } catch (e) { alert(`Problema de conex�o: ${e.message}`) }
         setLoading(false)
     }
 
@@ -1652,7 +1652,7 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
                     <div>
                         <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
                             <Award className="text-violet-500" size={24} />
-                            Gestão de Equipe
+                            Gest�o de Equipe
                         </h2>
                         <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8">Adicione os profissionais que atendem no estabelecimento.</p>
                     </div>
@@ -1678,7 +1678,7 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
                                     <input type="text" required value={addForm.role} onChange={e => setAddForm({ ...addForm, role: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all" placeholder="Ex: Manicure, Cabeleireira" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Cor no Calendário</label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Cor no Calend�rio</label>
                                     <select value={addForm.color} onChange={e => setAddForm({ ...addForm, color: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all appearance-none cursor-pointer">
                                         <option value="border-violet-500">Roxo</option>
                                         <option value="border-pink-500">Rosa</option>
@@ -1775,7 +1775,7 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
     )
 }
 
-// ─── Block Modal ───────────────────────────────────────────
+// --- Block Modal -------------------------------------------
 function BlockModal({ selectedDate, onClose, onSave }) {
     const [form, setForm] = useState({ title: '', dates: [selectedDate], startTime: '12:00', endTime: '13:00' })
     const [saving, setSaving] = useState(false)
@@ -1801,7 +1801,7 @@ function BlockModal({ selectedDate, onClose, onSave }) {
             for (const date of form.dates) {
                 const startsAt = toISO_SP(date, form.startTime)
                 const endsAt = toISO_SP(date, form.endTime)
-                if (new Date(endsAt) <= new Date(startsAt)) throw new Error(`Horário inválido em ${date}`)
+                if (new Date(endsAt) <= new Date(startsAt)) throw new Error(`Hor�rio inv�lido em ${date}`)
             }
 
             // Batch send
@@ -1828,14 +1828,14 @@ function BlockModal({ selectedDate, onClose, onSave }) {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-600 to-slate-700 text-white">
-                    <h3 className="text-base font-extrabold flex items-center gap-2"><Lock size={16} /> Bloquear Horário</h3>
+                    <h3 className="text-base font-extrabold flex items-center gap-2"><Lock size={16} /> Bloquear Hor�rio</h3>
                     <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Motivo (opcional)</label>
                         <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" placeholder="Ex: Almoço, Consulta médica..." />
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" placeholder="Ex: Almo�o, Consulta m�dica..." />
                     </div>
 
                     <div>
@@ -1857,7 +1857,7 @@ function BlockModal({ selectedDate, onClose, onSave }) {
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Início</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">In�cio</label>
                             <input type="time" required value={form.startTime} onChange={e => setForm({ ...form, startTime: e.target.value })}
                                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" />
                         </div>
@@ -1878,7 +1878,7 @@ function BlockModal({ selectedDate, onClose, onSave }) {
     )
 }
 
-// ─── SVG Donut Chart ───────────────────────────────────────
+// --- SVG Donut Chart ---------------------------------------
 function DonutChart({ data }) {
     if (!data || data.length === 0) return <div className="text-center text-slate-400 py-10">Sem dados suficientes</div>;
     const total = data.reduce((sum, item) => sum + item.value, 0);
@@ -1924,7 +1924,7 @@ function DonutChart({ data }) {
     );
 }
 
-// ─── Reports Page ──────────────────────────────────────────
+// --- Reports Page ------------------------------------------
 function ReportsPage({ isMobile, onOpenMenu }) {
     const [period, setPeriod] = useState(30); // days
     const [startDate, setStartDate] = useState(fmt(new Date(new Date().setDate(new Date().getDate() - 30))));
@@ -1953,7 +1953,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
     }, []);
 
     if (!mounted || loading) {
-        return <div className="p-10 text-center text-slate-500 flex flex-col items-center justify-center h-full"><RefreshCw className="animate-spin mb-4 text-violet-500" /> Carregando relatórios avançados...</div>;
+        return <div className="p-10 text-center text-slate-500 flex flex-col items-center justify-center h-full"><RefreshCw className="animate-spin mb-4 text-violet-500" /> Carregando relat�rios avan�ados...</div>;
     }
 
     const today = new Date();
@@ -2050,14 +2050,14 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                         </button>
                     )}
                     <div>
-                        <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-600" size={24} /> Relatórios Financeiros</h2>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Inteligência de negócio e acompanhamento de faturamento.</p>
+                        <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-600" size={24} /> Relat�rios Financeiros</h2>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Intelig�ncia de neg�cio e acompanhamento de faturamento.</p>
                     </div>
                 </div>
 
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                     <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-2xl shadow-inner border border-slate-200">
-                        {[{ label: 'Últimos 7 Dias', val: 7 }, { label: 'Últimos 15 Dias', val: 15 }, { label: 'Últimos 30 Dias', val: 30 }].map(f => (
+                        {[{ label: '�ltimos 7 Dias', val: 7 }, { label: '�ltimos 15 Dias', val: 15 }, { label: '�ltimos 30 Dias', val: 30 }].map(f => (
                             <button key={f.val} onClick={() => { setPeriod(f.val); setIsCustom(false); }}
                                 className={`px-4 py-2 rounded-xl text-[11px] font-black transition-all whitespace-nowrap ${!isCustom && period === f.val ? 'bg-violet-600 text-white shadow-lg shadow-violet-200 scale-105' : 'text-slate-500 hover:bg-white hover:text-slate-700'}`}>
                                 {f.label}
@@ -2077,7 +2077,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                     {isCustom && (
                         <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
                             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="text-[10px] font-bold px-2 py-1.5 rounded-lg border border-slate-200 focus:border-violet-400 outline-none" />
-                            <span className="text-[10px] text-slate-400 font-bold">até</span>
+                            <span className="text-[10px] text-slate-400 font-bold">at�</span>
                             <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-[10px] font-bold px-2 py-1.5 rounded-lg border border-slate-200 focus:border-violet-400 outline-none" />
                         </div>
                     )}
@@ -2094,9 +2094,9 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                                     const { jsPDF } = window.jspdf;
                                     const doc = new jsPDF();
                                     doc.setFontSize(20);
-                                    doc.text('Relatório Financeiro - Agendaí', 15, 20);
+                                    doc.text('Relat�rio Financeiro - Agenda�', 15, 20);
                                     doc.setFontSize(10);
-                                    doc.text(`Período: ${isCustom ? startDate + ' a ' + endDate : 'Últimos ' + period + ' dias'}`, 15, 28);
+                                    doc.text(`Per�odo: ${isCustom ? startDate + ' a ' + endDate : '�ltimos ' + period + ' dias'}`, 15, 28);
                                     doc.text(`Faturamento Total: R$ ${totalRevenue}`, 15, 34);
                                     doc.text(`Total de Atendimentos: ${totalApts}`, 15, 40);
 
@@ -2110,7 +2110,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
 
                                     doc.autoTable({
                                         startY: 45,
-                                        head: [['Data', 'Cliente', 'Serviços', 'Status', 'Valor']],
+                                        head: [['Data', 'Cliente', 'Servi�os', 'Status', 'Valor']],
                                         body: rows,
                                         headStyles: { fillColor: [139, 92, 246] }
                                     });
@@ -2141,7 +2141,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${growth >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                 {growth >= 0 ? <TrendingUp size={10} /> : <TrendingUp size={10} className="rotate-180" />} {Math.abs(growth)}%
                             </span>
-                            <span className="text-[9px] text-slate-400">vs período anterior</span>
+                            <span className="text-[9px] text-slate-400">vs per�odo anterior</span>
                         </div>
                     </div>
 
@@ -2152,35 +2152,35 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                             <Users size={16} className="text-violet-500" />
                         </div>
                         <p className="text-3xl font-black text-slate-800 tracking-tight">{totalApts}</p>
-                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Nos últimos {period} dias</p>
+                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Nos �ltimos {period} dias</p>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-400/10 to-cyan-500/10 rounded-bl-[100px] -mr-4 -mt-4 transition-transform group-hover:scale-110" />
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Ticket Médio</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Ticket M�dio</p>
                             <Target size={16} className="text-blue-500" />
                         </div>
                         <p className="text-3xl font-black text-slate-800 tracking-tight">R$ {ticketMedio}</p>
-                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Gasto médio por cliente</p>
+                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Gasto m�dio por cliente</p>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-orange-500/10 rounded-bl-[100px] -mr-4 -mt-4 transition-transform group-hover:scale-110" />
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Serviços Feitos</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Servi�os Feitos</p>
                             <Scissors size={16} className="text-amber-500" />
                         </div>
                         <p className="text-3xl font-black text-slate-800 tracking-tight">{Object.values(serviceCounts).reduce((a, b) => a + b, 0)}</p>
-                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Procedimentos concluídos</p>
+                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Procedimentos conclu�dos</p>
                     </div>
                 </div>
 
                 {/* 2. Main Chart: Revenue Over Time */}
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2"><TrendingUp size={18} className="text-violet-600" /> Evolução do Faturamento</h3>
-                        <span className="px-3 py-1 bg-violet-50 text-violet-700 text-[10px] font-bold rounded-lg border border-violet-100">Visão Histórica Dinâmica</span>
+                        <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2"><TrendingUp size={18} className="text-violet-600" /> Evolu��o do Faturamento</h3>
+                        <span className="px-3 py-1 bg-violet-50 text-violet-700 text-[10px] font-bold rounded-lg border border-violet-100">Vis�o Hist�rica Din�mica</span>
                     </div>
                     {/* Horizontal scrolling if period > 15 to fit bars nicely */}
                     <div className="overflow-x-auto scrollbar-hide">
@@ -2212,7 +2212,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* 3. Donut Chart - Popular Services */}
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
-                        <h3 className="font-extrabold text-sm text-slate-800 mb-6 flex items-center gap-2"><PieChart size={18} className="text-blue-500" /> Distribuição de Serviços</h3>
+                        <h3 className="font-extrabold text-sm text-slate-800 mb-6 flex items-center gap-2"><PieChart size={18} className="text-blue-500" /> Distribui��o de Servi�os</h3>
                         <div className="flex-1 flex items-center justify-center">
                             <DonutChart data={topServicesData} />
                         </div>
@@ -2225,7 +2225,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                             <button className="text-[10px] font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-2 py-1 rounded-lg transition-colors">Ver Todos</button>
                         </div>
                         <div className="flex-1 space-y-1">
-                            {topClients.length === 0 && <p className="text-xs text-slate-400 text-center py-10">Não há dados suficientes.</p>}
+                            {topClients.length === 0 && <p className="text-xs text-slate-400 text-center py-10">N�o h� dados suficientes.</p>}
                             {topClients.map((client, i) => (
                                 <div key={i} className="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
                                     <div className="flex items-center gap-3">
@@ -2258,7 +2258,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                 <div className="bg-gradient-to-r from-violet-600 to-purple-700 rounded-3xl p-6 text-white shadow-xl shadow-violet-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div>
                         <h4 className="font-black text-lg mb-1 flex items-center gap-2"><Award size={20} className="text-amber-300" /> Crescimento Constante</h4>
-                        <p className="text-sm text-white/80 font-medium">Você faturou R$ {totalRevenue} no período selecionado. Continue acompanhando e promovendo seus serviços para aumentar ainda mais!</p>
+                        <p className="text-sm text-white/80 font-medium">Voc� faturou R$ {totalRevenue} no per�odo selecionado. Continue acompanhando e promovendo seus servi�os para aumentar ainda mais!</p>
                     </div>
                     <button className="px-6 py-3 bg-white text-violet-700 font-black text-xs uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg whitespace-nowrap">
                         Baixar Resumo em PDF
@@ -2270,7 +2270,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
     )
 }
 
-// ─── Schedule Page ─────────────────────────────────────────
+// --- Schedule Page -----------------------------------------
 function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen }) {
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [saving, setSaving] = useState(null) // dateStr being saved
@@ -2297,10 +2297,10 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
             // If toggling back to default, remove the override
             const defaultState = isDefaultOpen(date)
             if (currentlyOpen !== defaultState) {
-                // Currently overridden away from default — remove override to restore default
+                // Currently overridden away from default � remove override to restore default
                 await fetch(`/api/admin?id=${override.id}&type=schedule`, { method: 'DELETE' })
             } else {
-                // Currently at default but has override — flip it
+                // Currently at default but has override � flip it
                 await fetch('/api/admin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2308,10 +2308,10 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                 })
             }
         } else {
-            // No override exists — create one (flip from default)
+            // No override exists � create one (flip from default)
             const reason = !currentlyOpen
-                ? 'Aberto por exceção'
-                : 'Fechado por exceção'
+                ? 'Aberto por exce��o'
+                : 'Fechado por exce��o'
             await fetch('/api/admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2344,7 +2344,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                             <LayoutGrid size={20} />
                         </button>
                     )}
-                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Clock className="text-violet-500" size={20} /> Horários</h2>
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Clock className="text-violet-500" size={20} /> Hor�rios</h2>
                 </div>
                 <span className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap">Clique no dia para alternar aberto/fechado</span>
             </header>
@@ -2354,19 +2354,19 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-green-100 border-2 border-green-400" />
-                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Aberto (padrão)</span>
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Aberto (padr�o)</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-red-100 border-2 border-red-400" />
-                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Fechado (padrão)</span>
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Fechado (padr�o)</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-green-100 border-2 border-amber-400 ring-2 ring-amber-200" />
-                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Aberto (exceção)</span>
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Aberto (exce��o)</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-red-100 border-2 border-amber-400 ring-2 ring-amber-200" />
-                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Fechado (exceção)</span>
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Fechado (exce��o)</span>
                         </div>
                     </div>
                 </div>
@@ -2376,7 +2376,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                     <button onClick={() => navMonth(-1)} className="p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 active:bg-slate-200 transition-colors"><ChevronLeft size={20} /></button>
                     <h3 className="text-sm md:text-lg font-extrabold text-slate-700 text-center">
                         {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-                        {monthOverrides.length > 0 && <div className="text-[10px] font-bold text-amber-500">{monthOverrides.length} exceção{monthOverrides.length > 1 ? 'ões' : ''}</div>}
+                        {monthOverrides.length > 0 && <div className="text-[10px] font-bold text-amber-500">{monthOverrides.length} exce��o{monthOverrides.length > 1 ? '�es' : ''}</div>}
                     </h3>
                     <button onClick={() => navMonth(1)} className="p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 active:bg-slate-200 transition-colors"><ChevronRight size={20} /></button>
                 </div>
@@ -2417,7 +2417,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                                         {inMonth ? (open ? 'Aberto' : 'Fechado') : ''}
                                     </p>
                                     {isException && inMonth && (
-                                        <span className="absolute top-0.5 right-0.5 text-[8px]">⭐</span>
+                                        <span className="absolute top-0.5 right-0.5 text-[8px]">?</span>
                                     )}
                                     {isSaving && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-white/60">
@@ -2436,7 +2436,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                 {/* Overrides List */}
                 {monthOverrides.length > 0 && (
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                        <h3 className="font-bold text-sm text-slate-700 mb-3 flex items-center gap-2">⭐ Exceções neste mês</h3>
+                        <h3 className="font-bold text-sm text-slate-700 mb-3 flex items-center gap-2">? Exce��es neste m�s</h3>
                         <div className="space-y-2">
                             {monthOverrides.map(o => {
                                 const d = new Date(o.date + 'T12:00:00')
@@ -2465,7 +2465,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                 {/* Info */}
                 <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 text-center">
                     <p className="text-sm text-violet-700 font-medium">
-                        💡 As mudanças feitas aqui são aplicadas instantaneamente. O bot já saberá quais dias estão abertos ou fechados.
+                        ?? As mudan�as feitas aqui s�o aplicadas instantaneamente. O bot j� saber� quais dias est�o abertos ou fechados.
                     </p>
                 </div>
             </div>
@@ -2473,8 +2473,8 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
     )
 }
 
-// ─── Settings Page ─────────────────────────────────────────
-// ─── Faqs Page (Bot Knowledge) ─────────────────────────────
+// --- Settings Page -----------------------------------------
+// --- Faqs Page (Bot Knowledge) -----------------------------
 function FaqsPage({ isMobile, onOpenMenu }) {
     const [faqs, setFaqs] = useState([])
     const [loading, setLoading] = useState(true)
@@ -2532,7 +2532,7 @@ function FaqsPage({ isMobile, onOpenMenu }) {
                             <MessageCircle className="text-primary-dash" size={24} />
                             Base de Conhecimento
                         </h2>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Perguntas e respostas que o robô usará no WhatsApp.</p>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Perguntas e respostas que o rob� usar� no WhatsApp.</p>
                     </div>
                 </div>
                 <button onClick={() => setIsAdding(!isAdding)} className="flex items-center gap-2 bg-primary-dash text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary-dash/20 transition-all active:scale-95">
@@ -2553,10 +2553,10 @@ function FaqsPage({ isMobile, onOpenMenu }) {
                             <div>
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Resposta do Bot</label>
                                 <textarea required value={newFaq.answer} onChange={e => setNewFaq({ ...newFaq, answer: e.target.value })} rows={3}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium resize-none" placeholder="Ex: Sim, possuímos convênio com o estacionamento ao lado..." />
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium resize-none" placeholder="Ex: Sim, possu�mos conv�nio com o estacionamento ao lado..." />
                             </div>
                             <button type="submit" disabled={saving} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-black transition-colors disabled:opacity-50">
-                                {saving ? <RefreshCw className="animate-spin" size={18} /> : 'Salvar no Cérebro do Bot'}
+                                {saving ? <RefreshCw className="animate-spin" size={18} /> : 'Salvar no C�rebro do Bot'}
                             </button>
                         </form>
                     </div>
@@ -2624,10 +2624,10 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
                 })
             })
             if (!res.ok) throw new Error('Erro ao salvar')
-            setMessage('Configurações salvas com sucesso!')
+            setMessage('Configura��es salvas com sucesso!')
             refreshGlobal()
 
-            // Forçamos a atualização da cor no root para refletir instantaneamente
+            // For�amos a atualiza��o da cor no root para refletir instantaneamente
             document.documentElement.style.setProperty('--primary-dash', color);
 
         } catch (e) {
@@ -2646,29 +2646,29 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
                             <LayoutGrid size={20} />
                         </button>
                     )}
-                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Settings className="text-violet-500" size={20} /> Configurações</h2>
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Settings className="text-violet-500" size={20} /> Configura��es</h2>
                 </div>
             </header>
             <div className="flex-1 overflow-auto p-4 md:p-6">
                 <div className="max-w-2xl bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-5 md:p-6">
-                        <h3 className="text-base font-bold text-slate-800 mb-1">Informações do Estabelecimento</h3>
-                        <p className="text-sm text-slate-500 mb-6">Personalize os dados que aparecerão para o seu salão (White-label).</p>
+                        <h3 className="text-base font-bold text-slate-800 mb-1">Informa��es do Estabelecimento</h3>
+                        <p className="text-sm text-slate-500 mb-6">Personalize os dados que aparecer�o para o seu sal�o (White-label).</p>
 
                         <form onSubmit={handleSave} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nome da Empresa</label>
                                     <input type="text" required value={name} onChange={e => setName(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all" placeholder="Ex: Espaço C.A." />
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all" placeholder="Ex: Agenda�" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nicho de Atuação</label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nicho de Atua��o</label>
                                     <select value={niche} onChange={e => setNiche(e.target.value)}
                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all bg-white">
-                                        <option value="salon">Salão de Beleza / Estética</option>
+                                        <option value="salon">Sal�o de Beleza / Est�tica</option>
                                         <option value="barber">Barbearia Profissional</option>
-                                        <option value="clinic">Clínica Médica / Odonto</option>
+                                        <option value="clinic">Cl�nica M�dica / Odonto</option>
                                     </select>
                                 </div>
                             </div>
@@ -2689,7 +2689,7 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
                                         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: color }}>
                                             {name.charAt(0)}
                                         </div>
-                                        <span className="text-xs text-slate-400 font-medium italic">Pré-visualização do círculo de marca</span>
+                                        <span className="text-xs text-slate-400 font-medium italic">Pr�-visualiza��o do c�rculo de marca</span>
                                     </div>
                                 </div>
                             </div>
@@ -2697,14 +2697,14 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
                             <hr className="border-slate-100" />
 
                             <div>
-                                <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2"><Bot size={18} className="text-violet-500" /> Atendimento do Robô</h3>
-                                <p className="text-xs text-slate-500 mb-4">Como o robô deve recepcionar seus clientes no WhatsApp.</p>
+                                <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2"><Bot size={18} className="text-violet-500" /> Atendimento do Rob�</h3>
+                                <p className="text-xs text-slate-500 mb-4">Como o rob� deve recepcionar seus clientes no WhatsApp.</p>
 
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Mensagem de Boas-vindas</label>
                                 <textarea value={welcome} onChange={e => setWelcome(e.target.value)} rows={3}
                                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all resize-none"
-                                    placeholder="Ex: Olá! Seja bem-vindo ao Espaço C.A. Como posso te ajudar hoje?" />
-                                <p className="text-[10px] text-slate-400 mt-1 italic">Dica: O robô usará isso como base para iniciar as conversas.</p>
+                                    placeholder="Ex: Ol�! Seja bem-vindo ao Agenda� Como posso te ajudar hoje?" />
+                                <p className="text-[10px] text-slate-400 mt-1 italic">Dica: O rob� usar� isso como base para iniciar as conversas.</p>
                             </div>
 
                             {message && (
@@ -2716,7 +2716,7 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
                             <div className="pt-2">
                                 <button type="submit" disabled={saving} className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-slate-800 text-white font-bold hover:bg-black disabled:opacity-50 transition-all shadow-xl active:scale-95">
                                     {saving ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
-                                    {saving ? 'Guardando...' : 'Salvar Alterações'}
+                                    {saving ? 'Guardando...' : 'Salvar Altera��es'}
                                 </button>
                             </div>
                         </form>
