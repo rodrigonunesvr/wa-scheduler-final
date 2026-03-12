@@ -67,8 +67,8 @@ function getMonthDates(year, month) {
 
 // --- Main --------------------------------------------------
 export default function AdminDashboard() {
-    const [currentDate, setCurrentDate] = useState(new Date())
-    const [selectedDate, setSelectedDate] = useState(fmt(new Date()))
+    const [currentDate, setCurrentDate] = useState(null)
+    const [selectedDate, setSelectedDate] = useState(null)
     const [appointments, setAppointments] = useState([])
     const [blocks, setBlocks] = useState([])
     const [overrides, setOverrides] = useState([])
@@ -88,11 +88,17 @@ export default function AdminDashboard() {
     const [searchQuery, setSearchQuery] = useState('')
     const [darkMode, setDarkMode] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
+    const [mounted, setMounted] = useState(false)
     const [sessionLoading, setSessionLoading] = useState(true)
     const router = useRouter()
 
     // Detecção de Mobile e Dark Mode inicial
     useEffect(() => {
+        setMounted(true)
+        const now = new Date()
+        setCurrentDate(now)
+        setSelectedDate(fmt(now))
+
         const checkMobile = () => setIsMobile(window.innerWidth < 768)
         checkMobile()
         window.addEventListener('resize', checkMobile)
@@ -290,11 +296,13 @@ export default function AdminDashboard() {
         return ![0, 1].includes(date.getDay())
     }
 
-    if (sessionLoading) {
+    if (!mounted || sessionLoading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-violet-600">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-violet-600 mb-4"></div>
-                <p className="font-bold text-sm tracking-widest uppercase">Verificando Acesso...</p>
+                <p className="font-bold text-sm tracking-widest uppercase">
+                    {!mounted ? 'Iniciando AgendaÍ...' : 'Verificando Acesso...'}
+                </p>
             </div>
         )
     }
