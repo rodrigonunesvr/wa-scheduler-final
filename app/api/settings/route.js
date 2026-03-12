@@ -10,7 +10,7 @@ export async function GET() {
                 .from('settings')
                 .insert({
                     id: 1,
-                    business_name: 'AgendaÍ',
+                    business_name: 'AgendaÃ',
                     niche: 'salon',
                     primary_color: '#8b5cf6'
                 })

@@ -22,7 +22,7 @@ export default function LoginPage() {
         })
 
         if (error) {
-            setError(error.message === 'Invalid login credentials' ? 'Credenciais inválidas' : error.message)
+            setError(error.message === 'Invalid login credentials' ? 'Credenciais invÃ¡lidas' : error.message)
             setLoading(false)
         } else {
             router.push('/')
@@ -65,7 +65,7 @@ export default function LoginPage() {
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Lock className="h-5 w-5 text-slate-400" />
                                 </div>
-                                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"
+                                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                                     className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl shadow-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-400 sm:text-sm font-medium transition-all" />
                             </div>
                         </div>
