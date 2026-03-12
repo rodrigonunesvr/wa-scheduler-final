@@ -44,7 +44,7 @@ export async function GET(request) {
         for (const apt of appointments) {
             try {
                 const timeStr = moment(apt.starts_at).tz(TIMEZONE).format('HH:mm');
-                const message = `OlÃƒÆ’Ã‚Â¡ ${apt.customer_name}! Passando para lembrar do seu agendamento amanhÃƒÆ’Ã‚Â£, dia ${moment(tomorrow).format('DD/MM')}, ÃƒÆ’Ã‚Â s ${timeStr}. ÃƒÂ¢Ã…â€œÃ‚Â¨ Nos vemos em breve!`;
+                const message = `OlÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ ${apt.customer_name}! Passando para lembrar do seu agendamento amanhÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£, dia ${moment(tomorrow).format('DD/MM')}, ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â s ${timeStr}. ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¨ Nos vemos em breve!`;
 
                 const result = await sendWhatsAppMessage(apt.customer_phone, message);
                 if (result?.error) {

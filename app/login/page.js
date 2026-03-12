@@ -44,12 +44,12 @@ export default function LoginPage() {
                     redirectTo: `${window.location.origin}/login?mode=update`,
                 })
                 if (error) throw error
-                setSuccess('Link de recuperaÃ§Ã£o enviado para seu e-mail!')
+                setSuccess('Link de recuperaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o enviado para seu e-mail!')
             }
         } catch (err) {
             let msg = err.message
             if (msg === 'Invalid login credentials') msg = 'E-mail ou senha incorretos'
-            if (msg === 'User already registered') msg = 'Este e-mail jÃ¡ possui cadastro'
+            if (msg === 'User already registered') msg = 'Este e-mail jÃƒÆ’Ã‚Â¡ possui cadastro'
             setError(msg)
         } finally {
             setLoading(false)
@@ -64,10 +64,10 @@ export default function LoginPage() {
                 </div>
             </div>
             <h2 className="text-center text-4xl font-black text-slate-900 tracking-tight">
-                AgendaÃ
+                AgendaÃÆ’Ã‚Â
             </h2>
             <p className="mt-3 text-center text-sm text-slate-500 font-medium">
-                {mode === 'login' ? 'Agende o sucesso do seu negÃ³cio.' :
+                {mode === 'login' ? 'Agende o sucesso do seu negÃƒÆ’Ã‚Â³cio.' :
                     mode === 'signup' ? 'Crie sua conta profissional hoje.' :
                         'Recupere o acesso ao seu painel.'}
             </p>
@@ -123,7 +123,7 @@ export default function LoginPage() {
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-violet-500">
                                         <Lock size={18} />
                                     </div>
-                                    <input type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                                    <input type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} placeholder="ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢"
                                         className="block w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 transition-all" />
                                     <button type="button" onClick={() => setShowPassword(!showPassword)}
                                         className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-violet-500 transition-colors">
@@ -164,8 +164,8 @@ export default function LoginPage() {
                     <div className="mt-8 pt-8 border-t border-slate-100 text-center space-y-4">
                         {mode === 'login' ? (
                             <p className="text-xs text-slate-500 font-bold">
-                                NÃ£o possui conta?
-                                <button onClick={() => setMode('signup')} className="ml-2 text-violet-500 hover:text-violet-600 transition-colors uppercase tracking-widest text-[10px]">Cadastre seu negÃ³cio</button>
+                                NÃƒÆ’Ã‚Â£o possui conta?
+                                <button onClick={() => setMode('signup')} className="ml-2 text-violet-500 hover:text-violet-600 transition-colors uppercase tracking-widest text-[10px]">Cadastre seu negÃƒÆ’Ã‚Â³cio</button>
                             </p>
                         ) : (
                             <button onClick={() => setMode('login')} className="flex items-center justify-center gap-2 mx-auto text-xs font-bold text-slate-400 hover:text-violet-500 transition-all">
@@ -176,7 +176,7 @@ export default function LoginPage() {
                 </div>
 
                 <p className="mt-8 text-center text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
-                    &copy; {new Date().getFullYear()} AgendaÃ SaaS â€” SoluÃ§Ãµes Inteligentes
+                    &copy; {new Date().getFullYear()} AgendaÃÆ’Ã‚Â SaaS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â SoluÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes Inteligentes
                 </p>
             </div>
         </div>

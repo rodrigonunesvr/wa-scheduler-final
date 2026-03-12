@@ -10,7 +10,7 @@ export async function POST(request) {
     try {
         // Modular Check: Is the AI Bot enabled for this project?
         if (!SAAS_CONFIG.modules.botEnabled) {
-            console.log('ÃƒÂ°Ã…Â¸Ã‚Â¤Ã¢â‚¬â€œ MÃƒÆ’Ã‚Â³dulo de Bot desativado no SAAS_CONFIG. Ignorando processamento de IA.')
+            console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â¤ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³dulo de Bot desativado no SAAS_CONFIG. Ignorando processamento de IA.')
             return NextResponse.json({ status: 'bot-disabled' })
         }
 
@@ -23,7 +23,7 @@ export async function POST(request) {
         const currentApiKey = process.env.EVOLUTION_API_KEY
 
         if (headerKey !== currentApiKey && bodyKey !== currentApiKey) {
-            console.error('ÃƒÂ°Ã…Â¸Ã…Â¡Ã‚Â« Invalid API Key. Header:', headerKey, 'Body:', bodyKey)
+            console.error('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â« Invalid API Key. Header:', headerKey, 'Body:', bodyKey)
             // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -63,13 +63,13 @@ export async function POST(request) {
             .maybeSingle()
 
         if (fetchError) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Error fetching session:', fetchError)
+            console.error('ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Error fetching session:', fetchError)
         }
 
         let session = existingSession
 
         if (!session) {
-            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Â Ã¢â‚¬Â¢ Criando nova sessÃƒÆ’Ã‚Â£o para:', phone)
+            console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Criando nova sessÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o para:', phone)
             const { data: newSession, error: insertError } = await supabase
                 .from('wa_sessions')
                 .insert({ phone, state: 'START', context_json: [] })
@@ -77,7 +77,7 @@ export async function POST(request) {
                 .maybeSingle()
 
             if (insertError) {
-                console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Error creating session:', insertError)
+                console.error('ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Error creating session:', insertError)
                 return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
             }
             session = newSession
@@ -88,13 +88,13 @@ export async function POST(request) {
             const diffMins = (nowMs - lastUpdate) / (1000 * 60)
 
             if (diffMins > 10) {
-                console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Â¢Ã¢â‚¬â„¢ SessÃƒÆ’Ã‚Â£o expirada (>10min). Resetando histÃƒÆ’Ã‚Â³rico.')
+                console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ SessÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o expirada (>10min). Resetando histÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rico.')
                 session.context_json = []
             }
         }
 
         if (!session) {
-            console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Session is still null after attempt to create')
+            console.error('ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Session is still null after attempt to create')
             return NextResponse.json({ error: 'Session initialization failed' }, { status: 500 })
         }
 
@@ -107,15 +107,15 @@ export async function POST(request) {
             .maybeSingle()
         if (customer) {
             customerName = customer.name
-            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤ Cliente reconhecida:', customerName)
+            console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¤ Cliente reconhecida:', customerName)
         } else {
-            console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¤ Cliente nova. Phone:', phone, 'Error:', customerError?.message)
+            console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¤ Cliente nova. Phone:', phone, 'Error:', customerError?.message)
         }
 
         // 4. Process Content (Text or Audio)
         let userMessage = text
         if (audioUrl) {
-            userMessage = "[ÃƒÆ’Ã‚ÂUDIO RECEBIDO - TranscriÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o pendente na v1]"
+            userMessage = "[ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂUDIO RECEBIDO - TranscriÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o pendente na v1]"
         }
 
         if (!userMessage) {
@@ -137,7 +137,7 @@ export async function POST(request) {
         const currentHour = now.hour()
 
         // 6.1 Contextual Greeting
-        let greeting = 'OlÃƒÆ’Ã‚Â¡'
+        let greeting = 'OlÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡'
         if (currentHour >= 5 && currentHour < 12) greeting = 'Bom dia'
         else if (currentHour >= 12 && currentHour < 18) greeting = 'Boa tarde'
         else greeting = 'Boa noite'
@@ -146,8 +146,8 @@ export async function POST(request) {
         const futureApts = await getAppointmentsByPhone(phone)
         const hasApts = futureApts && futureApts.length > 0
         const aptsContext = hasApts
-            ? `\n-- - AGENDAMENTOS FUTUROS DESTA CLIENTE-- -\n` + futureApts.map(a => ` - ${moment(a.starts_at).tz('America/Sao_Paulo').format('DD/MM [ÃƒÆ’Ã‚Â s] HH:mm')}: ${a.service_id} `).join('\n')
-            : '\nEsta cliente nÃƒÆ’Ã‚Â£o possui agendamentos futuros registrados.'
+            ? `\n-- - AGENDAMENTOS FUTUROS DESTA CLIENTE-- -\n` + futureApts.map(a => ` - ${moment(a.starts_at).tz('America/Sao_Paulo').format('DD/MM [ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â s] HH:mm')}: ${a.service_id} `).join('\n')
+            : '\nEsta cliente nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o possui agendamentos futuros registrados.'
 
         // 6.3 Determine if this is the start of the session (no assistant messages yet)
         const isFirstInteraction = !history.some(m => m.role === 'assistant')
@@ -155,30 +155,33 @@ export async function POST(request) {
         // Fetch Settings for Niche and Global Info
         const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single()
         const niche = settings?.niche || 'salon'
-        const bizName = settings?.business_name || 'AgendaÃƒÂ'
+        const bizName = settings?.business_name || 'AgendaÃ­'
         const welcome = settings?.welcome_message || ''
+        const customPrompt = settings?.bot_prompt || ''
 
         // Fetch FAQs for bot knowledge
         const { data: faqs } = await supabase.from('faqs').select('*').eq('active', true)
         const faqsText = faqs && faqs.length > 0
-            ? `--- PERGUNTAS FREQUENTES (BASE DE CONHECIMENTO)-- -\n` + faqs.map(f => `P: ${f.question}\nR: ${f.answer}`).join('\n\n')
+            ? `--- PERGUNTAS FREQUENTES (BASE DE CONHECIMENTO)---\n` + faqs.map(f => `P: ${f.question}\nR: ${f.answer}`).join('\n\n')
             : ''
 
         // Create Niche-based Persona
         const personas = {
-            salon: `VocÃƒÆ’Ã‚Âª ÃƒÆ’Ã‚Â© a Clara, a secretÃƒÆ’Ã‚Â¡ria virtual do ${bizName}. VocÃƒÆ’Ã‚Âª ÃƒÆ’Ã‚Â© gentil, usa muitos emojis e ÃƒÆ’Ã‚Â© especialista em beleza e estÃƒÆ’Ã‚Â©tica.`,
-            barber: `VocÃƒÆ’Ã‚Âª ÃƒÆ’Ã‚Â© o "Brother", o atendente gente boa da ${bizName}. VocÃƒÆ’Ã‚Âª fala de forma descontraÃƒÆ’Ã‚Â­da, usa gÃƒÆ’Ã‚Â­rias de barbearia (ex: "E aÃƒÆ’Ã‚Â­, fera?", "Beleza, meu caro?") e ÃƒÆ’Ã‚Â© focado no estilo do cliente.`,
-            clinic: `VocÃƒÆ’Ã‚Âª ÃƒÆ’Ã‚Â© a Dra. Clara, assistente da ${bizName}. VocÃƒÆ’Ã‚Âª ÃƒÆ’Ã‚Â© profissional, formal e extremamente organizada. Transmite confianÃƒÆ’Ã‚Â§a e saÃƒÆ’Ã‚Âºde.`
+            salon: `VocÃª Ã© a Clara, a secretÃ¡ria virtual do ${bizName}. VocÃª Ã© gentil, usa muitos emojis e Ã© especialista em beleza e estÃ©tica.`,
+            barber: `VocÃª Ã© o "Brother", o atendente gente boa da ${bizName}. VocÃª fala de forma descontraÃ­da, usa gÃ­rias de barbearia (ex: "E aÃ­, fera?", "Beleza, meu caro?") e Ã© focado no estilo do cliente.`,
+            clinic: `VocÃª Ã© a Dra. Clara, assistente da ${bizName}. VocÃª Ã© profissional, formal e extremamente organizada. Transmite confianÃ§a e saÃºde.`
         }
-        const currentPersona = personas[niche] || personas.salon
+        const currentPersona = customPrompt || personas[niche] || personas.salon
 
         // Fetch active services and format for AI
         const { data: dbServices } = await supabase.from('services').select('*').eq('active', true).order('name')
         const servicesListText = dbServices && dbServices.length > 0
             ? dbServices.map(s => `- ${s.name}: R$ ${s.price.toFixed(2)}`).join('\n')
-            : '- Nenhum serviÃƒÆ’Ã‚Â§o disponÃƒÆ’Ã‚Â­vel no momento.'
+            : '- Nenhum serviÃ§o disponÃ­vel no momento.'
 
         let calendarLines = ''
+        // Fetch schedule overrides
+        const scheduleOverrides = await fetchScheduleOverrides();
         for (let i = 0; i < 7; i++) {
             const day = now.clone().add(i, 'days')
             const dayName = day.format('dddd')
@@ -186,8 +189,8 @@ export async function POST(request) {
             const isoDate = day.format('YYYY-MM-DD')
             const isOpen = isDayOpen(isoDate, scheduleOverrides)
             const isOverride = scheduleOverrides.some(o => o.date === isoDate)
-            const suffix = isOverride ? ' (exceÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o)' : ''
-            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ aberto' + suffix : 'ÃƒÂ¢Ã‚ÂÃ…â€™ fechado' + suffix} \n`
+            const suffix = isOverride ? ' (exceÃ§Ã£o)' : ''
+            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? 'âœ… aberto' + suffix : 'âŒ fechado' + suffix} \n`
         }
 
         // 7. AI Brain (GPT-4o-mini)
@@ -197,49 +200,48 @@ export async function POST(request) {
 ${currentPersona}
 ${welcome ? `Mensagem de Boas-vindas/Aviso: ${welcome}` : ''}
 
-Seu objetivo ÃƒÆ’Ã‚Â© agendar serviÃƒÆ’Ã‚Â§os, tirar dÃƒÆ’Ã‚Âºvidas sobre preÃƒÆ’Ã‚Â§os e informar sobre o estabelecimento.
+Seu objetivo Ã© agendar serviÃ§os, tirar dÃºvidas sobre preÃ§os e informar sobre o estabelecimento.
 
-Hoje ÃƒÆ’Ã‚Â© ${todayLabel}.
+Hoje Ã© ${todayLabel}.
 
---- CALENDÃƒÆ’Ã‚ÂRIO DOS PRÃƒÆ’Ã¢â‚¬Å“XIMOS DIAS-- -
+--- CALENDÃRIO DOS PRÃ“XIMOS DIAS ---
     ${calendarLines}
-Normalmente funcionamos de terÃƒÆ’Ã‚Â§a a sÃƒÆ’Ã‚Â¡bado, mas pode haver exceÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes.Consulte SEMPRE o calendÃƒÆ’Ã‚Â¡rio acima para saber se um dia estÃƒÆ’Ã‚Â¡ aberto ou fechado.
+Normalmente funcionamos de terÃ§a a sÃ¡bado, mas pode haver exceÃ§Ãµes. Consulte SEMPRE o calendÃ¡rio acima para saber se um dia estÃ¡ aberto ou fechado.
 
     ${customerName ? `
 --- CLIENTE IDENTIFICADA ---
-Essa cliente jÃƒÆ’Ã‚Â¡ ÃƒÆ’Ã‚Â© cadastrada! O nome dela ÃƒÆ’Ã‚Â©: ${customerName}.
-ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â REGRA DE OURO: Chame-a pelo nome (ex: "Oi, ${customerName}!") logo na primeira frase de CADA resposta. Seja carinhosa e atenciosa.
+Essa cliente jÃ¡ Ã© cadastrada! O nome dela Ã©: ${customerName}.
+âš ï¸ REGRA DE OURO: Chame-a pelo nome (ex: "Oi, ${customerName}!") logo na primeira frase de CADA resposta. Seja carinhosa e atenciosa.
 ` : `
 --- CLIENTE NOVA ---
-VocÃƒÆ’Ã‚Âª ainda nÃƒÆ’Ã‚Â£o sabe o nome desta cliente. 
-ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â REGRA CRÃƒÆ’Ã‚ÂTICA: Se a cliente quiser agendar, vocÃƒÆ’Ã‚Âª DEVE perguntar o nome dela antes de usar a ferramenta 'book_appointment'. VocÃƒÆ’Ã‚Âª sÃƒÆ’Ã‚Â³ pode agendar se tiver o nome completo dela para o registro.
+VocÃª ainda nÃ£o sabe o nome desta cliente. 
+âš ï¸ REGRA CRÃTICA: Se a cliente quiser agendar, vocÃª DEVE perguntar o nome dela antes de usar a ferramenta 'book_appointment'. VocÃª sÃ³ pode agendar se tiver o nome completo dela para o registro.
 `}
 
 ${aptsContext}
 
-${isFirstInteraction ? `REGRA DE SAUDAÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: Como esta ÃƒÆ’Ã‚Â© a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}! Sou o assistente virtual do ${bizName}. Como posso ajudar?".` : `REGRA DE SAUDAÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: NÃƒÆ’Ã†â€™O se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
+${isFirstInteraction ? `REGRA DE SAUDAÃ‡ÃƒO: Como esta Ã© a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}! Sou o assistente virtual do ${bizName}. Como posso ajudar?".` : `REGRA DE SAUDAÃ‡ÃƒO: NÃƒO se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
 
 REGRAS DE COMPORTAMENTO:
-1. PRIORIDADE DE AÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: Se o cliente mencionar um serviÃƒÆ’Ã‚Â§o e uma data / dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
-2. AGENDAMENTOS EXISTENTES: Se o cliente jÃƒÆ’Ã‚Â¡ tiver agendamentos(veja acima), mencione - os apenas uma vez.NÃƒÆ’Ã‚Â£o deixe que isso impeÃƒÆ’Ã‚Â§a de marcar NOVOS horÃƒÆ’Ã‚Â¡rios.
+1. PRIORIDADE DE AÃ‡ÃƒO: Se o cliente mencionar um serviÃ§o e uma data/dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
+2. AGENDAMENTOS EXISTENTES: Se o cliente jÃ¡ tiver agendamentos (veja acima), mencione-os apenas uma vez. NÃ£o deixe que isso impeÃ§a de marcar NOVOS horÃ¡rios.
 3. FLUXO DE AGENDAMENTO:
-- Se o cliente perguntar por horÃƒÆ’Ã‚Â¡rios ou sugerir um dia: Use 'check_calendar'.
-   - Se o cliente escolher um horÃƒÆ’Ã‚Â¡rio e vocÃƒÆ’Ã‚Âª tiver o NOME: Use 'book_appointment' IMEDIATAMENTE apÃƒÆ’Ã‚Â³s verificar a disponibilidade(se o usuÃƒÆ’Ã‚Â¡rio jÃƒÆ’Ã‚Â¡ demonstrou intenÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de marcar).
-   - Se nÃƒÆ’Ã‚Â£o tiver o nome da cliente nova: PeÃƒÆ’Ã‚Â§a o nome ANTES de agendar.
-4. PÃƒÆ’Ã¢â‚¬Å“S-AÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: ApÃƒÆ’Ã‚Â³s concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
-5. PROTOCOLO E PREPARO: VocÃƒÆ’Ã‚Âª DEVE informar o protocolo de preparo (veja abaixo) COMPLETO sempre que um agendamento for confirmado. NÃƒÆ’Ã‚Â£o ignore nenhuma regra, especialmente a regra da cutÃƒÆ’Ã‚Â­cula.
+- Se o cliente perguntar por horÃ¡rios ou sugerir um dia: Use 'check_calendar'.
+   - Se o cliente escolher um horÃ¡rio e vocÃª tiver o NOME: Use 'book_appointment' IMEDIATAMENTE apÃ³s verificar a disponibilidade (se o usuÃ¡rio jÃ¡ demonstrou intenÃ§Ã£o de marcar).
+   - Se nÃ£o tiver o nome da cliente nova: PeÃ§a o nome ANTES de agendar.
+4. PÃ“S-AÃ‡ÃƒO: ApÃ³s concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
+5. PROTOCOLO E PREPARO: VocÃª DEVE informar o protocolo de preparo completo sempre que um agendamento for confirmado.
 
-6. REGRAS DE INTERATIVIDADE(NOVO):
-   - ** Busca por PerÃƒÆ’Ã‚Â­odo **: Antes de listar os horÃƒÆ’Ã‚Â¡rios, pergunte: "VocÃƒÆ’Ã‚Âª prefere na parte da manhÃƒÆ’Ã‚Â£ ou da tarde?".Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
-   - ** Venda Adicional(Upsell) **: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviÃƒÆ’Ã‚Â§o (como uma esmaltaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o rÃƒÆ’Ã‚Â¡pida ou remoÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o)?".
-   - ** PrevenÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de Conflitos **: Se a cliente quiser dois serviÃƒÆ’Ã‚Â§os juntos, tente calcular a duraÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o total e fazer um ÃƒÆ’Ã‚Âºnico agendamento longo em vez de dois separados.
+6. REGRAS DE INTERATIVIDADE:
+   - **Busca por PerÃ­odo**: Antes de listar os horÃ¡rios, pergunte: "VocÃª prefere na parte da manhÃ£ ou da tarde?". Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
+   - **Venda Adicional (Upsell)**: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviÃ§o?".
 
---- TABELA DE PREÃƒÆ’Ã¢â‚¬Â¡OS (VALORES DINÃƒÆ’Ã¢â‚¬Å¡MICOS) ---
+--- TABELA DE PREÃ‡OS (VALORES DINÃ‚MICOS) ---
 ${servicesListText}
 
 ${faqsText}
 
---- CANCELAMENTO E REAGENDAMENTO-- -
+--- CANCELAMENTO E REAGENDAMENTO ---
     - Use 'list_my_appointments' para gerenciar agendamentos existentes.
 - Sempre confirme a data antes de cancelar ou mudar.
 `},
@@ -251,12 +253,12 @@ ${faqsText}
                 type: "function",
                 function: {
                     name: "check_calendar",
-                    description: "Verifica horÃƒÆ’Ã‚Â¡rios livres na agenda.",
+                    description: "Verifica horÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rios livres na agenda.",
                     parameters: {
                         type: "object",
                         properties: {
                             date: { type: "string", description: "Data no formato YYYY-MM-DD." },
-                            period: { type: "string", enum: ["manha", "tarde"], description: "Filtro de perÃƒÆ’Ã‚Â­odo: 'manha' ou 'tarde'." }
+                            period: { type: "string", enum: ["manha", "tarde"], description: "Filtro de perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo: 'manha' ou 'tarde'." }
                         }
                     }
                 }
@@ -265,13 +267,13 @@ ${faqsText}
                 type: "function",
                 function: {
                     name: "book_appointment",
-                    description: "Realiza o agendamento oficial no sistema. Suporta mÃƒÆ’Ã‚Âºltiplos serviÃƒÆ’Ã‚Â§os.",
+                    description: "Realiza o agendamento oficial no sistema. Suporta mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºltiplos serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os.",
                     parameters: {
                         type: "object",
                         properties: {
                             name: { type: "string", description: "Nome completo do cliente." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista de serviÃƒÆ’Ã‚Â§os. Ex: ['Banho de Gel']" },
-                            service: { type: "string", description: "ServiÃƒÆ’Ã‚Â§o ÃƒÆ’Ã‚Âºnico." },
+                            services: { type: "array", items: { type: "string" }, description: "Lista de serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os. Ex: ['Banho de Gel']" },
+                            service: { type: "string", description: "ServiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºnico." },
                             startsAt: { type: "string", description: "Data e hora ISO. Ex: 2024-05-20T14:00:00" }
                         },
                         required: ["name", "startsAt"]
@@ -304,12 +306,12 @@ ${faqsText}
                 type: "function",
                 function: {
                     name: "update_appointment",
-                    description: "Atualiza um agendamento existente (ex: adicionar um serviÃƒÆ’Ã‚Â§o novo no mesmo horÃƒÆ’Ã‚Â¡rio).",
+                    description: "Atualiza um agendamento existente (ex: adicionar um serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o novo no mesmo horÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio).",
                     parameters: {
                         type: "object",
                         properties: {
                             id: { type: "string", description: "O ID do agendamento (obtenha via list_my_appointments)." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista atualizada de serviÃƒÆ’Ã‚Â§os." }
+                            services: { type: "array", items: { type: "string" }, description: "Lista atualizada de serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os." }
                         },
                         required: ["id", "services"]
                     }
@@ -330,7 +332,7 @@ ${faqsText}
         let toolTurn = 0
         while (aiMsg.tool_calls && toolTurn < 3) {
             toolTurn++
-            console.log(`ÃƒÂ°Ã…Â¸Ã…â€™Ã¢â€šÂ¬ Turno de Ferramentas ${toolTurn} `)
+            console.log(`ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã¢â‚¬â„¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Turno de Ferramentas ${toolTurn} `)
 
             history.push(aiMsg) // Push the assistant tool call to history
             const toolMessagesForCompletion = [...messages, ...history.slice(messages.length - 1)] // Get recent history including aiMsg
@@ -338,7 +340,7 @@ ${faqsText}
             for (const toolCall of aiMsg.tool_calls) {
                 let result = ""
                 const args = JSON.parse(toolCall.function.arguments)
-                console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Executando: ${toolCall.function.name} `, args)
+                console.log(`ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Executando: ${toolCall.function.name} `, args)
 
                 if (toolCall.function.name === 'check_calendar') {
                     const slots = await findAvailableSlots({

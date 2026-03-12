@@ -1,7 +1,7 @@
 {
-    "name": "AgendaÃ â€” Dashboard Inteligente",
-    "short_name": "AgendaÃ",
-    "description": "Sistema de Agendamento Inteligente para SalÃµes, Barbearias e ClÃ­nicas.",
+    "name": "AgendaÃƒÂ Ã¢â‚¬â€ Dashboard Inteligente",
+    "short_name": "AgendaÃƒÂ",
+    "description": "Sistema de Agendamento Inteligente para SalÃƒÂµes, Barbearias e ClÃƒÂ­nicas.",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0f172a",

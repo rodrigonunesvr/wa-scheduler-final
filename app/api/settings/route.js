@@ -10,7 +10,7 @@ export async function GET() {
                 .from('settings')
                 .insert({
                     id: 1,
-                    business_name: 'AgendaÃƒÂ',
+                    business_name: 'AgendaÃƒÆ’Ã‚Â',
                     niche: 'salon',
                     primary_color: '#8b5cf6'
                 })
@@ -34,7 +34,7 @@ export async function GET() {
 export async function PATCH(request) {
     try {
         const body = await request.json()
-        const { business_name, niche, primary_color, logo_url, welcome_message } = body
+        const { business_name, niche, primary_color, logo_url, welcome_message, bot_prompt } = body
 
         const updateData = { updated_at: new Date().toISOString() }
         if (business_name !== undefined) updateData.business_name = business_name
@@ -42,6 +42,7 @@ export async function PATCH(request) {
         if (primary_color !== undefined) updateData.primary_color = primary_color
         if (logo_url !== undefined) updateData.logo_url = logo_url
         if (welcome_message !== undefined) updateData.welcome_message = welcome_message
+        if (bot_prompt !== undefined) updateData.bot_prompt = bot_prompt
 
         const { data, error } = await supabase
             .from('settings')
