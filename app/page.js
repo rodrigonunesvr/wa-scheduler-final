@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, Settings, LogOut, Bot } from 'lucide-react'
+import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, Settings, LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -10,20 +10,20 @@ const whatsappLink = (phone, text = '') => { const base = `https://wa.me/${phone
 const DEFAULT_SERVICES = [
     { id: 'Fibra ou Molde F1', name: 'Fibra ou Molde F1', price: 190, duration: 120, active: true },
     { id: 'Banho de Gel', name: 'Banho de Gel', price: 150, duration: 90, active: true },
-    { id: 'Manuten√ß√£o', name: 'Manuten√ß√£o', price: 150, duration: 90, active: true },
-    { id: 'Manuten√ß√£o (outra prof.)', name: 'Manuten√ß√£o (outra prof.)', price: 170, duration: 90, active: true },
-    { id: 'Remo√ß√£o', name: 'Remo√ß√£o', price: 45, duration: 30, active: true },
-    { id: 'Esmalta√ß√£o B√°sica', name: 'Esmalta√ß√£o B√°sica', price: 20, duration: 30, active: true },
-    { id: 'Esmalta√ß√£o Premium', name: 'Esmalta√ß√£o Premium', price: 25, duration: 45, active: true },
-    { id: 'Esm. ou P√≥ + Francesinha', name: 'Esm. ou P√≥ + Francesinha', price: 35, duration: 45, active: true },
-    { id: 'Esm. + Francesinha + P√≥', name: 'Esm. + Francesinha + P√≥', price: 45, duration: 60, active: true },
+    { id: 'ManutenÁ„o', name: 'ManutenÁ„o', price: 150, duration: 90, active: true },
+    { id: 'ManutenÁ„o (outra prof.)', name: 'ManutenÁ„o (outra prof.)', price: 170, duration: 90, active: true },
+    { id: 'RemoÁ„o', name: 'RemoÁ„o', price: 45, duration: 30, active: true },
+    { id: 'EsmaltaÁ„o B·sica', name: 'EsmaltaÁ„o B·sica', price: 20, duration: 30, active: true },
+    { id: 'EsmaltaÁ„o Premium', name: 'EsmaltaÁ„o Premium', price: 25, duration: 45, active: true },
+    { id: 'Esm. ou PÛ + Francesinha', name: 'Esm. ou PÛ + Francesinha', price: 35, duration: 45, active: true },
+    { id: 'Esm. + Francesinha + PÛ', name: 'Esm. + Francesinha + PÛ', price: 45, duration: 60, active: true },
 ]
 let SERVICES = [...DEFAULT_SERVICES]
 const DEFAULT_PROFESSIONALS = [{ id: 'padrao', name: 'Profissional', role: 'Especialista', color: 'border-violet-500', active: true }]
 let PROFESSIONALS = [...DEFAULT_PROFESSIONALS]
 
-const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'S√°b']
-const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Mar√ßo', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'S·b']
+const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'MarÁo', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
 const TIME_SLOTS = []
 for (let h = 7; h <= 19; h++) {
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
     const [overrides, setOverrides] = useState([])
     const [globalServices, setGlobalServices] = useState(SERVICES)
     const [globalProfessionals, setGlobalProfessionals] = useState(PROFESSIONALS)
-    const [globalSettings, setGlobalSettings] = useState({ business_name: 'Agenda√≠' })
+    const [globalSettings, setGlobalSettings] = useState({ business_name: 'AgendaÕ' })
     const [loading, setLoading] = useState(true)
     const [showNewModal, setShowNewModal] = useState(false)
     const [showBlockModal, setShowBlockModal] = useState(false)
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
     const [sessionLoading, setSessionLoading] = useState(true)
     const router = useRouter()
 
-    // Detec√ß√£o de Mobile e Dark Mode inicial
+    // DetecÁ„o de Mobile e Dark Mode inicial
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768)
         checkMobile()
@@ -119,23 +119,23 @@ export default function AdminDashboard() {
             }
         })
 
+        // Efeito para aplicar a cor do Branding dinamicamente
+        useEffect(() => {
+            if (globalSettings.primary_color) {
+                document.documentElement.style.setProperty('--primary-dash', globalSettings.primary_color);
+                // TambÈm criamos uma vers„o com transparÍncia para fundos suaves
+                const r = parseInt(globalSettings.primary_color.slice(1, 3), 16);
+                const g = parseInt(globalSettings.primary_color.slice(3, 5), 16);
+                const b = parseInt(globalSettings.primary_color.slice(5, 7), 16);
+                document.documentElement.style.setProperty('--primary-dash-light', `rgba(${r}, ${g}, ${b}, 0.1)`);
+            }
+        }, [globalSettings.primary_color]);
+
         return () => {
             window.removeEventListener('resize', checkMobile)
             subscription.unsubscribe()
         }
-    }, [router])
-
-    // Efeito para aplicar a cor do Branding dinamicamente
-    useEffect(() => {
-        if (globalSettings.primary_color) {
-            document.documentElement.style.setProperty('--primary-dash', globalSettings.primary_color);
-            // Tamb√©m criamos uma vers√£o com transpar√™ncia para fundos suaves
-            const r = parseInt(globalSettings.primary_color.slice(1, 3), 16);
-            const g = parseInt(globalSettings.primary_color.slice(3, 5), 16);
-            const b = parseInt(globalSettings.primary_color.slice(5, 7), 16);
-            document.documentElement.style.setProperty('--primary-dash-light', `rgba(${r}, ${g}, ${b}, 0.1)`);
-        }
-    }, [globalSettings.primary_color]);
+    }, [router, globalSettings.primary_color])
 
     const toggleDarkMode = () => {
         const newMode = !darkMode
@@ -307,7 +307,7 @@ export default function AdminDashboard() {
     const headerLabel = viewMode === 'month'
         ? `${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}`
         : viewMode === 'week'
-            ? `${weekDates[0].getDate()} √¢‚Ç¨‚Äù ${weekDates[6].getDate()} de ${MONTH_NAMES[weekDates[0].getMonth()]} ${weekDates[0].getFullYear()}`
+            ? `${weekDates[0].getDate()} ó ${weekDates[6].getDate()} de ${MONTH_NAMES[weekDates[0].getMonth()]} ${weekDates[0].getFullYear()}`
             : new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 
     return (
@@ -319,13 +319,13 @@ export default function AdminDashboard() {
             <aside className={`${isMobile ? 'sidebar-drawer' : sidebarOpen ? 'w-56' : 'w-16'} ${isMobile && sidebarOpen ? 'open' : ''} bg-gradient-to-b from-primary-dash to-purple-950 text-white transition-all duration-300 flex flex-col shrink-0 h-full shadow-2xl z-40`}>
                 <div className="p-4 flex items-center justify-between border-b border-white/10">
                     <div className="flex items-center gap-3">
-                        <img src="/logo.png" alt="Agenda√É¬ç" className="w-8 h-8 rounded-lg object-contain shadow-lg" />
+                        <img src="/logo.png" alt="AgendaÕ" className="w-8 h-8 rounded-lg object-contain shadow-lg" />
                         {(sidebarOpen || isMobile) && <span className="font-extrabold text-lg tracking-tight truncate max-w-[130px] bg-clip-text text-transparent bg-gradient-to-r from-white to-violet-200" title={globalSettings.business_name}>{globalSettings.business_name}</span>}
                     </div>
                     {isMobile && <button onClick={() => setSidebarOpen(false)} className="p-1 text-white/50 hover:text-white"><X size={20} /></button>}
                 </div>
                 <nav className="flex-1 py-3 space-y-0.5 px-2 overflow-y-auto scrollbar-hide">
-                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Hor√°rios' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'equipe', icon: Award, label: 'Equipe' }, { id: 'servicos', icon: Scissors, label: 'Servi√ßos' }, { id: 'faqs', icon: MessageCircle, label: 'Bot FAQ' }, { id: 'relatorios', icon: BarChart3, label: 'Relat√≥rios' }, { id: 'configuracoes', icon: Settings, label: 'Configura√ß√µes' }].map(item => (
+                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Hor·rios' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'equipe', icon: Award, label: 'Equipe' }, { id: 'servicos', icon: Scissors, label: 'ServiÁos' }, { id: 'faqs', icon: MessageCircle, label: 'Bot FAQ' }, { id: 'relatorios', icon: BarChart3, label: 'RelatÛrios' }, { id: 'configuracoes', icon: Settings, label: 'ConfiguraÁıes' }].map(item => (
                         <button key={item.id} onClick={() => { setActivePage(item.id); setNewBadge(0); if (isMobile) setSidebarOpen(false) }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activePage === item.id ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}>
                             <item.icon size={18} />{(sidebarOpen || isMobile) && item.label}
@@ -362,7 +362,7 @@ export default function AdminDashboard() {
                                     </button>
                                 )}
                                 <div className="flex bg-slate-100 rounded-xl p-0.5 shrink-0">
-                                    {['dia', 'semana', 'm√™s'].map((v, i) => {
+                                    {['dia', 'semana', 'mÍs'].map((v, i) => {
                                         const mode = ['day', 'week', 'month'][i]
                                         return <button key={mode} onClick={() => setViewMode(mode)} className={`px-2 md:px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition-all ${viewMode === mode ? 'bg-white shadow text-violet-700' : 'text-slate-500'}`}>{v.charAt(0).toUpperCase() + v.slice(1)}</button>
                                     })}
@@ -414,11 +414,11 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3 mobile-hide md:flex">
                                     <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center"><TrendingUp className="text-blue-600" size={18} /></div>
-                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">M√É¬™s</p><p className="text-xl font-black text-blue-600">{monthApts.length}</p></div>
+                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">MÍs</p><p className="text-xl font-black text-blue-600">{monthApts.length}</p></div>
                                 </div>
                                 <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center gap-3 mobile-hide md:flex">
                                     <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center"><FileText className="text-amber-600" size={18} /></div>
-                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fatur. M√É¬™s</p><p className="text-xl font-black text-amber-600 truncate">R$ {monthRevenue}</p></div>
+                                    <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fatur. MÍs</p><p className="text-xl font-black text-amber-600 truncate">R$ {monthRevenue}</p></div>
                                 </div>
                             </div>
                         )}
@@ -695,7 +695,7 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                                 <div className="flex items-center gap-2">
                                     <Lock size={14} className="text-slate-600" />
                                     <span className="font-bold text-sm text-slate-700">{blk.title || 'Bloqueado'}</span>
-                                    <span className="text-xs text-slate-500">{time} √¢‚Ç¨‚Äù {endTime.split(':').slice(0, 2).join(':')}</span>
+                                    <span className="text-xs text-slate-500">{time} ó {endTime.split(':').slice(0, 2).join(':')}</span>
                                 </div>
                                 <button onClick={() => onDeleteBlock(blk.id)}
                                     className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-all" title="Remover bloqueio">
@@ -743,7 +743,7 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                                     <div className="flex flex-wrap gap-1 mt-1.5">
                                         {svcs.map((s, i) => <span key={i} className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>)}
                                     </div>
-                                    <p className="text-white/70 text-[10px] mt-1">{time} √¢‚Ç¨‚Äù {endH}:{endM} ({dur}min) √¢‚Ç¨¬¢ R$ {total}</p>
+                                    <p className="text-white/70 text-[10px] mt-1">{time} ó {endH}:{endM} ({dur}min) ï R$ {total}</p>
                                 </div>
                                 {!isCancelled && (
                                     <div className="opacity-0 group-hover:opacity-100 flex flex-col gap-1 transition-opacity ml-2">
@@ -807,7 +807,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                             <div className="text-sm text-slate-500 flex flex-col md:flex-row md:items-center gap-2 mt-2">
                                 <span className="flex items-center justify-center md:justify-start gap-1"><Phone size={12} /> {apt.customer_phone}</span>
                                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                    <a href={whatsappLink(apt.customer_phone, `Ol√É¬° ${apt.customer_name}, tudo bem? Passando para lembrar e confirmar o seu agendamento de ${svcs.join(' + ')}, dia ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })} √É¬†s ${toSPTime(apt.starts_at)}. Podemos confirmar?`)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
+                                    <a href={whatsappLink(apt.customer_phone, `Ol· ${apt.customer_name}, tudo bem? Passando para lembrar e confirmar o seu agendamento de ${svcs.join(' + ')}, dia ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })} ‡s ${toSPTime(apt.starts_at)}. Podemos confirmar?`)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
                                         <MessageCircle size={10} /> Lembrar / Confirmar
                                     </a>
                                     <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors">
@@ -820,7 +820,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
 
                     <div className="bg-slate-50 rounded-xl p-4 space-y-3">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hor√É¬°rio</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hor·rio</span>
                             <span className="text-sm font-bold text-slate-800">{toSPTime(apt.starts_at)} ({dur}min)</span>
                         </div>
                         {prof && (
@@ -830,7 +830,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                             </div>
                         )}
                         <div className="flex items-center justify-between pt-2">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Servi√É¬ßos</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ServiÁos</span>
                             <div className="flex flex-wrap gap-1 justify-end">
                                 {svcs.map((s, i) => <span key={i} className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{s}</span>)}
                             </div>
@@ -844,12 +844,12 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                     {/* Notes Section */}
                     <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1"><FileText size={12} /> Observa√É¬ß√É¬µes</span>
+                            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1"><FileText size={12} /> ObservaÁıes</span>
                             {!editingNotes && <button onClick={() => setEditingNotes(true)} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"><Edit2 size={11} /> Editar</button>}
                         </div>
                         {editingNotes ? (
                             <div className="space-y-2">
-                                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} placeholder="Ex: cliente al√É¬©rgica a acetona, quer francesinha rosa..."
+                                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} placeholder="Ex: cliente alÈrgica a acetona, quer francesinha rosa..."
                                     className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm resize-none" />
                                 <div className="flex gap-2">
                                     <button onClick={() => { setEditingNotes(false); setNotes(apt.notes || '') }} className="flex-1 py-2 rounded-lg border border-slate-200 text-slate-500 text-xs font-bold hover:bg-slate-50">Cancelar</button>
@@ -857,7 +857,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-sm text-amber-800">{notes || 'Nenhuma observa√É¬ß√É¬£o'}</p>
+                            <p className="text-sm text-amber-800">{notes || 'Nenhuma observaÁ„o'}</p>
                         )}
                     </div>
 
@@ -900,7 +900,7 @@ function CancelConfirmModal({ apt, onClose, onConfirm }) {
                         </div>
                         <div>
                             <h3 className="text-lg font-extrabold">Confirmar Cancelamento</h3>
-                            <p className="text-white/80 text-sm">Esta a√É¬ß√É¬£o n√É¬£o pode ser desfeita</p>
+                            <p className="text-white/80 text-sm">Esta aÁ„o n„o pode ser desfeita</p>
                         </div>
                     </div>
                 </div>
@@ -908,10 +908,10 @@ function CancelConfirmModal({ apt, onClose, onConfirm }) {
                 {/* Appointment Summary */}
                 <div className="p-6 space-y-4">
                     <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-2">
-                        <p className="text-sm text-slate-600">Voc√É¬™ est√É¬° prestes a cancelar:</p>
+                        <p className="text-sm text-slate-600">VocÍ est· prestes a cancelar:</p>
                         <div className="bg-white rounded-lg p-3 border border-red-100">
                             <p className="font-bold text-slate-800">{apt.customer_name}</p>
-                            <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} √É¬†s {toSPTime(apt.starts_at)}</p>
+                            <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} ‡s {toSPTime(apt.starts_at)}</p>
                             <p className="text-sm text-slate-500">{svcs.join(' + ')}</p>
                             <p className="text-sm font-bold text-red-600 mt-1">Valor: R$ {total}</p>
                         </div>
@@ -969,7 +969,7 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
                         <div className="bg-slate-50 rounded-xl p-4 space-y-3">
                             <p className="font-bold text-slate-800 text-sm">{apt.customer_name}</p>
                             <p className="text-sm text-slate-500 flex items-center gap-1"><Phone size={12} /> <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="hover:text-green-600 hover:underline transition-colors">{apt.customer_phone}</a> <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full hover:bg-green-100 transition-colors">WhatsApp <ExternalLink size={9} /></a></p>
-                            <p className="text-sm text-slate-500">{svcs.join(' + ')} √¢‚Ç¨‚Äù R$ {total}</p>
+                            <p className="text-sm text-slate-500">{svcs.join(' + ')} ó R$ {total}</p>
 
                             <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
                                 <div>
@@ -1014,13 +1014,13 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
                     <div className="bg-slate-50 rounded-xl p-4">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Agendamento atual</p>
                         <p className="font-bold text-slate-800">{apt.customer_name}</p>
-                        <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} √É¬†s {toSPTime(apt.starts_at)}</p>
-                        <p className="text-sm text-slate-500">{svcs.join(' + ')} √¢‚Ç¨‚Äù R$ {total}</p>
+                        <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} ‡s {toSPTime(apt.starts_at)}</p>
+                        <p className="text-sm text-slate-500">{svcs.join(' + ')} ó R$ {total}</p>
                     </div>
 
                     {/* New date/time */}
                     <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Nova data e hor√É¬°rio</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Nova data e hor·rio</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Data</label>
@@ -1028,7 +1028,7 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
                                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm font-medium" />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Hor√É¬°rio</label>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Hor·rio</label>
                                 <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
                                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 outline-none text-sm font-medium" />
                             </div>
@@ -1059,7 +1059,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessional
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (form.services.length === 0) { setError('Selecione ao menos um servi√É¬ßo.'); return }
+        if (form.services.length === 0) { setError('Selecione ao menos um serviÁo.'); return }
         setSaving(true); setError('')
 
         const startsAt = toISO_SP(form.date, form.time)
@@ -1099,7 +1099,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessional
                         </div>
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Servi√É¬ßos (selecione um ou mais)</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">ServiÁos (selecione um ou mais)</label>
                         <div className="space-y-1.5">
                             {SERVICES.map(s => {
                                 const sel = form.services.includes(s.id)
@@ -1123,12 +1123,12 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessional
                     </div>
                     {form.services.length > 0 && (
                         <div className="bg-violet-50 border border-violet-200 rounded-xl px-4 py-3 flex items-center justify-between">
-                            <div><span className="text-xs font-bold text-violet-600">{form.services.length} servi√É¬ßo{form.services.length > 1 ? 's' : ''}</span><span className="text-xs text-violet-400 ml-2">√¢‚Ç¨¬¢ {totalDuration}min</span></div>
+                            <div><span className="text-xs font-bold text-violet-600">{form.services.length} serviÁo{form.services.length > 1 ? 's' : ''}</span><span className="text-xs text-violet-400 ml-2">ï {totalDuration}min</span></div>
                             <span className="text-lg font-black text-violet-700">R$ {totalPrice}</span>
                         </div>
                     )}
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Profissional Respons√É¬°vel</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Profissional Respons·vel</label>
                         <select required value={form.professional_id} onChange={e => setForm({ ...form, professional_id: e.target.value })}
                             className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium appearance-none cursor-pointer">
                             {actProfs.map(p => <option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}
@@ -1141,20 +1141,20 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, globalProfessional
                                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Hor√É¬°rio</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Hor·rio</label>
                             <input type="time" required value={form.time} onChange={e => setForm({ ...form, time: e.target.value })}
                                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
                         </div>
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Observa√É¬ß√É¬µes (opcional)</label>
-                        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Ex: al√É¬©rgica a acetona, quer francesinha rosa..."
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">ObservaÁıes (opcional)</label>
+                        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Ex: alÈrgica a acetona, quer francesinha rosa..."
                             className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm resize-none" />
                     </div>
                     {error && <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl border border-red-100">{error}</div>}
                     <button type="submit" disabled={saving}
                         className="w-full py-3 rounded-xl bg-violet-600 text-white font-bold hover:bg-violet-700 disabled:opacity-50 transition-all shadow-lg shadow-violet-200 active:scale-[0.99]">
-                        {saving ? 'Salvando...' : `Confirmar √¢‚Ç¨‚Äù R$ ${totalPrice}`}
+                        {saving ? 'Salvando...' : `Confirmar ó R$ ${totalPrice}`}
                     </button>
                 </form>
             </div>
@@ -1244,10 +1244,10 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                                         <th className="text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Cliente</th>
                                         <th className="text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Telefone</th>
                                         <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">Agendamentos</th>
-                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">Pr√É¬≥ximos</th>
+                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">PrÛximos</th>
                                         <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">Total Gasto</th>
-                                        <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">√É≈°ltima Visita</th>
-                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">A√É¬ß√É¬µes</th>
+                                        <th className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3 mobile-hide">⁄ltima Visita</th>
+                                        <th className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-4 md:px-5 py-3">AÁıes</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1272,17 +1272,17 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                                                 <td className="px-5 py-3 text-center">
                                                     {stats.upcoming > 0
                                                         ? <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-lg">{stats.upcoming}</span>
-                                                        : <span className="text-xs text-slate-400">√¢‚Ç¨‚Äù</span>}
+                                                        : <span className="text-xs text-slate-400">ó</span>}
                                                 </td>
                                                 <td className="px-5 py-3 text-right">
                                                     <span className="text-sm font-bold text-green-600">R$ {stats.totalSpent.toFixed(0)}</span>
                                                 </td>
                                                 <td className="px-5 py-3 text-right text-sm text-slate-500">
-                                                    {stats.lastVisit ? toSPDate(stats.lastVisit.starts_at).split('-').reverse().join('/') : '√¢‚Ç¨‚Äù'}
+                                                    {stats.lastVisit ? toSPDate(stats.lastVisit.starts_at).split('-').reverse().join('/') : 'ó'}
                                                 </td>
                                                 <td className="px-5 py-3 text-center">
                                                     <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1 text-xs font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-2.5 py-1 rounded-lg hover:bg-violet-100 transition-colors">
-                                                        <History size={12} /> Hist√É¬≥rico
+                                                        <History size={12} /> HistÛrico
                                                     </button>
                                                 </td>
                                             </tr>
@@ -1304,8 +1304,8 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between p-5 border-b border-slate-100">
                             <div>
-                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><History className="text-violet-500" size={18} /> Hist√É¬≥rico</h3>
-                                <p className="text-sm text-slate-500">{historyCustomer?.name || 'Cliente'} √¢‚Ç¨¬¢ {historyPhone}</p>
+                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><History className="text-violet-500" size={18} /> HistÛrico</h3>
+                                <p className="text-sm text-slate-500">{historyCustomer?.name || 'Cliente'} ï {historyPhone}</p>
                             </div>
                             <button onClick={() => setHistoryPhone(null)} className="p-2 rounded-lg hover:bg-slate-100"><X size={18} /></button>
                         </div>
@@ -1369,12 +1369,12 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
             })
             if (!res.ok) {
                 const err = await res.json()
-                alert(`Erro ao salvar no banco de dados do Supabase.\nDetalhe: ${err.error || res.statusText}\nSua tabela 'services' pode estar ausente ou bloqueada por seguran√É¬ßa RLS.`)
+                alert(`Erro ao salvar no banco de dados do Supabase.\nDetalhe: ${err.error || res.statusText}\nSua tabela 'services' pode estar ausente ou bloqueada por seguranÁa RLS.`)
             } else {
                 refreshGlobal()
                 setEditing(null)
             }
-        } catch (e) { alert(`Erro de Conex√É¬£o: ${e.message}`) }
+        } catch (e) { alert(`Erro de Conex„o: ${e.message}`) }
         setLoading(false)
     }
 
@@ -1388,7 +1388,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
             })
             if (!res.ok) {
                 const err = await res.json()
-                alert(`Supabase recusou a inser√É¬ß√É¬£o do servi√É¬ßo.\nErro: ${err.error || res.statusText}\nVoc√É¬™ executou o script SQL de cria√É¬ß√É¬£o da tabela 'services' e removeu o bloqueio RLS?`)
+                alert(`Supabase recusou a inserÁ„o do serviÁo.\nErro: ${err.error || res.statusText}\nVocÍ executou o script SQL de criaÁ„o da tabela 'services' e removeu o bloqueio RLS?`)
             } else {
                 setIsAdding(false)
                 setAddForm({ name: '', price: '', duration: '', active: true })
@@ -1414,11 +1414,11 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
 
             if (!res.ok) {
                 const err = await res.json()
-                alert(`Oculta√É¬ß√É¬£o falhou!\nErro BD: ${err.error || res.statusText}\nA tabela "services" do seu Supabase n√É¬£o permite acesso. Crie a tabela e desabilite a seguran√É¬ßa RLS.`)
+                alert(`OcultaÁ„o falhou!\nErro BD: ${err.error || res.statusText}\nA tabela "services" do seu Supabase n„o permite acesso. Crie a tabela e desabilite a seguranÁa RLS.`)
             } else {
                 refreshGlobal()
             }
-        } catch (e) { alert(`Problema de conex√É¬£o: ${e.message}`) }
+        } catch (e) { alert(`Problema de conex„o: ${e.message}`) }
         setLoading(false)
     }
 
@@ -1434,36 +1434,36 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                     <div>
                         <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
                             <Scissors className="text-primary-dash" size={24} />
-                            Servi√É¬ßos Din√É¬¢micos
+                            ServiÁos Din‚micos
                         </h2>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8">Gerencie o cat√É¬°logo do bot e do sistema.</p>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8">Gerencie o cat·logo do bot e do sistema.</p>
                     </div>
                 </div>
                 <button onClick={() => setIsAdding(!isAdding)} className="flex items-center gap-2 bg-primary-dash hover:bg-black text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary-dash/20 transition-all active:scale-95">
                     {isAdding ? <X size={16} /> : <Plus size={16} />}
-                    <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Novo Servi√É¬ßo'}</span>
+                    <span className="hidden sm:inline">{isAdding ? 'Cancelar' : 'Novo ServiÁo'}</span>
                 </button>
             </header>
 
             <div className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
                 {isAdding && (
                     <div className="bg-white rounded-2xl border border-primary-dash/20 shadow-xl shadow-primary-dash/5 p-5 md:p-6 mb-6 transform transition-all animate-in fade-in slide-in-from-top-4">
-                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><Plus className="text-primary-dash" size={16} /> Adicionar Novo Servi√É¬ßo</h3>
+                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><Plus className="text-primary-dash" size={16} /> Adicionar Novo ServiÁo</h3>
                         <form onSubmit={handleAdd} className="space-y-4">
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nome do Servi√É¬ßo</label>
-                                <input type="text" required value={addForm.name} onChange={e => setAddForm({ ...addForm, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all" placeholder="Ex: C√É¬≠lios Volume Russo" />
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nome do ServiÁo</label>
+                                <input type="text" required value={addForm.name} onChange={e => setAddForm({ ...addForm, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all" placeholder="Ex: CÌlios Volume Russo" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Pre√É¬ßo Base (R$)</label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">PreÁo Base (R$)</label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">R$</span>
                                         <input type="number" required value={addForm.price} onChange={e => setAddForm({ ...addForm, price: e.target.value })} className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-bold transition-all" placeholder="0.00" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Dura√É¬ß√É¬£o (Minutos)</label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">DuraÁ„o (Minutos)</label>
                                     <div className="relative">
                                         <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input type="number" required value={addForm.duration} onChange={e => setAddForm({ ...addForm, duration: e.target.value })} className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all" placeholder="60" />
@@ -1472,7 +1472,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                             </div>
                             <div className="pt-2">
                                 <button type="submit" disabled={loading} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-black transition-colors disabled:opacity-50">
-                                    {loading ? 'Salvando...' : 'Criar Servi√É¬ßo'}
+                                    {loading ? 'Salvando...' : 'Criar ServiÁo'}
                                 </button>
                             </div>
                         </form>
@@ -1483,8 +1483,8 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                     {services.length === 0 && !loading && (
                         <div className="p-10 text-center bg-white rounded-2xl border border-slate-200 border-dashed">
                             <Scissors className="mx-auto text-slate-300 mb-3" size={32} />
-                            <p className="text-slate-500 font-medium">Voc√É¬™ ainda n√É¬£o tem servi√É¬ßos no Banco de Dados.</p>
-                            <p className="text-xs text-slate-400 mt-1">Clique em "Novo Servi√É¬ßo" para come√É¬ßar a preencher o cat√É¬°logo do Bot.</p>
+                            <p className="text-slate-500 font-medium">VocÍ ainda n„o tem serviÁos no Banco de Dados.</p>
+                            <p className="text-xs text-slate-400 mt-1">Clique em "Novo ServiÁo" para comeÁar a preencher o cat·logo do Bot.</p>
                         </div>
                     )}
                     {services.map(svc => (
@@ -1519,7 +1519,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                                             onClick={() => toggleActive(svc)}
                                             disabled={loading}
                                             className={`w-10 h-6 rounded-full p-1 transition-colors ${svc.active ? 'bg-green-500' : 'bg-slate-300'}`}
-                                            title={svc.active ? 'Desativar Servi√É¬ßo' : 'Ativar Servi√É¬ßo'}
+                                            title={svc.active ? 'Desativar ServiÁo' : 'Ativar ServiÁo'}
                                         >
                                             <div className={`w-4 h-4 rounded-full bg-white transition-transform ${svc.active ? 'translate-x-4' : 'translate-x-0'}`} />
                                         </button>
@@ -1590,7 +1590,7 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
                 refreshGlobal()
                 setEditing(null)
             }
-        } catch (e) { alert(`Erro de Conex√É¬£o: ${e.message}`) }
+        } catch (e) { alert(`Erro de Conex„o: ${e.message}`) }
         setLoading(false)
     }
 
@@ -1604,7 +1604,7 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
             })
             if (!res.ok) {
                 const err = await res.json()
-                alert(`Supabase recusou a inser√É¬ß√É¬£o.\nErro: ${err.error || res.statusText}`)
+                alert(`Supabase recusou a inserÁ„o.\nErro: ${err.error || res.statusText}`)
             } else {
                 setIsAdding(false)
                 setAddForm({ name: '', role: 'Especialista', color: 'border-violet-500', active: true })
@@ -1630,11 +1630,11 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
 
             if (!res.ok) {
                 const err = await res.json()
-                alert(`A√É¬ß√É¬£o falhou!\nErro BD: ${err.error || res.statusText}`)
+                alert(`AÁ„o falhou!\nErro BD: ${err.error || res.statusText}`)
             } else {
                 refreshGlobal()
             }
-        } catch (e) { alert(`Problema de conex√É¬£o: ${e.message}`) }
+        } catch (e) { alert(`Problema de conex„o: ${e.message}`) }
         setLoading(false)
     }
 
@@ -1652,7 +1652,7 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
                     <div>
                         <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
                             <Award className="text-violet-500" size={24} />
-                            Gest√É¬£o de Equipe
+                            Gest„o de Equipe
                         </h2>
                         <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8">Adicione os profissionais que atendem no estabelecimento.</p>
                     </div>
@@ -1678,7 +1678,7 @@ function ProfessionalsPage({ isMobile, onOpenMenu, globalProfessionals, refreshG
                                     <input type="text" required value={addForm.role} onChange={e => setAddForm({ ...addForm, role: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all" placeholder="Ex: Manicure, Cabeleireira" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Cor no Calend√É¬°rio</label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Cor no Calend·rio</label>
                                     <select value={addForm.color} onChange={e => setAddForm({ ...addForm, color: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none text-sm font-medium transition-all appearance-none cursor-pointer">
                                         <option value="border-violet-500">Roxo</option>
                                         <option value="border-pink-500">Rosa</option>
@@ -1801,7 +1801,7 @@ function BlockModal({ selectedDate, onClose, onSave }) {
             for (const date of form.dates) {
                 const startsAt = toISO_SP(date, form.startTime)
                 const endsAt = toISO_SP(date, form.endTime)
-                if (new Date(endsAt) <= new Date(startsAt)) throw new Error(`Hor√É¬°rio inv√É¬°lido em ${date}`)
+                if (new Date(endsAt) <= new Date(startsAt)) throw new Error(`Hor·rio inv·lido em ${date}`)
             }
 
             // Batch send
@@ -1828,14 +1828,14 @@ function BlockModal({ selectedDate, onClose, onSave }) {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-600 to-slate-700 text-white">
-                    <h3 className="text-base font-extrabold flex items-center gap-2"><Lock size={16} /> Bloquear Hor√É¬°rio</h3>
+                    <h3 className="text-base font-extrabold flex items-center gap-2"><Lock size={16} /> Bloquear Hor·rio</h3>
                     <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Motivo (opcional)</label>
                         <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" placeholder="Ex: Almo√É¬ßo, Consulta m√É¬©dica..." />
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" placeholder="Ex: AlmoÁo, Consulta mÈdica..." />
                     </div>
 
                     <div>
@@ -1857,7 +1857,7 @@ function BlockModal({ selectedDate, onClose, onSave }) {
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">In√É¬≠cio</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">InÌcio</label>
                             <input type="time" required value={form.startTime} onChange={e => setForm({ ...form, startTime: e.target.value })}
                                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 outline-none text-sm font-medium" />
                         </div>
@@ -1953,7 +1953,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
     }, []);
 
     if (!mounted || loading) {
-        return <div className="p-10 text-center text-slate-500 flex flex-col items-center justify-center h-full"><RefreshCw className="animate-spin mb-4 text-violet-500" /> Carregando relat√≥rios avan√ßados...</div>;
+        return <div className="p-10 text-center text-slate-500 flex flex-col items-center justify-center h-full"><RefreshCw className="animate-spin mb-4 text-violet-500" /> Carregando relatÛrios avanÁados...</div>;
     }
 
     const today = new Date();
@@ -2050,31 +2050,35 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                         </button>
                     )}
                     <div>
-                        <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-600" size={24} /> Relat√≥rios Financeiros</h2>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Intelig√™ncia de neg√≥cio e acompanhamento de faturamento.</p>
+                        <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2"><BarChart3 className="text-violet-600" size={24} /> RelatÛrios Financeiros</h2>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">InteligÍncia de negÛcio e acompanhamento de faturamento.</p>
                     </div>
                 </div>
 
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                     <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-2xl shadow-inner border border-slate-200">
-                        {[{ label: '7 Dias', val: 7 }, { label: '15 Dias', val: 15 }, { label: '30 Dias', val: 30 }].map(f => (
+                        {[{ label: '⁄ltimos 7 Dias', val: 7 }, { label: '⁄ltimos 15 Dias', val: 15 }, { label: '⁄ltimos 30 Dias', val: 30 }].map(f => (
                             <button key={f.val} onClick={() => { setPeriod(f.val); setIsCustom(false); }}
                                 className={`px-4 py-2 rounded-xl text-[11px] font-black transition-all whitespace-nowrap ${!isCustom && period === f.val ? 'bg-violet-600 text-white shadow-lg shadow-violet-200 scale-105' : 'text-slate-500 hover:bg-white hover:text-slate-700'}`}>
                                 {f.label}
                             </button>
                         ))}
+                        <div className="w-[1px] h-6 bg-slate-200 mx-1" />
+                        <button onClick={() => { setPeriod(9999); setIsCustom(false); }}
+                            className={`px-3 py-2 rounded-xl text-[11px] font-black transition-all whitespace-nowrap ${!isCustom && period === 9999 ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}>
+                            Tudo
+                        </button>
                         <button onClick={() => setIsCustom(true)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-black transition-all whitespace-nowrap ${isCustom ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white hover:text-slate-700'}`}>
-                            <Calendar size={14} /> Customizado
+                            <Calendar size={14} /> Selecionar Datas
                         </button>
                     </div>
 
                     {isCustom && (
                         <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
                             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="text-[10px] font-bold px-2 py-1.5 rounded-lg border border-slate-200 focus:border-violet-400 outline-none" />
-                            <span className="text-[10px] text-slate-400 font-bold">at√©</span>
+                            <span className="text-[10px] text-slate-400 font-bold">atÈ</span>
                             <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-[10px] font-bold px-2 py-1.5 rounded-lg border border-slate-200 focus:border-violet-400 outline-none" />
-                            <button onClick={() => setRefreshKey(k => k + 1)} className="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-[10px] font-bold hover:bg-black transition active:scale-95">OK</button>
                         </div>
                     )}
 
@@ -2090,9 +2094,9 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                                     const { jsPDF } = window.jspdf;
                                     const doc = new jsPDF();
                                     doc.setFontSize(20);
-                                    doc.text('Relat√≥rio Financeiro - Agenda√≠', 15, 20);
+                                    doc.text('RelatÛrio Financeiro - AgendaÌ', 15, 20);
                                     doc.setFontSize(10);
-                                    doc.text(`Per√≠odo: ${isCustom ? startDate + ' a ' + endDate : '√öltimos ' + period + ' dias'}`, 15, 28);
+                                    doc.text(`PerÌodo: ${isCustom ? startDate + ' a ' + endDate : '⁄ltimos ' + period + ' dias'}`, 15, 28);
                                     doc.text(`Faturamento Total: R$ ${totalRevenue}`, 15, 34);
                                     doc.text(`Total de Atendimentos: ${totalApts}`, 15, 40);
 
@@ -2106,7 +2110,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
 
                                     doc.autoTable({
                                         startY: 45,
-                                        head: [['Data', 'Cliente', 'Servi√ßos', 'Status', 'Valor']],
+                                        head: [['Data', 'Cliente', 'ServiÁos', 'Status', 'Valor']],
                                         body: rows,
                                         headStyles: { fillColor: [139, 92, 246] }
                                     });
@@ -2137,7 +2141,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${growth >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                 {growth >= 0 ? <TrendingUp size={10} /> : <TrendingUp size={10} className="rotate-180" />} {Math.abs(growth)}%
                             </span>
-                            <span className="text-[9px] text-slate-400">vs per√É¬≠odo anterior</span>
+                            <span className="text-[9px] text-slate-400">vs perÌodo anterior</span>
                         </div>
                     </div>
 
@@ -2148,35 +2152,35 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                             <Users size={16} className="text-violet-500" />
                         </div>
                         <p className="text-3xl font-black text-slate-800 tracking-tight">{totalApts}</p>
-                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Nos √É¬∫ltimos {period} dias</p>
+                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Nos ˙ltimos {period} dias</p>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-400/10 to-cyan-500/10 rounded-bl-[100px] -mr-4 -mt-4 transition-transform group-hover:scale-110" />
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Ticket M√É¬©dio</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Ticket MÈdio</p>
                             <Target size={16} className="text-blue-500" />
                         </div>
                         <p className="text-3xl font-black text-slate-800 tracking-tight">R$ {ticketMedio}</p>
-                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Gasto m√É¬©dio por cliente</p>
+                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Gasto mÈdio por cliente</p>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-orange-500/10 rounded-bl-[100px] -mr-4 -mt-4 transition-transform group-hover:scale-110" />
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Servi√É¬ßos Feitos</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">ServiÁos Feitos</p>
                             <Scissors size={16} className="text-amber-500" />
                         </div>
                         <p className="text-3xl font-black text-slate-800 tracking-tight">{Object.values(serviceCounts).reduce((a, b) => a + b, 0)}</p>
-                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Procedimentos conclu√É¬≠dos</p>
+                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Procedimentos concluÌdos</p>
                     </div>
                 </div>
 
                 {/* 2. Main Chart: Revenue Over Time */}
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2"><TrendingUp size={18} className="text-violet-600" /> Evolu√É¬ß√É¬£o do Faturamento</h3>
-                        <span className="px-3 py-1 bg-violet-50 text-violet-700 text-[10px] font-bold rounded-lg border border-violet-100">Vis√É¬£o Hist√É¬≥rica Din√É¬¢mica</span>
+                        <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2"><TrendingUp size={18} className="text-violet-600" /> EvoluÁ„o do Faturamento</h3>
+                        <span className="px-3 py-1 bg-violet-50 text-violet-700 text-[10px] font-bold rounded-lg border border-violet-100">Vis„o HistÛrica Din‚mica</span>
                     </div>
                     {/* Horizontal scrolling if period > 15 to fit bars nicely */}
                     <div className="overflow-x-auto scrollbar-hide">
@@ -2208,7 +2212,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* 3. Donut Chart - Popular Services */}
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
-                        <h3 className="font-extrabold text-sm text-slate-800 mb-6 flex items-center gap-2"><PieChart size={18} className="text-blue-500" /> Distribui√É¬ß√É¬£o de Servi√É¬ßos</h3>
+                        <h3 className="font-extrabold text-sm text-slate-800 mb-6 flex items-center gap-2"><PieChart size={18} className="text-blue-500" /> DistribuiÁ„o de ServiÁos</h3>
                         <div className="flex-1 flex items-center justify-center">
                             <DonutChart data={topServicesData} />
                         </div>
@@ -2221,7 +2225,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                             <button className="text-[10px] font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-2 py-1 rounded-lg transition-colors">Ver Todos</button>
                         </div>
                         <div className="flex-1 space-y-1">
-                            {topClients.length === 0 && <p className="text-xs text-slate-400 text-center py-10">N√É¬£o h√É¬° dados suficientes.</p>}
+                            {topClients.length === 0 && <p className="text-xs text-slate-400 text-center py-10">N„o h· dados suficientes.</p>}
                             {topClients.map((client, i) => (
                                 <div key={i} className="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
                                     <div className="flex items-center gap-3">
@@ -2254,7 +2258,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                 <div className="bg-gradient-to-r from-violet-600 to-purple-700 rounded-3xl p-6 text-white shadow-xl shadow-violet-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div>
                         <h4 className="font-black text-lg mb-1 flex items-center gap-2"><Award size={20} className="text-amber-300" /> Crescimento Constante</h4>
-                        <p className="text-sm text-white/80 font-medium">Voc√É¬™ faturou R$ {totalRevenue} no per√É¬≠odo selecionado. Continue acompanhando e promovendo seus servi√É¬ßos para aumentar ainda mais!</p>
+                        <p className="text-sm text-white/80 font-medium">VocÍ faturou R$ {totalRevenue} no perÌodo selecionado. Continue acompanhando e promovendo seus serviÁos para aumentar ainda mais!</p>
                     </div>
                     <button className="px-6 py-3 bg-white text-violet-700 font-black text-xs uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg whitespace-nowrap">
                         Baixar Resumo em PDF
@@ -2293,10 +2297,10 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
             // If toggling back to default, remove the override
             const defaultState = isDefaultOpen(date)
             if (currentlyOpen !== defaultState) {
-                // Currently overridden away from default √¢‚Ç¨‚Äù remove override to restore default
+                // Currently overridden away from default ó remove override to restore default
                 await fetch(`/api/admin?id=${override.id}&type=schedule`, { method: 'DELETE' })
             } else {
-                // Currently at default but has override √¢‚Ç¨‚Äù flip it
+                // Currently at default but has override ó flip it
                 await fetch('/api/admin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2304,10 +2308,10 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                 })
             }
         } else {
-            // No override exists √¢‚Ç¨‚Äù create one (flip from default)
+            // No override exists ó create one (flip from default)
             const reason = !currentlyOpen
-                ? 'Aberto por exce√É¬ß√É¬£o'
-                : 'Fechado por exce√É¬ß√É¬£o'
+                ? 'Aberto por exceÁ„o'
+                : 'Fechado por exceÁ„o'
             await fetch('/api/admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2340,7 +2344,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                             <LayoutGrid size={20} />
                         </button>
                     )}
-                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Clock className="text-violet-500" size={20} /> Hor√É¬°rios</h2>
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Clock className="text-violet-500" size={20} /> Hor·rios</h2>
                 </div>
                 <span className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap">Clique no dia para alternar aberto/fechado</span>
             </header>
@@ -2350,19 +2354,19 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-green-100 border-2 border-green-400" />
-                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Aberto (padr√É¬£o)</span>
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Aberto (padr„o)</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-red-100 border-2 border-red-400" />
-                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Fechado (padr√É¬£o)</span>
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Fechado (padr„o)</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-green-100 border-2 border-amber-400 ring-2 ring-amber-200" />
-                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Aberto (exce√É¬ß√É¬£o)</span>
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Aberto (exceÁ„o)</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 md:w-5 md:h-5 rounded-md bg-red-100 border-2 border-amber-400 ring-2 ring-amber-200" />
-                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Fechado (exce√É¬ß√É¬£o)</span>
+                            <span className="text-[9px] md:text-xs font-semibold text-slate-600">Fechado (exceÁ„o)</span>
                         </div>
                     </div>
                 </div>
@@ -2372,7 +2376,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                     <button onClick={() => navMonth(-1)} className="p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 active:bg-slate-200 transition-colors"><ChevronLeft size={20} /></button>
                     <h3 className="text-sm md:text-lg font-extrabold text-slate-700 text-center">
                         {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-                        {monthOverrides.length > 0 && <div className="text-[10px] font-bold text-amber-500">{monthOverrides.length} exce√É¬ß√É¬£o{monthOverrides.length > 1 ? '√É¬µes' : ''}</div>}
+                        {monthOverrides.length > 0 && <div className="text-[10px] font-bold text-amber-500">{monthOverrides.length} exceÁ„o{monthOverrides.length > 1 ? 'ıes' : ''}</div>}
                     </h3>
                     <button onClick={() => navMonth(1)} className="p-2.5 rounded-lg hover:bg-slate-100 text-slate-400 active:bg-slate-200 transition-colors"><ChevronRight size={20} /></button>
                 </div>
@@ -2432,7 +2436,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                 {/* Overrides List */}
                 {monthOverrides.length > 0 && (
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                        <h3 className="font-bold text-sm text-slate-700 mb-3 flex items-center gap-2">? Exce√É¬ß√É¬µes neste m√É¬™s</h3>
+                        <h3 className="font-bold text-sm text-slate-700 mb-3 flex items-center gap-2">? ExceÁıes neste mÍs</h3>
                         <div className="space-y-2">
                             {monthOverrides.map(o => {
                                 const d = new Date(o.date + 'T12:00:00')
@@ -2461,7 +2465,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                 {/* Info */}
                 <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 text-center">
                     <p className="text-sm text-violet-700 font-medium">
-                        ?? As mudan√É¬ßas feitas aqui s√É¬£o aplicadas instantaneamente. O bot j√É¬° saber√É¬° quais dias est√É¬£o abertos ou fechados.
+                        ?? As mudanÁas feitas aqui s„o aplicadas instantaneamente. O bot j· saber· quais dias est„o abertos ou fechados.
                     </p>
                 </div>
             </div>
@@ -2528,7 +2532,7 @@ function FaqsPage({ isMobile, onOpenMenu }) {
                             <MessageCircle className="text-primary-dash" size={24} />
                             Base de Conhecimento
                         </h2>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Perguntas e respostas que o rob√É¬¥ usar√É¬° no WhatsApp.</p>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Perguntas e respostas que o robÙ usar· no WhatsApp.</p>
                     </div>
                 </div>
                 <button onClick={() => setIsAdding(!isAdding)} className="flex items-center gap-2 bg-primary-dash text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary-dash/20 transition-all active:scale-95">
@@ -2549,10 +2553,10 @@ function FaqsPage({ isMobile, onOpenMenu }) {
                             <div>
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Resposta do Bot</label>
                                 <textarea required value={newFaq.answer} onChange={e => setNewFaq({ ...newFaq, answer: e.target.value })} rows={3}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium resize-none" placeholder="Ex: Sim, possu√É¬≠mos conv√É¬™nio com o estacionamento ao lado..." />
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium resize-none" placeholder="Ex: Sim, possuÌmos convÍnio com o estacionamento ao lado..." />
                             </div>
                             <button type="submit" disabled={saving} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-black transition-colors disabled:opacity-50">
-                                {saving ? <RefreshCw className="animate-spin" size={18} /> : 'Salvar no C√É¬©rebro do Bot'}
+                                {saving ? <RefreshCw className="animate-spin" size={18} /> : 'Salvar no CÈrebro do Bot'}
                             </button>
                         </form>
                     </div>
@@ -2593,7 +2597,6 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
     const [niche, setNiche] = useState(globalSettings.niche || 'salon')
     const [color, setColor] = useState(globalSettings.primary_color || '#8b5cf6')
     const [welcome, setWelcome] = useState(globalSettings.welcome_message || '')
-    const [botPrompt, setBotPrompt] = useState(globalSettings.bot_prompt || '')
     const [saving, setSaving] = useState(false)
     const [message, setMessage] = useState('')
 
@@ -2603,7 +2606,6 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
             setNiche(globalSettings.niche || 'salon')
             setColor(globalSettings.primary_color || '#8b5cf6')
             setWelcome(globalSettings.welcome_message || '')
-            setBotPrompt(globalSettings.bot_prompt || '')
         }
     }, [globalSettings])
 
@@ -2618,14 +2620,16 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
                     business_name: name,
                     niche: niche,
                     primary_color: color,
-                    welcome_message: welcome,
-                    bot_prompt: botPrompt
+                    welcome_message: welcome
                 })
             })
             if (!res.ok) throw new Error('Erro ao salvar')
-            setMessage('Configura√ß√µes salvas com sucesso!')
+            setMessage('ConfiguraÁıes salvas com sucesso!')
             refreshGlobal()
+
+            // ForÁamos a atualizaÁ„o da cor no root para refletir instantaneamente
             document.documentElement.style.setProperty('--primary-dash', color);
+
         } catch (e) {
             setMessage('Erro: ' + e.message)
         }
@@ -2642,29 +2646,29 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
                             <LayoutGrid size={20} />
                         </button>
                     )}
-                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Settings className="text-violet-500" size={20} /> Configura√ß√µes</h2>
+                    <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Settings className="text-violet-500" size={20} /> ConfiguraÁıes</h2>
                 </div>
             </header>
             <div className="flex-1 overflow-auto p-4 md:p-6">
                 <div className="max-w-2xl bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-5 md:p-6">
-                        <h3 className="text-base font-bold text-slate-800 mb-1">Informa√ß√µes do Estabelecimento</h3>
-                        <p className="text-sm text-slate-500 mb-6">Personalize os dados que aparecer√£o para o seu sal√£o (White-label).</p>
+                        <h3 className="text-base font-bold text-slate-800 mb-1">InformaÁıes do Estabelecimento</h3>
+                        <p className="text-sm text-slate-500 mb-6">Personalize os dados que aparecer„o para o seu sal„o (White-label).</p>
 
                         <form onSubmit={handleSave} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nome da Empresa</label>
                                     <input type="text" required value={name} onChange={e => setName(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all" placeholder="Ex: Agenda√É¬ç" />
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all" placeholder="Ex: AgendaÕ" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nicho de Atua√ß√£o</label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nicho de AtuaÁ„o</label>
                                     <select value={niche} onChange={e => setNiche(e.target.value)}
                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all bg-white">
-                                        <option value="salon">Sal√£o de Beleza / Est√©tica</option>
+                                        <option value="salon">Sal„o de Beleza / EstÈtica</option>
                                         <option value="barber">Barbearia Profissional</option>
-                                        <option value="clinic">Cl√≠nica M√©dica / Odonto</option>
+                                        <option value="clinic">ClÌnica MÈdica / Odonto</option>
                                     </select>
                                 </div>
                             </div>
@@ -2685,7 +2689,7 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
                                         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: color }}>
                                             {name.charAt(0)}
                                         </div>
-                                        <span className="text-xs text-slate-400 font-medium italic">Pr√É¬©-visualiza√É¬ß√É¬£o do c√É¬≠rculo de marca</span>
+                                        <span className="text-xs text-slate-400 font-medium italic">PrÈ-visualizaÁ„o do cÌrculo de marca</span>
                                     </div>
                                 </div>
                             </div>
@@ -2693,24 +2697,14 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
                             <hr className="border-slate-100" />
 
                             <div>
-                                <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2"><Bot size={18} className="text-violet-500" /> Atendimento do Rob√¥</h3>
-                                <p className="text-xs text-slate-500 mb-4">Como o rob√¥ deve recepcionar seus clientes no WhatsApp.</p>
+                                <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2"><Bot size={18} className="text-violet-500" /> Atendimento do RobÙ</h3>
+                                <p className="text-xs text-slate-500 mb-4">Como o robÙ deve recepcionar seus clientes no WhatsApp.</p>
 
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Mensagem de Boas-vindas</label>
-                                        <textarea value={welcome} onChange={e => setWelcome(e.target.value)} rows={2}
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all resize-none"
-                                            placeholder="Ex: Ol√°! Seja bem-vindo ao Agenda√≠. Como posso te ajudar hoje?" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Instru√ß√µes do Rob√¥ (Contexto da IA)</label>
-                                        <textarea value={botPrompt} onChange={e => setBotPrompt(e.target.value)} rows={4}
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all resize-none font-mono text-[11px]"
-                                            placeholder="Ex: Voc√™ √© a Clara, assistente virtual do Sal√£o. Seja educada, ofere√ßa caf√© e verifique a disponibilidade..." />
-                                        <p className="text-[10px] text-slate-400 mt-1 italic">Dica: Defina a personalidade e regras espec√≠ficas para o rob√¥.</p>
-                                    </div>
-                                </div>
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Mensagem de Boas-vindas</label>
+                                <textarea value={welcome} onChange={e => setWelcome(e.target.value)} rows={3}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium transition-all resize-none"
+                                    placeholder="Ex: Ol·! Seja bem-vindo ao AgendaÕ Como posso te ajudar hoje?" />
+                                <p className="text-[10px] text-slate-400 mt-1 italic">Dica: O robÙ usar· isso como base para iniciar as conversas.</p>
                             </div>
 
                             {message && (
@@ -2722,7 +2716,7 @@ function SettingsPage({ isMobile, onOpenMenu, globalSettings, refreshGlobal }) {
                             <div className="pt-2">
                                 <button type="submit" disabled={saving} className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-slate-800 text-white font-bold hover:bg-black disabled:opacity-50 transition-all shadow-xl active:scale-95">
                                     {saving ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
-                                    {saving ? 'Salvando...' : 'Salvar Altera√ß√µes'}
+                                    {saving ? 'Guardando...' : 'Salvar AlteraÁıes'}
                                 </button>
                             </div>
                         </form>

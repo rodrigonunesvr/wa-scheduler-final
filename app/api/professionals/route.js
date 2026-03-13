@@ -26,7 +26,7 @@ export async function POST(request) {
         const { name, role, color, active } = body
 
         if (!name) {
-            return NextResponse.json({ error: 'O nome do profissional ÃƒÂ© obrigatÃƒÂ³rio.' }, { status: 400 })
+            return NextResponse.json({ error: 'O nome do profissional é obrigatório.' }, { status: 400 })
         }
 
         const { data, error } = await supabase

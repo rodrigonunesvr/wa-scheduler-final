@@ -10,7 +10,7 @@ export async function POST(request) {
     try {
         // Modular Check: Is the AI Bot enabled for this project?
         if (!SAAS_CONFIG.modules.botEnabled) {
-            console.log('Ã°Å¸Â¤â€“ MÃƒÂ³dulo de Bot desativado no SAAS_CONFIG. Ignorando processamento de IA.')
+            console.log('🤖 Módulo de Bot desativado no SAAS_CONFIG. Ignorando processamento de IA.')
             return NextResponse.json({ status: 'bot-disabled' })
         }
 
@@ -23,7 +23,7 @@ export async function POST(request) {
         const currentApiKey = process.env.EVOLUTION_API_KEY
 
         if (headerKey !== currentApiKey && bodyKey !== currentApiKey) {
-            console.error('Ã°Å¸Å¡Â« Invalid API Key. Header:', headerKey, 'Body:', bodyKey)
+            console.error('🚫 Invalid API Key. Header:', headerKey, 'Body:', bodyKey)
             // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -63,13 +63,13 @@ export async function POST(request) {
             .maybeSingle()
 
         if (fetchError) {
-            console.error('Ã¢ÂÅ’ Error fetching session:', fetchError)
+            console.error('❌ Error fetching session:', fetchError)
         }
 
         let session = existingSession
 
         if (!session) {
-            console.log('Ã°Å¸â€ â€¢ Criando nova sessÃƒÂ£o para:', phone)
+            console.log('🆕 Criando nova sessão para:', phone)
             const { data: newSession, error: insertError } = await supabase
                 .from('wa_sessions')
                 .insert({ phone, state: 'START', context_json: [] })
@@ -77,7 +77,7 @@ export async function POST(request) {
                 .maybeSingle()
 
             if (insertError) {
-                console.error('Ã¢ÂÅ’ Error creating session:', insertError)
+                console.error('❌ Error creating session:', insertError)
                 return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
             }
             session = newSession
@@ -88,13 +88,13 @@ export async function POST(request) {
             const diffMins = (nowMs - lastUpdate) / (1000 * 60)
 
             if (diffMins > 10) {
-                console.log('Ã°Å¸â€¢â€™ SessÃƒÂ£o expirada (>10min). Resetando histÃƒÂ³rico.')
+                console.log('🕒 Sessão expirada (>10min). Resetando histórico.')
                 session.context_json = []
             }
         }
 
         if (!session) {
-            console.error('Ã¢ÂÅ’ Session is still null after attempt to create')
+            console.error('❌ Session is still null after attempt to create')
             return NextResponse.json({ error: 'Session initialization failed' }, { status: 500 })
         }
 
@@ -146,7 +146,7 @@ export async function POST(request) {
         const futureApts = await getAppointmentsByPhone(phone)
         const hasApts = futureApts && futureApts.length > 0
         const aptsContext = hasApts
-            ? `\n--- AGENDAMENTOS FUTUROS DESTA CLIENTE ---\n` + futureApts.map(a => ` - ${moment(a.starts_at).tz('America/Sao_Paulo').format('DD/MM [às] HH:mm')}: ${a.service_id} `).join('\n')
+            ? `\n-- - AGENDAMENTOS FUTUROS DESTA CLIENTE-- -\n` + futureApts.map(a => ` - ${moment(a.starts_at).tz('America/Sao_Paulo').format('DD/MM [às] HH:mm')}: ${a.service_id} `).join('\n')
             : '\nEsta cliente não possui agendamentos futuros registrados.'
 
         // 6.3 Determine if this is the start of the session (no assistant messages yet)
@@ -157,12 +157,11 @@ export async function POST(request) {
         const niche = settings?.niche || 'salon'
         const bizName = settings?.business_name || 'AgendaÍ'
         const welcome = settings?.welcome_message || ''
-        const customPrompt = settings?.bot_prompt || ''
 
         // Fetch FAQs for bot knowledge
         const { data: faqs } = await supabase.from('faqs').select('*').eq('active', true)
         const faqsText = faqs && faqs.length > 0
-            ? `--- PERGUNTAS FREQUENTES (BASE DE CONHECIMENTO)---\n` + faqs.map(f => `P: ${f.question}\nR: ${f.answer}`).join('\n\n')
+            ? `--- PERGUNTAS FREQUENTES (BASE DE CONHECIMENTO)-- -\n` + faqs.map(f => `P: ${f.question}\nR: ${f.answer}`).join('\n\n')
             : ''
 
         // Create Niche-based Persona
@@ -171,7 +170,7 @@ export async function POST(request) {
             barber: `Você é o "Brother", o atendente gente boa da ${bizName}. Você fala de forma descontraída, usa gírias de barbearia (ex: "E aí, fera?", "Beleza, meu caro?") e é focado no estilo do cliente.`,
             clinic: `Você é a Dra. Clara, assistente da ${bizName}. Você é profissional, formal e extremamente organizada. Transmite confiança e saúde.`
         }
-        let currentPersona = customPrompt || personas[niche] || personas.salon
+        const currentPersona = personas[niche] || personas.salon
 
         // Fetch active services and format for AI
         const { data: dbServices } = await supabase.from('services').select('*').eq('active', true).order('name')
@@ -187,8 +186,8 @@ export async function POST(request) {
             const isoDate = day.format('YYYY-MM-DD')
             const isOpen = isDayOpen(isoDate, scheduleOverrides)
             const isOverride = scheduleOverrides.some(o => o.date === isoDate)
-            const suffix = isOverride ? ' (exceÃƒÂ§ÃƒÂ£o)' : ''
-            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? 'Ã¢Å“â€¦ aberto' + suffix : 'Ã¢ÂÅ’ fechado' + suffix} \n`
+            const suffix = isOverride ? ' (exceção)' : ''
+            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? '✅ aberto' + suffix : '❌ fechado' + suffix} \n`
         }
 
         // 7. AI Brain (GPT-4o-mini)
@@ -198,44 +197,44 @@ export async function POST(request) {
 ${currentPersona}
 ${welcome ? `Mensagem de Boas-vindas/Aviso: ${welcome}` : ''}
 
-Seu objetivo ÃƒÂ© agendar serviÃƒÂ§os, tirar dÃƒÂºvidas sobre preÃƒÂ§os e informar sobre o estabelecimento.
+Seu objetivo é agendar serviços, tirar dúvidas sobre preços e informar sobre o estabelecimento.
 
-Hoje ÃƒÂ© ${todayLabel}.
+Hoje é ${todayLabel}.
 
---- CALENDÃƒÂRIO DOS PRÃƒâ€œXIMOS DIAS-- -
+--- CALENDÁRIO DOS PRÓXIMOS DIAS-- -
     ${calendarLines}
-Normalmente funcionamos de terÃƒÂ§a a sÃƒÂ¡bado, mas pode haver exceÃƒÂ§ÃƒÂµes.Consulte SEMPRE o calendÃƒÂ¡rio acima para saber se um dia estÃƒÂ¡ aberto ou fechado.
+Normalmente funcionamos de terça a sábado, mas pode haver exceções.Consulte SEMPRE o calendário acima para saber se um dia está aberto ou fechado.
 
     ${customerName ? `
 --- CLIENTE IDENTIFICADA ---
-Essa cliente jÃƒÂ¡ ÃƒÂ© cadastrada! O nome dela ÃƒÂ©: ${customerName}.
-Ã¢Å¡Â Ã¯Â¸Â REGRA DE OURO: Chame-a pelo nome (ex: "Oi, ${customerName}!") logo na primeira frase de CADA resposta. Seja carinhosa e atenciosa.
+Essa cliente já é cadastrada! O nome dela é: ${customerName}.
+⚠️ REGRA DE OURO: Chame-a pelo nome (ex: "Oi, ${customerName}!") logo na primeira frase de CADA resposta. Seja carinhosa e atenciosa.
 ` : `
 --- CLIENTE NOVA ---
-VocÃƒÂª ainda nÃƒÂ£o sabe o nome desta cliente. 
-Ã¢Å¡Â Ã¯Â¸Â REGRA CRÃƒÂTICA: Se a cliente quiser agendar, vocÃƒÂª DEVE perguntar o nome dela antes de usar a ferramenta 'book_appointment'. VocÃƒÂª sÃƒÂ³ pode agendar se tiver o nome completo dela para o registro.
+Você ainda não sabe o nome desta cliente. 
+⚠️ REGRA CRÍTICA: Se a cliente quiser agendar, você DEVE perguntar o nome dela antes de usar a ferramenta 'book_appointment'. Você só pode agendar se tiver o nome completo dela para o registro.
 `}
 
 ${aptsContext}
 
-${isFirstInteraction ? `REGRA DE SAUDAÃƒâ€¡ÃƒÆ’O: Como esta ÃƒÂ© a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}! Sou o assistente virtual do ${bizName}. Como posso ajudar?".` : `REGRA DE SAUDAÃƒâ€¡ÃƒÆ’O: NÃƒÆ’O se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
+${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Como esta é a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}! Sou o assistente virtual do ${bizName}. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: NÃO se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
 
 REGRAS DE COMPORTAMENTO:
-1. PRIORIDADE DE AÃƒâ€¡ÃƒÆ’O: Se o cliente mencionar um serviÃƒÂ§o e uma data / dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
-2. AGENDAMENTOS EXISTENTES: Se o cliente jÃƒÂ¡ tiver agendamentos(veja acima), mencione - os apenas uma vez.NÃƒÂ£o deixe que isso impeÃƒÂ§a de marcar NOVOS horÃƒÂ¡rios.
+1. PRIORIDADE DE AÇÃO: Se o cliente mencionar um serviço e uma data / dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
+2. AGENDAMENTOS EXISTENTES: Se o cliente já tiver agendamentos(veja acima), mencione - os apenas uma vez.Não deixe que isso impeça de marcar NOVOS horários.
 3. FLUXO DE AGENDAMENTO:
-- Se o cliente perguntar por horÃƒÂ¡rios ou sugerir um dia: Use 'check_calendar'.
-   - Se o cliente escolher um horÃƒÂ¡rio e vocÃƒÂª tiver o NOME: Use 'book_appointment' IMEDIATAMENTE apÃƒÂ³s verificar a disponibilidade(se o usuÃƒÂ¡rio jÃƒÂ¡ demonstrou intenÃƒÂ§ÃƒÂ£o de marcar).
-   - Se nÃƒÂ£o tiver o nome da cliente nova: PeÃƒÂ§a o nome ANTES de agendar.
-4. PÃƒâ€œS-AÃƒâ€¡ÃƒÆ’O: ApÃƒÂ³s concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
-5. PROTOCOLO E PREPARO: VocÃƒÂª DEVE informar o protocolo de preparo (veja abaixo) COMPLETO sempre que um agendamento for confirmado. NÃƒÂ£o ignore nenhuma regra, especialmente a regra da cutÃƒÂ­cula.
+- Se o cliente perguntar por horários ou sugerir um dia: Use 'check_calendar'.
+   - Se o cliente escolher um horário e você tiver o NOME: Use 'book_appointment' IMEDIATAMENTE após verificar a disponibilidade(se o usuário já demonstrou intenção de marcar).
+   - Se não tiver o nome da cliente nova: Peça o nome ANTES de agendar.
+4. PÓS-AÇÃO: Após concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
+5. PROTOCOLO E PREPARO: Você DEVE informar o protocolo de preparo (veja abaixo) COMPLETO sempre que um agendamento for confirmado. Não ignore nenhuma regra, especialmente a regra da cutícula.
 
 6. REGRAS DE INTERATIVIDADE(NOVO):
-   - ** Busca por PerÃƒÂ­odo **: Antes de listar os horÃƒÂ¡rios, pergunte: "VocÃƒÂª prefere na parte da manhÃƒÂ£ ou da tarde?".Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
-   - ** Venda Adicional(Upsell) **: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviÃƒÂ§o (como uma esmaltaÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida ou remoÃƒÂ§ÃƒÂ£o)?".
-   - ** PrevenÃƒÂ§ÃƒÂ£o de Conflitos **: Se a cliente quiser dois serviÃƒÂ§os juntos, tente calcular a duraÃƒÂ§ÃƒÂ£o total e fazer um ÃƒÂºnico agendamento longo em vez de dois separados.
+   - ** Busca por Período **: Antes de listar os horários, pergunte: "Você prefere na parte da manhã ou da tarde?".Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
+   - ** Venda Adicional(Upsell) **: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviço (como uma esmaltação rápida ou remoção)?".
+   - ** Prevenção de Conflitos **: Se a cliente quiser dois serviços juntos, tente calcular a duração total e fazer um único agendamento longo em vez de dois separados.
 
---- TABELA DE PREÃƒâ€¡OS (VALORES DINÃƒâ€šMICOS) ---
+--- TABELA DE PREÇOS (VALORES DINÂMICOS) ---
 ${servicesListText}
 
 ${faqsText}
@@ -252,12 +251,12 @@ ${faqsText}
                 type: "function",
                 function: {
                     name: "check_calendar",
-                    description: "Verifica horÃƒÂ¡rios livres na agenda.",
+                    description: "Verifica horários livres na agenda.",
                     parameters: {
                         type: "object",
                         properties: {
                             date: { type: "string", description: "Data no formato YYYY-MM-DD." },
-                            period: { type: "string", enum: ["manha", "tarde"], description: "Filtro de perÃƒÂ­odo: 'manha' ou 'tarde'." }
+                            period: { type: "string", enum: ["manha", "tarde"], description: "Filtro de período: 'manha' ou 'tarde'." }
                         }
                     }
                 }
@@ -266,13 +265,13 @@ ${faqsText}
                 type: "function",
                 function: {
                     name: "book_appointment",
-                    description: "Realiza o agendamento oficial no sistema. Suporta mÃƒÂºltiplos serviÃƒÂ§os.",
+                    description: "Realiza o agendamento oficial no sistema. Suporta múltiplos serviços.",
                     parameters: {
                         type: "object",
                         properties: {
                             name: { type: "string", description: "Nome completo do cliente." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista de serviÃƒÂ§os. Ex: ['Banho de Gel']" },
-                            service: { type: "string", description: "ServiÃƒÂ§o ÃƒÂºnico." },
+                            services: { type: "array", items: { type: "string" }, description: "Lista de serviços. Ex: ['Banho de Gel']" },
+                            service: { type: "string", description: "Serviço único." },
                             startsAt: { type: "string", description: "Data e hora ISO. Ex: 2024-05-20T14:00:00" }
                         },
                         required: ["name", "startsAt"]
@@ -305,12 +304,12 @@ ${faqsText}
                 type: "function",
                 function: {
                     name: "update_appointment",
-                    description: "Atualiza um agendamento existente (ex: adicionar um serviÃƒÂ§o novo no mesmo horÃƒÂ¡rio).",
+                    description: "Atualiza um agendamento existente (ex: adicionar um serviço novo no mesmo horário).",
                     parameters: {
                         type: "object",
                         properties: {
                             id: { type: "string", description: "O ID do agendamento (obtenha via list_my_appointments)." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista atualizada de serviÃƒÂ§os." }
+                            services: { type: "array", items: { type: "string" }, description: "Lista atualizada de serviços." }
                         },
                         required: ["id", "services"]
                     }
@@ -331,7 +330,7 @@ ${faqsText}
         let toolTurn = 0
         while (aiMsg.tool_calls && toolTurn < 3) {
             toolTurn++
-            console.log(`Ã°Å¸Å’â‚¬ Turno de Ferramentas ${toolTurn} `)
+            console.log(`🌀 Turno de Ferramentas ${toolTurn} `)
 
             history.push(aiMsg) // Push the assistant tool call to history
             const toolMessagesForCompletion = [...messages, ...history.slice(messages.length - 1)] // Get recent history including aiMsg
@@ -339,7 +338,7 @@ ${faqsText}
             for (const toolCall of aiMsg.tool_calls) {
                 let result = ""
                 const args = JSON.parse(toolCall.function.arguments)
-                console.log(`Ã°Å¸â€ºÂ Ã¯Â¸Â Executando: ${toolCall.function.name} `, args)
+                console.log(`🛠️ Executando: ${toolCall.function.name} `, args)
 
                 if (toolCall.function.name === 'check_calendar') {
                     const slots = await findAvailableSlots({

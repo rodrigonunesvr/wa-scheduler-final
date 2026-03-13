@@ -2,191 +2,89 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { Lock, Mail, ArrowRight, Eye, EyeOff, UserPlus, KeyRound, ChevronLeft, Sparkles } from 'lucide-react'
+import { Lock, Mail, ArrowRight } from 'lucide-react'
 
 export default function LoginPage() {
-    const [mode, setMode] = useState('login') // 'login' | 'signup' | 'recovery'
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
-    const [name, setName] = useState('')
-    const [showPassword, setShowPassword] = useState(false)
     const [error, setError] = useState(null)
-    const [success, setSuccess] = useState(null)
     const [loading, setLoading] = useState(false)
     const router = useRouter()
 
-    const handleAuth = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault()
         setLoading(true)
         setError(null)
-        setSuccess(null)
 
-        try {
-            if (mode === 'login') {
-                const { error } = await supabase.auth.signInWithPassword({ email, password })
-                if (error) throw error
-                router.push('/')
-            }
-            else if (mode === 'signup') {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: { full_name: name }
-                    }
-                })
-                if (error) throw error
-                setSuccess('Cadastro realizado! Verifique seu e-mail para confirmar.')
-                setTimeout(() => setMode('login'), 3000)
-            }
-            else if (mode === 'recovery') {
-                const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: `${window.location.origin}/login?mode=update`,
-                })
-                if (error) throw error
-                setSuccess('Link de recuperação enviado para seu e-mail!')
-            }
-        } catch (err) {
-            let msg = err.message
-            if (msg === 'Invalid login credentials') msg = 'E-mail ou senha incorretos'
-            if (msg === 'User already registered') msg = 'Este e-mail já possui cadastro'
-            setError(msg)
-        } finally {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        })
+
+        if (error) {
+            setError(error.message === 'Invalid login credentials' ? 'Credenciais inválidas' : error.message)
             setLoading(false)
+        } else {
+            router.push('/')
         }
     }
 
-    const renderHeader = () => (
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-            <div className="flex justify-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-violet-600 to-indigo-700 rounded-3xl flex items-center justify-center shadow-2xl shadow-violet-200 rotate-3 hover:rotate-0 transition-transform duration-300">
-                    <Sparkles className="text-white w-10 h-10 animate-pulse" />
-                </div>
-            </div>
-            <h2 className="text-center text-4xl font-black text-slate-900 tracking-tight">
-                AgendaÍ
-            </h2>
-            <p className="mt-3 text-center text-sm text-slate-500 font-medium">
-                {mode === 'login' ? 'Agende o sucesso do seu negócio.' :
-                    mode === 'signup' ? 'Crie sua conta profissional hoje.' :
-                        'Recupere o acesso ao seu painel.'}
-            </p>
-        </div>
-    )
-
     return (
-        <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-            {renderHeader()}
+        <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+            <div className="sm:mx-auto sm:w-full sm:max-w-md">
+                <div className="flex justify-center mb-6">
+                    <div className="w-16 h-16 bg-violet-600 rounded-2xl flex items-center justify-center shadow-xl shadow-violet-200">
+                        <Lock className="text-white w-8 h-8" />
+                    </div>
+                </div>
+                <h2 className="mt-2 text-center text-3xl font-extrabold text-slate-900">
+                    Acesso Exclusivo
+                </h2>
+                <p className="mt-2 text-center text-sm text-slate-500 font-medium">
+                    Painel Administrativo do Estabelecimento
+                </p>
+            </div>
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-10 px-6 shadow-[0_20px_50px_rgba(124,58,237,0.08)] sm:rounded-[2rem] sm:px-12 border border-slate-100 relative overflow-hidden">
-
-                    {/* Progress indicator (Subtle) */}
-                    <div className="absolute top-0 left-0 w-full h-1 bg-slate-100">
-                        <div className={`h-full bg-violet-500 transition-all duration-500 ${loading ? 'w-full animate-pulse' : 'w-0'}`} />
-                    </div>
-
-                    <form className="space-y-5" onSubmit={handleAuth}>
-                        {mode === 'signup' && (
-                            <div className="animate-in fade-in slide-in-from-top-2">
-                                <label className="block text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2 ml-1">Nome Completo</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-violet-500">
-                                        <UserPlus size={18} />
-                                    </div>
-                                    <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="Como gostaria de ser chamado?"
-                                        className="block w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 transition-all" />
+                <div className="bg-white py-8 px-4 shadow-xl shadow-slate-200/50 sm:rounded-3xl sm:px-10 border border-slate-100">
+                    <form className="space-y-6" onSubmit={handleLogin}>
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">E-mail</label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Mail className="h-5 w-5 text-slate-400" />
                                 </div>
-                            </div>
-                        )}
-
-                        <div className="animate-in fade-in slide-in-from-top-2">
-                            <label className="block text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2 ml-1">E-mail Corporativo</label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-violet-500">
-                                    <Mail size={18} />
-                                </div>
-                                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@exemplo.com"
-                                    className="block w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 transition-all" />
+                                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com"
+                                    className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl shadow-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-400 sm:text-sm font-medium transition-all" />
                             </div>
                         </div>
 
-                        {mode !== 'recovery' && (
-                            <div className="animate-in fade-in slide-in-from-top-2">
-                                <div className="flex items-center justify-between mb-2 ml-1">
-                                    <label className="block text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Senha</label>
-                                    {mode === 'login' && (
-                                        <button type="button" onClick={() => setMode('recovery')} className="text-[10px] font-bold text-violet-500 hover:text-violet-600 transition-colors uppercase tracking-widest">Esqueci Senha</button>
-                                    )}
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Senha</label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Lock className="h-5 w-5 text-slate-400" />
                                 </div>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-violet-500">
-                                        <Lock size={18} />
-                                    </div>
-                                    <input type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"
-                                        className="block w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-semibold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 transition-all" />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-violet-500 transition-colors">
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
+                                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••"
+                                    className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl shadow-sm placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-400 sm:text-sm font-medium transition-all" />
                             </div>
-                        )}
+                        </div>
 
                         {error && (
-                            <div className="rounded-2xl bg-red-50 p-4 border border-red-100 animate-in zoom-in-95 duration-200">
-                                <div className="flex items-center gap-2 text-xs text-red-600 font-bold">
-                                    <AlertTriangle size={14} /> {error}
-                                </div>
-                            </div>
-                        )}
-
-                        {success && (
-                            <div className="rounded-2xl bg-green-50 p-4 border border-green-100 animate-in zoom-in-95 duration-200">
-                                <div className="flex items-center gap-2 text-xs text-green-600 font-bold">
-                                    <CheckCircle2 size={14} /> {success}
-                                </div>
+                            <div className="rounded-xl bg-red-50 p-4 border border-red-100">
+                                <div className="text-sm text-red-700 font-medium text-center">{error}</div>
                             </div>
                         )}
 
                         <div className="pt-2">
                             <button type="submit" disabled={loading}
-                                className="w-full flex justify-center items-center py-4 px-4 border border-transparent rounded-[1.25rem] shadow-xl shadow-violet-500/10 text-xs font-black uppercase tracking-[0.2em] text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-4 focus:ring-violet-500/20 disabled:opacity-50 transition-all active:scale-[0.98]">
-                                {loading ? 'Processando...' :
-                                    mode === 'login' ? 'Acessar Painel' :
-                                        mode === 'signup' ? 'Finalizar Cadastro' :
-                                            'Enviar Link'}
-                                {!loading && <ArrowRight className="ml-3 h-4 w-4" />}
+                                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-violet-200 text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50 transition-all active:scale-95">
+                                {loading ? 'Entrando...' : 'Acessar Painel'} {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
                             </button>
                         </div>
                     </form>
-
-                    <div className="mt-8 pt-8 border-t border-slate-100 text-center space-y-4">
-                        {mode === 'login' ? (
-                            <p className="text-xs text-slate-500 font-bold">
-                                Não possui conta?
-                                <button onClick={() => setMode('signup')} className="ml-2 text-violet-500 hover:text-violet-600 transition-colors uppercase tracking-widest text-[10px]">Cadastre seu negócio</button>
-                            </p>
-                        ) : (
-                            <button onClick={() => setMode('login')} className="flex items-center justify-center gap-2 mx-auto text-xs font-bold text-slate-400 hover:text-violet-500 transition-all">
-                                <ChevronLeft size={16} /> Voltar para o login
-                            </button>
-                        )}
-                    </div>
                 </div>
-
-                <p className="mt-8 text-center text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
-                    &copy; {new Date().getFullYear()} AgendaÍ SaaS — Soluções Inteligentes
-                </p>
             </div>
         </div>
     )
-}
-
-function AlertTriangle(props) {
-    return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
-}
-
-function CheckCircle2(props) {
-    return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" /></svg>
 }
