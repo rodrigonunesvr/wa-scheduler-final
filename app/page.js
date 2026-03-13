@@ -247,8 +247,10 @@ export default function AdminDashboard() {
             <aside className={`${isMobile ? 'sidebar-drawer' : sidebarOpen ? 'w-56' : 'w-16'} ${isMobile && sidebarOpen ? 'open' : ''} bg-gradient-to-b from-violet-700 to-purple-900 text-white transition-all duration-300 flex flex-col shrink-0 h-full`}>
                 <div className="p-4 flex items-center justify-between border-b border-white/10">
                     <div className="flex items-center gap-3">
-                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1.5 rounded-lg hover:bg-white/10 transition mobile-hide"><LayoutGrid size={20} /></button>
-                        {(sidebarOpen || isMobile) && <span className="font-extrabold text-lg tracking-tight">Espaço C.A.</span>}
+                        <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                            <Scissors className="text-white" size={16} />
+                        </div>
+                        {(sidebarOpen || isMobile) && <span className="font-extrabold text-lg tracking-tight">AgendaÍ</span>}
                     </div>
                     {isMobile && <button onClick={() => setSidebarOpen(false)} className="p-1 text-white/50 hover:text-white"><X size={20} /></button>}
                 </div>
@@ -1656,21 +1658,21 @@ function ReportsPage({ isMobile, onOpenMenu }) {
     const growth = period === 9999 ? 0 : (prevRevenue === 0 ? 100 : (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1));
 
     // Daily Chart Data (Aggregate by Date)
-    const datesMap = {};
-    const chartDays = period === 9999 ? 30 : period; // Limit chart to 30 dots if infinite
-    for (let i = 0; i < chartDays; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - (chartDays - 1 - i));
-        datesMap[fmt(d)] = { revenue: 0, count: 0, label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) };
+    const chartData = [];
+    const diffDays = Math.ceil((endPeriod - startPeriod) / (1000 * 60 * 60 * 24));
+    const iterations = Math.min(diffDays + 1, 31); // Max 31 days to avoid clutter
+
+    for (let i = 0; i < iterations; i++) {
+        const d = new Date(startPeriod);
+        d.setDate(startPeriod.getDate() + i);
+        const dStr = fmt(d);
+        const dayApts = filteredApts.filter(a => toSPDate(a.starts_at) === dStr);
+        chartData.push({
+            revenue: dayApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0),
+            count: dayApts.length,
+            label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+        });
     }
-    filteredApts.forEach(a => {
-        const dStr = toSPDate(a.starts_at);
-        if (datesMap[dStr]) {
-            datesMap[dStr].revenue += calcTotal(parseServices(a.service_id));
-            datesMap[dStr].count += 1;
-        }
-    });
-    const chartData = Object.values(datesMap);
     const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1);
 
     // Top Services
