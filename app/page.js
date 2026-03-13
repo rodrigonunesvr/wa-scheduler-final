@@ -341,7 +341,7 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-2">
                         {(sidebarOpen || isMobile) && (
                             <span className="font-black text-2xl tracking-tighter bg-gradient-to-br from-white via-white to-white/50 bg-clip-text text-transparent select-none">
-                                AgendaÍ v38
+                                AgendaÍ v40
                             </span>
                         )}
                     </div>
@@ -444,7 +444,7 @@ export default function AdminDashboard() {
                         <div className="flex-1 overflow-auto p-2 md:p-4">
                             {viewMode === 'month' && <MonthView currentDate={currentDate} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} isMobile={isMobile} isDayOpen={isDayOpen} />}
                             {viewMode === 'week' && <WeekView weekDates={weekDates} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} isMobile={isMobile} isDayOpen={isDayOpen} />}
-                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={filteredDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} isMobile={isMobile} />}
+                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={filteredDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} isMobile={isMobile} scheduleRules={scheduleRules} />}
                         </div>
                     </>
                 )}
@@ -455,11 +455,11 @@ export default function AdminDashboard() {
             </main>
 
             {/* Modals */}
-            {showNewModal && <NewAppointmentModal selectedDate={selectedDate} onClose={() => setShowNewModal(false)} onSave={() => { setShowNewModal(false); setRefreshKey(k => k + 1) }} />}
+            {showNewModal && <NewAppointmentModal selectedDate={selectedDate} onClose={() => setShowNewModal(false)} onSave={() => { setShowNewModal(false); setRefreshKey(k => k + 1) }} scheduleRules={scheduleRules} />}
             {showBlockModal && <BlockModal selectedDate={selectedDate} onClose={() => setShowBlockModal(false)} onSave={() => { setShowBlockModal(false); setRefreshKey(k => k + 1) }} />}
             {actionApt && actionType === 'view' && <AppointmentDetailModal apt={actionApt} onClose={closeAction} onCancel={() => setActionType('cancel')} onReschedule={() => setActionType('reschedule')} onSaveNotes={async (id, notes) => { await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, notes }) }); setRefreshKey(k => k + 1) }} />}
             {actionApt && actionType === 'cancel' && <CancelConfirmModal apt={actionApt} onClose={closeAction} onConfirm={() => doCancelAppointment(actionApt.id)} />}
-            {actionApt && actionType === 'reschedule' && <RescheduleModal apt={actionApt} onClose={closeAction} onConfirm={doReschedule} />}
+            {actionApt && actionType === 'reschedule' && <RescheduleModal apt={actionApt} onClose={closeAction} onConfirm={doReschedule} scheduleRules={scheduleRules} />}
         </div >
     )
 }
@@ -573,7 +573,7 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
 }
 
 // ─── Day View (with blocks + status colors) ───────────────
-function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue, onDeleteBlock, isMobile }) {
+function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue, onDeleteBlock, isMobile, scheduleRules = [] }) {
     const SLOT_HEIGHT = 48
     const GRID_START = 7 * 60 // 07:00 in minutes
 
@@ -610,6 +610,18 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
         }
     })
 
+    const activeRule = (scheduleRules || []).find(r => selectedDate >= r.start_date && selectedDate <= r.end_date);
+    const isRestricted = (slot) => {
+        if (!activeRule) return false;
+        const [h, m] = slot.split(':').map(Number);
+        const slotMin = h * 60 + m;
+        const [oh, om] = activeRule.open_time.split(':').map(Number);
+        const openMin = oh * 60 + om;
+        const [ch, cm] = activeRule.close_time.split(':').map(Number);
+        const closeMin = ch * 60 + cm;
+        return slotMin < openMin || slotMin >= closeMin;
+    }
+
     const getStatusStyle = (status) => {
         switch (status) {
             case 'CONFIRMED': return 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
@@ -642,12 +654,21 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                     const isHour = slot.endsWith(':00')
                     const isOccupied = occupiedSlots.has(slot)
                     const isBlocked = blockedSlots.has(slot)
+                    const restricted = isRestricted(slot)
                     return (
                         <div key={idx} className="absolute w-full flex" style={{ top: `${idx * SLOT_HEIGHT}px`, height: `${SLOT_HEIGHT}px` }}>
                             <div className="w-16 shrink-0 flex items-start justify-end pr-3 pt-1">
                                 {isHour && <span className="text-[11px] font-bold text-slate-400">{slot}</span>}
                             </div>
-                            <div className={`flex-1 border-l border-slate-100 ${isHour ? 'border-t border-t-slate-200' : 'border-t border-t-slate-50'} ${isBlocked ? 'bg-slate-100' : isOccupied ? 'bg-violet-50/50' : ''}`} />
+                            <div className={`flex-1 border-l border-slate-100 ${isHour ? 'border-t border-t-slate-200' : 'border-t border-t-slate-50'} 
+                                ${restricted ? 'bg-slate-50/80 opacity-60 cursor-not-allowed' : isBlocked ? 'bg-slate-100' : isOccupied ? 'bg-violet-50/50' : ''}`}>
+                                {restricted && !isOccupied && !isBlocked && (
+                                    <div className="h-full flex items-center justify-center gap-1.5 grayscale opacity-30">
+                                        <Ban size={14} className="text-slate-400" />
+                                        <span className="text-[9px] font-black uppercase text-slate-400">Restrito</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )
                 })}
@@ -903,7 +924,7 @@ function CancelConfirmModal({ apt, onClose, onConfirm }) {
 }
 
 // ─── Reschedule Modal ──────────────────────────────────────
-function RescheduleModal({ apt, onClose, onConfirm }) {
+function RescheduleModal({ apt, onClose, onConfirm, scheduleRules = [] }) {
     const svcs = parseServices(apt.service_id)
     const total = calcTotal(svcs)
     const dur = calcDuration(svcs)
@@ -914,6 +935,18 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
     const [saving, setSaving] = useState(false)
 
     const handleConfirm = async () => {
+        const activeRule = (scheduleRules || []).find(r => newDate >= r.start_date && newDate <= r.end_date);
+        if (activeRule) {
+            const [h, m] = newTime.split(':').map(Number);
+            const slotMin = h * 60 + m;
+            const [oh, om] = activeRule.open_time.split(':').map(Number);
+            const openMin = oh * 60 + om;
+            const [ch, cm] = activeRule.close_time.split(':').map(Number);
+            const closeMin = ch * 60 + cm;
+            if (slotMin < openMin || slotMin >= closeMin) {
+                alert(`Atenção: O horário ${newTime} está fora do expediente especial (abre ${activeRule.open_time.substring(0, 5)} - fecha ${activeRule.close_time.substring(0, 5)}). Deseja continuar mesmo assim?`);
+            }
+        }
         setSaving(true)
         await onConfirm(apt.id, newDate, newTime, dur)
     }
@@ -1015,7 +1048,7 @@ function RescheduleModal({ apt, onClose, onConfirm }) {
 }
 
 // ─── New Appointment Modal ─────────────────────────────────
-function NewAppointmentModal({ selectedDate, onClose, onSave }) {
+function NewAppointmentModal({ selectedDate, onClose, onSave, scheduleRules = [] }) {
     const [form, setForm] = useState({ customer_name: '', customer_phone: '', services: [], date: selectedDate, time: '09:00', notes: '' })
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
@@ -1034,6 +1067,21 @@ function NewAppointmentModal({ selectedDate, onClose, onSave }) {
         const endsAt = new Date(endMs).toISOString()
 
         try {
+            const activeRule = (scheduleRules || []).find(r => form.date >= r.start_date && form.date <= r.end_date);
+            if (activeRule) {
+                const [h, m] = form.time.split(':').map(Number);
+                const slotMin = h * 60 + m;
+                const [oh, om] = activeRule.open_time.split(':').map(Number);
+                const openMin = oh * 60 + om;
+                const [ch, cm] = activeRule.close_time.split(':').map(Number);
+                const closeMin = ch * 60 + cm;
+                if (slotMin < openMin || slotMin >= closeMin) {
+                    if (!confirm(`Atenção: O horário ${form.time} está fora do expediente definido (${activeRule.open_time.substring(0, 5)} às ${activeRule.close_time.substring(0, 5)}). Registrar mesmo assim?`)) {
+                        setSaving(false); return;
+                    }
+                }
+            }
+
             const res = await fetch('/api/admin', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ customer_name: form.customer_name, customer_phone: form.customer_phone, service_id: JSON.stringify(form.services), starts_at: startsAt, ends_at: endsAt, notes: form.notes || undefined })
