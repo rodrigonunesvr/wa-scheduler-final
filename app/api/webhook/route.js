@@ -209,18 +209,17 @@ ${aptsContext}
 
 ${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Como esta é a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}, meu nome é Clara! Sou a secretária virtual do Espaço C.A. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: NÃO se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
 
-3. FLUXO DE AGENDAMENTO (PROTOCOLO V47):
+3. FLUXO DE AGENDAMENTO (PROTOCOLO V48):
    - **Fase 1: Consulta**: Se o cliente perguntar por horários ou sugerir um dia, use 'check_calendar'.
-   - **Fase 2: Barreira de Venda (OBRIGATÓRIO)**: Se houver disponibilidade e o serviço for de estrutura (Manutenção, Gel, Fibra, Outra Profissional), você **NÃO PODE** agendar ainda. Você deve responder: "Temos sim! Mas antes de marcarmos, você gostaria de incluir algum serviço a mais nesse horário? ✨" e listar as opções abaixo.
-   - **Fase 3: Registro**: Use 'book_appointment' **SOMENTE** após a cliente confirmar qual adicional deseja ou dizer que quer apenas o serviço principal.
-   - **Venda Adicional (Upsell) e Sequenciamento Obrigatório (v47)**: 
-     - ⚠️ REGRA DE BLOQUEIO ABSOLUTO: É estritamente proibido usar a ferramenta 'book_appointment' antes de apresentar o menu abaixo para serviços de estrutura.
-     - **Cardápio de Adicionais para Oferecer**:
-       1. Esmaltação Básica
-       2. Esmaltação Premium
-       3. Esmaltação ou Pó + Francesinha
-       4. Esmaltação + Francesinha + Pó
-     - Exemplo de Pergunta: "Para deixar suas unhas ainda mais lindas, gostaria de aproveitar o horário e adicionar uma Esmaltação Premium ou quem sabe uma Francesinha?"
+   - **Fase 2: Barreira de Venda (OBRIGATÓRIO)**: Se o serviço for de estrutura (Manutenção, Gel, Fibra, Outra Profissional), você **NÃO PODE** agendar ainda. Responda com os horários e PERGUNTE obrigatoriamente: "Gostaria de incluir mais algum serviço nesse horário? ✨" e apresente o Cardápio abaixo.
+   - **Fase 3: Registro**: Use 'book_appointment' **SOMENTE** após a cliente escolher o adicional ou confirmar que quer apenas o principal.
+   - **Trava de Segurança (v48)**: O sistema possui uma trava técnica. Se você tentar agendar um serviço de estrutura sem ter mostrado o cardápio de adicionais antes na conversa, o agendamento falhará com erro de protocolo.
+   
+   - **Cardápio de Adicionais OBRIGATÓRIO (Protocolo V48)**: 
+     1. Esmaltação Básica
+     2. Esmaltação Premium
+     3. Esmaltação ou Pó + Francesinha
+     4. Esmaltação + Francesinha + Pó
    - Se não tiver o nome da cliente nova: Peça o nome ANTES de agendar.
 4. PÓS-AÇÃO: Após concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
 5. PROTOCOLO E PREPARO: Você DEVE informar o protocolo de preparo (veja abaixo) COMPLETO sempre que um agendamento for confirmado. Não ignore nenhuma regra, especialmente a regra da cutícula.
@@ -357,20 +356,42 @@ ${servicesListText}
                 }
                 else if (toolCall.function.name === 'book_appointment') {
                     try {
-                        const appointment = await bookAppointment({
-                            phone: phone,
-                            name: args.name,
-                            services: args.services || args.service,
-                            startsAt: args.startsAt
-                        })
+                        // --- PROTOCOLO V48: TRAVA DE SEGURANÇA DE UPSELL ---
+                        const structuralServices = ['Manutenção', 'Gel', 'Fibra', 'Banho de Gel', 'Molde F1'];
+                        const requestedServices = Array.isArray(args.services || args.service) ? (args.services || args.service) : [args.services || args.service];
+                        const isStructural = requestedServices.some(s => structuralServices.some(ss => s?.toLowerCase().includes(ss.toLowerCase())));
 
-                        if (appointment?.error) {
-                            result = JSON.stringify({ status: "error", message: appointment.message })
-                        } else {
-                            result = JSON.stringify({ status: "success", appointment })
-                            try {
-                                await supabase.from('customers').upsert({ phone: phone, name: args.name }, { onConflict: 'phone' })
-                            } catch (e) { console.error('Customer upsert error:', e) }
+                        if (isStructural) {
+                            // Verifica se o bot já ofereceu o cardápio de esmaltações no histórico recente
+                            const hasOfferedUpsell = history.some(m =>
+                                m.role === 'assistant' &&
+                                (m.content?.includes('Esmaltação') || m.content?.includes('Francesinha') || m.content?.includes('adicionar mais algum serviço'))
+                            );
+
+                            if (!hasOfferedUpsell) {
+                                result = JSON.stringify({
+                                    status: "error",
+                                    message: "PROTOCOLO V48 BLOQUEADO: Você não ofereceu o Cardápio de Adicionais (Esmaltações) antes de agendar. Peça desculpas e ofereça o menu PRIMEIRO."
+                                });
+                            }
+                        }
+
+                        if (!result) { // Se não foi bloqueado pela trava
+                            const appointment = await bookAppointment({
+                                phone: phone,
+                                name: args.name,
+                                services: args.services || args.service,
+                                startsAt: args.startsAt
+                            })
+
+                            if (appointment?.error) {
+                                result = JSON.stringify({ status: "error", message: appointment.message })
+                            } else {
+                                result = JSON.stringify({ status: "success", appointment })
+                                try {
+                                    await supabase.from('customers').upsert({ phone: phone, name: args.name }, { onConflict: 'phone' })
+                                } catch (e) { console.error('Customer upsert error:', e) }
+                            }
                         }
                     } catch (err) {
                         result = JSON.stringify({ status: "error", message: err.message })
