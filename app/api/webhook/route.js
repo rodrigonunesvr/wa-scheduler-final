@@ -209,13 +209,13 @@ ${aptsContext}
 
 ${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Como esta é a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}, meu nome é Clara! Sou a secretária virtual do Espaço C.A. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: NÃO se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
 
-3. FLUXO DE AGENDAMENTO (PROTOCOLO V48):
+3. FLUXO DE AGENDAMENTO (PROTOCOLO V49 - BLINDADO):
    - **Fase 1: Consulta**: Se o cliente perguntar por horários ou sugerir um dia, use 'check_calendar'.
-   - **Fase 2: Barreira de Venda (OBRIGATÓRIO)**: Se o serviço for de estrutura (Manutenção, Gel, Fibra, Outra Profissional), você **NÃO PODE** agendar ainda. Responda com os horários e PERGUNTE obrigatoriamente: "Gostaria de incluir mais algum serviço nesse horário? ✨" e apresente o Cardápio abaixo.
-   - **Fase 3: Registro**: Use 'book_appointment' **SOMENTE** após a cliente escolher o adicional ou confirmar que quer apenas o principal.
-   - **Trava de Segurança (v48)**: O sistema possui uma trava técnica. Se você tentar agendar um serviço de estrutura sem ter mostrado o cardápio de adicionais antes na conversa, o agendamento falhará com erro de protocolo.
+   - **Fase 2: Venda Obrigatória**: Se o serviço for de estrutura (Manutenção, Gel, Fibra, Outra Profissional), você **ESTÁ PROIBIDA** de usar 'book_appointment' agora. Você deve responder com os horários e dizer: "Temos esses horários! Mas antes de marcarmos, para suas unhas ficarem perfeitas, você gostaria de incluir algum desses serviços adicionais junto? ✨" e enviar o Cardápio abaixo.
+   - **Fase 3: Registro**: Use 'book_appointment' **SOMENTE** no próximo turno, após a cliente responder sobre os adicionais.
+   - **Trava de Código Ativa**: Se você tentar agendar sem oferecer o menu, o sistema vai REJEITAR tecnicamente o seu comando.
    
-   - **Cardápio de Adicionais OBRIGATÓRIO (Protocolo V48)**: 
+   - **Cardápio de Adicionais OBRIGATÓRIO**: 
      1. Esmaltação Básica
      2. Esmaltação Premium
      3. Esmaltação ou Pó + Francesinha
@@ -362,17 +362,23 @@ ${servicesListText}
                         const isStructural = requestedServices.some(s => structuralServices.some(ss => s?.toLowerCase().includes(ss.toLowerCase())));
 
                         if (isStructural) {
-                            // Verifica se o bot já ofereceu o cardápio de esmaltações no histórico recente
-                            const hasOfferedUpsell = history.some(m =>
-                                m.role === 'assistant' &&
-                                (m.content?.includes('Esmaltação') || m.content?.includes('Francesinha') || m.content?.includes('adicionar mais algum serviço'))
-                            );
+                            // Verifica se os serviços solicitados JÁ INCLUEM um adicional (upsell)
+                            const upsellWords = ['Esmaltação', 'Francesinha', 'Pó'];
+                            const alreadyHasUpsell = requestedServices.some(s => upsellWords.some(w => s?.toLowerCase().includes(w.toLowerCase())));
 
-                            if (!hasOfferedUpsell) {
-                                result = JSON.stringify({
-                                    status: "error",
-                                    message: "PROTOCOLO V48 BLOQUEADO: Você não ofereceu o Cardápio de Adicionais (Esmaltações) antes de agendar. Peça desculpas e ofereça o menu PRIMEIRO."
-                                });
+                            if (!alreadyHasUpsell) {
+                                // Verifica se o bot já ofereceu o cardápio no histórico recente
+                                const hasOfferedUpsell = history.some(m =>
+                                    m.role === 'assistant' &&
+                                    (m.content?.includes('Esmaltação') || m.content?.includes('Francesinha') || m.content?.includes('adicionar mais algum serviço'))
+                                );
+
+                                if (!hasOfferedUpsell) {
+                                    result = JSON.stringify({
+                                        status: "error",
+                                        message: "PROTOCOLO V49 BLOQUEADO: Você está tentando agendar um serviço de estrutura sem oferecer o Menu de Adicionais antes. Para agendar, você DEVE PRIMEIRO perguntar se a cliente quer esmaltação básica, premium, etc. Envie o menu agora e aguarde a resposta dela."
+                                    });
+                                }
                             }
                         }
 
