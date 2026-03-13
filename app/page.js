@@ -62,6 +62,86 @@ function getMonthDates(year, month) {
 }
 
 // ─── Main ──────────────────────────────────────────────────
+// ─── Schedule Rule Modal (Periods) ────────────────────────
+function ScheduleRuleModal({ onClose, onSave, rule = null }) {
+    const [form, setForm] = useState(rule ? { ...rule } : {
+        start_date: fmt(new Date()),
+        end_date: fmt(new Date()),
+        open_time: '07:00',
+        close_time: '12:00',
+        label: ''
+    })
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState('')
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        setSaving(true); setError('')
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'rule', ...form })
+            })
+            const data = await res.json()
+            if (data.error) throw new Error(data.error)
+            onSave()
+        } catch (e) { setError(e.message) }
+        setSaving(false)
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-600 to-purple-700 text-white">
+                    <h3 className="text-base font-extrabold flex items-center gap-2"><CalendarClock size={18} /> {rule ? 'Editar' : 'Novo'} Período Especial</h3>
+                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Início</label>
+                            <input type="date" required value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Fim</label>
+                            <input type="date" required value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Abertura</label>
+                            <input type="time" required value={form.open_time} onChange={e => setForm({ ...form, open_time: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Fechamento</label>
+                            <input type="time" required value={form.close_time} onChange={e => setForm({ ...form, close_time: e.target.value })}
+                                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Rótulo (ex: Férias)</label>
+                        <input type="text" value={form.label} onChange={e => setForm({ ...form, label: e.target.value })}
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" placeholder="Ex: Horário de Verão..." />
+                    </div>
+
+                    {error && <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl border border-red-100">{error}</div>}
+
+                    <button type="submit" disabled={saving}
+                        className="w-full py-3 rounded-xl bg-violet-600 text-white font-bold hover:bg-violet-700 disabled:opacity-50 transition-all shadow-lg shadow-violet-200 active:scale-[0.99]">
+                        {saving ? 'Salvando...' : 'Salvar Período'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    )
+}
+
 export default function AdminDashboard() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState(fmt(new Date()))
@@ -261,7 +341,7 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-2">
                         {(sidebarOpen || isMobile) && (
                             <span className="font-black text-2xl tracking-tighter bg-gradient-to-br from-white via-white to-white/50 bg-clip-text text-transparent select-none">
-                                AgendaÍ
+                                AgendaÍ v38
                             </span>
                         )}
                     </div>
@@ -1552,6 +1632,8 @@ function BlockModal({ selectedDate, onClose, onSave }) {
         </div>
     )
 }
+
+
 
 // ─── SVG Donut Chart ───────────────────────────────────────
 function DonutChart({ data }) {
