@@ -341,7 +341,7 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-2">
                         {(sidebarOpen || isMobile) && (
                             <span className="font-black text-2xl tracking-tighter bg-gradient-to-br from-white via-white to-white/50 bg-clip-text text-transparent select-none">
-                                AgendaÍ v40
+                                AgendaÍ
                             </span>
                         )}
                     </div>
@@ -661,11 +661,11 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                                 {isHour && <span className="text-[11px] font-bold text-slate-400">{slot}</span>}
                             </div>
                             <div className={`flex-1 border-l border-slate-100 ${isHour ? 'border-t border-t-slate-200' : 'border-t border-t-slate-50'} 
-                                ${restricted ? 'bg-slate-50/80 opacity-60 cursor-not-allowed' : isBlocked ? 'bg-slate-100' : isOccupied ? 'bg-violet-50/50' : ''}`}>
+                                ${restricted ? 'bg-slate-200/50 opacity-100 cursor-not-allowed' : isBlocked ? 'bg-slate-100' : isOccupied ? 'bg-violet-50/50' : ''}`}>
                                 {restricted && !isOccupied && !isBlocked && (
-                                    <div className="h-full flex items-center justify-center gap-1.5 grayscale opacity-30">
-                                        <Ban size={14} className="text-slate-400" />
-                                        <span className="text-[9px] font-black uppercase text-slate-400">Restrito</span>
+                                    <div className="h-full flex items-center justify-center gap-1.5 grayscale opacity-60">
+                                        <Ban size={14} className="text-slate-500" />
+                                        <span className="text-[9px] font-black uppercase text-slate-500">Horário Restrito</span>
                                     </div>
                                 )}
                             </div>
