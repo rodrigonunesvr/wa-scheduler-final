@@ -246,11 +246,12 @@ export default function AdminDashboard() {
             {/* Sidebar */}
             <aside className={`${isMobile ? 'sidebar-drawer' : sidebarOpen ? 'w-56' : 'w-16'} ${isMobile && sidebarOpen ? 'open' : ''} bg-gradient-to-b from-violet-700 to-purple-900 text-white transition-all duration-300 flex flex-col shrink-0 h-full`}>
                 <div className="p-4 flex items-center justify-between border-b border-white/10">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                            <Scissors className="text-white" size={16} />
-                        </div>
-                        {(sidebarOpen || isMobile) && <span className="font-extrabold text-lg tracking-tight">AgendaÍ</span>}
+                    <div className="flex items-center gap-2">
+                        {(sidebarOpen || isMobile) && (
+                            <span className="font-black text-2xl tracking-tighter bg-gradient-to-br from-white via-white to-white/50 bg-clip-text text-transparent select-none">
+                                AgendaÍ
+                            </span>
+                        )}
                     </div>
                     {isMobile && <button onClick={() => setSidebarOpen(false)} className="p-1 text-white/50 hover:text-white"><X size={20} /></button>}
                 </div>
@@ -1623,7 +1624,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
     // If period is Infinity (Todo o período), just take all.
     const startPeriod = new Date();
     if (filterType === 'period') {
-        startPeriod.setDate(today.getDate() - period);
+        startPeriod.setDate(today.getDate() - (period - 1));
     } else if (customRange.start) {
         const [y, m, d] = customRange.start.split('-').map(Number);
         startPeriod.setFullYear(y, m - 1, d);
@@ -1659,12 +1660,15 @@ function ReportsPage({ isMobile, onOpenMenu }) {
 
     // Daily Chart Data (Aggregate by Date)
     const chartData = [];
-    const diffDays = Math.ceil((endPeriod - startPeriod) / (1000 * 60 * 60 * 24));
-    const iterations = Math.min(diffDays + 1, 31); // Max 31 days to avoid clutter
+    // Reset hours to compare dates strictly
+    const sDate = new Date(startPeriod.getFullYear(), startPeriod.getMonth(), startPeriod.getDate());
+    const eDate = new Date(endPeriod.getFullYear(), endPeriod.getMonth(), endPeriod.getDate());
+    const diffDays = Math.round((eDate - sDate) / (1000 * 60 * 60 * 24));
+    const iterations = Math.min(diffDays + 1, 31);
 
     for (let i = 0; i < iterations; i++) {
-        const d = new Date(startPeriod);
-        d.setDate(startPeriod.getDate() + i);
+        const d = new Date(sDate);
+        d.setDate(sDate.getDate() + i);
         const dStr = fmt(d);
         const dayApts = filteredApts.filter(a => toSPDate(a.starts_at) === dStr);
         chartData.push({
