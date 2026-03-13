@@ -166,7 +166,7 @@ export async function POST(request) {
                 if (newStart < aptEnd && newEnd > aptStart) {
                     const time = new Date(apt.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
                     return NextResponse.json({
-                        error: `Conflito de horário! Já existe agendamento de ${apt.customer_name} às ${time}.`
+                        error: `Conflito de horÃƒÂ¡rio! JÃƒÂ¡ existe agendamento de ${apt.customer_name} ÃƒÂ s ${time}.`
                     }, { status: 409 })
                 }
             }
@@ -185,7 +185,7 @@ export async function POST(request) {
                 const bEnd = new Date(block.ends_at).getTime()
                 if (newStart < bEnd && newEnd > bStart) {
                     return NextResponse.json({
-                        error: `Conflito! Esse horário está bloqueado (${block.title}).`
+                        error: `Conflito! Esse horÃƒÂ¡rio estÃƒÂ¡ bloqueado (${block.title}).`
                     }, { status: 409 })
                 }
             }
