@@ -122,11 +122,16 @@ export async function POST(request) {
             return NextResponse.json({ status: 'empty-message' })
         }
 
-        // 5. Update History (keep last 20 messages to avoid context overflow)
+        // 5. Update History (keep last 40 messages to avoid context overflow)
         let history = session.context_json || []
         history.push({ role: 'user', content: userMessage })
-        if (history.length > 20) {
-            history = history.slice(-20)
+
+        // Smart Slicing: Ensure we don't end up with a tool message as the first message
+        if (history.length > 40) {
+            history = history.slice(-40)
+            while (history.length > 0 && (history[0].role === 'tool' || (history[0].role === 'assistant' && history[0].tool_calls))) {
+                history.shift()
+            }
         }
 
         const moment = (await import('moment-timezone')).default
@@ -330,10 +335,17 @@ ${servicesListText}
 
             for (const toolCall of aiMsg.tool_calls) {
                 let result = ""
-                const args = JSON.parse(toolCall.function.arguments)
-                console.log(`🛠️ Executando: ${toolCall.function.name} `, args)
+                let args = {}
+                try {
+                    args = JSON.parse(toolCall.function.arguments)
+                } catch (e) {
+                    console.error("Erro ao parsear argumentos da ferramenta:", e)
+                    result = JSON.stringify({ status: "error", message: "Arguments parsing failed" })
+                }
 
-                if (toolCall.function.name === 'check_calendar') {
+                console.log(`🛠️ Executando: ${toolCall.function.name} `, args)
+                if (result) { /* Already handled error above */ }
+                else if (toolCall.function.name === 'check_calendar') {
                     const slots = await findAvailableSlots({
                         requestedDate: args.date,
                         period: args.period
