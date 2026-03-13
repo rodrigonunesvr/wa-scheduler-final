@@ -130,10 +130,10 @@ export default function AdminDashboard() {
             const schData = await schRes.json()
             const rulesData = await rulesRes.json()
 
-            setAppointments(aptData)
-            setBlocks(blkData)
-            setOverrides(schData)
-            setScheduleRules(rulesData)
+            setAppointments(Array.isArray(aptData) ? aptData : [])
+            setBlocks(Array.isArray(blkData) ? blkData : [])
+            setOverrides(Array.isArray(schData) ? schData : [])
+            setScheduleRules(Array.isArray(rulesData) ? rulesData : [])
 
             try {
                 const svcRes = await fetch(`/api/services?${cacheBuster}`)
@@ -1978,7 +1978,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, rules = [], onRefresh, 
             </header>
             <div className="flex-1 overflow-auto p-2 md:p-4 space-y-4">
                 {/* Horizontal Periods List */}
-                {rules.length > 0 && (
+                {Array.isArray(rules) && rules.length > 0 && (
                     <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">Períodos Especiais Ativos</h3>
                         <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
@@ -2058,8 +2058,8 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, rules = [], onRefresh, 
                             const dateStr = fmt(date)
                             const inMonth = date.getMonth() === thisMonth
                             const open = isDayOpen(date)
-                            const override = getOverride(dateStr)
-                            const rule = rules.find(r => dateStr >= r.start_date && dateStr <= r.end_date);
+                            const override = (overrides || []).find(o => o.date === dateStr)
+                            const rule = (rules || []).find(r => dateStr >= r.start_date && dateStr <= r.end_date);
                             const isException = !!override
                             const isPast = date < new Date(fmt(new Date()) + 'T00:00:00')
                             const isSaving = saving === dateStr
