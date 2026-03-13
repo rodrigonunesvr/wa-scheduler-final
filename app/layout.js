@@ -1,14 +1,14 @@
 import './globals.css'
 
 export const metadata = {
-    title: 'AgendaÃƒÂ Ã¢â‚¬â€ InteligÃƒÂªncia em Agendamentos',
-    description: 'Sistema de Agendamento Inteligente para SalÃƒÂµes, Barbearias e ClÃƒÂ­nicas.',
+    title: 'AgendaÍ — Inteligência em Agendamentos',
+    description: 'Sistema de Agendamento Inteligente para Salões, Barbearias e Clínicas.',
     manifest: '/manifest.json',
     themeColor: '#7c3aed',
     appleWebApp: {
         capable: true,
         statusBarStyle: 'black-translucent',
-        title: 'AgendaÃƒÂ',
+        title: 'AgendaÍ',
     },
     viewport: {
         width: 'device-width',

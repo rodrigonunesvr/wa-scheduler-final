@@ -26,7 +26,7 @@ export async function POST(request) {
         const { name, price, duration, active } = body
 
         if (!name || isNaN(price) || isNaN(duration)) {
-            return NextResponse.json({ error: 'Campos invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos.' }, { status: 400 })
+            return NextResponse.json({ error: 'Campos invÃƒÂ¡lidos.' }, { status: 400 })
         }
 
         const { data, error } = await supabase

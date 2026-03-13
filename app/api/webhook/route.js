@@ -10,7 +10,7 @@ export async function POST(request) {
     try {
         // Modular Check: Is the AI Bot enabled for this project?
         if (!SAAS_CONFIG.modules.botEnabled) {
-            console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â¤ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³dulo de Bot desativado no SAAS_CONFIG. Ignorando processamento de IA.')
+            console.log('Ã°Å¸Â¤â€“ MÃƒÂ³dulo de Bot desativado no SAAS_CONFIG. Ignorando processamento de IA.')
             return NextResponse.json({ status: 'bot-disabled' })
         }
 
@@ -23,7 +23,7 @@ export async function POST(request) {
         const currentApiKey = process.env.EVOLUTION_API_KEY
 
         if (headerKey !== currentApiKey && bodyKey !== currentApiKey) {
-            console.error('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â« Invalid API Key. Header:', headerKey, 'Body:', bodyKey)
+            console.error('Ã°Å¸Å¡Â« Invalid API Key. Header:', headerKey, 'Body:', bodyKey)
             // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -63,13 +63,13 @@ export async function POST(request) {
             .maybeSingle()
 
         if (fetchError) {
-            console.error('ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Error fetching session:', fetchError)
+            console.error('Ã¢ÂÅ’ Error fetching session:', fetchError)
         }
 
         let session = existingSession
 
         if (!session) {
-            console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Criando nova sessÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o para:', phone)
+            console.log('Ã°Å¸â€ â€¢ Criando nova sessÃƒÂ£o para:', phone)
             const { data: newSession, error: insertError } = await supabase
                 .from('wa_sessions')
                 .insert({ phone, state: 'START', context_json: [] })
@@ -77,7 +77,7 @@ export async function POST(request) {
                 .maybeSingle()
 
             if (insertError) {
-                console.error('ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Error creating session:', insertError)
+                console.error('Ã¢ÂÅ’ Error creating session:', insertError)
                 return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
             }
             session = newSession
@@ -88,13 +88,13 @@ export async function POST(request) {
             const diffMins = (nowMs - lastUpdate) / (1000 * 60)
 
             if (diffMins > 10) {
-                console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ SessÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o expirada (>10min). Resetando histÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³rico.')
+                console.log('Ã°Å¸â€¢â€™ SessÃƒÂ£o expirada (>10min). Resetando histÃƒÂ³rico.')
                 session.context_json = []
             }
         }
 
         if (!session) {
-            console.error('ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Session is still null after attempt to create')
+            console.error('Ã¢ÂÅ’ Session is still null after attempt to create')
             return NextResponse.json({ error: 'Session initialization failed' }, { status: 500 })
         }
 
@@ -107,15 +107,15 @@ export async function POST(request) {
             .maybeSingle()
         if (customer) {
             customerName = customer.name
-            console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¤ Cliente reconhecida:', customerName)
+            console.log('👤 Cliente reconhecida:', customerName)
         } else {
-            console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¤ Cliente nova. Phone:', phone, 'Error:', customerError?.message)
+            console.log('👤 Cliente nova. Phone:', phone, 'Error:', customerError?.message)
         }
 
         // 4. Process Content (Text or Audio)
         let userMessage = text
         if (audioUrl) {
-            userMessage = "[ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂUDIO RECEBIDO - TranscriÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o pendente na v1]"
+            userMessage = "[ÁUDIO RECEBIDO - Transcrição pendente na v1]"
         }
 
         if (!userMessage) {
@@ -137,7 +137,7 @@ export async function POST(request) {
         const currentHour = now.hour()
 
         // 6.1 Contextual Greeting
-        let greeting = 'OlÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡'
+        let greeting = 'Olá'
         if (currentHour >= 5 && currentHour < 12) greeting = 'Bom dia'
         else if (currentHour >= 12 && currentHour < 18) greeting = 'Boa tarde'
         else greeting = 'Boa noite'
@@ -146,8 +146,8 @@ export async function POST(request) {
         const futureApts = await getAppointmentsByPhone(phone)
         const hasApts = futureApts && futureApts.length > 0
         const aptsContext = hasApts
-            ? `\n-- - AGENDAMENTOS FUTUROS DESTA CLIENTE-- -\n` + futureApts.map(a => ` - ${moment(a.starts_at).tz('America/Sao_Paulo').format('DD/MM [ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â s] HH:mm')}: ${a.service_id} `).join('\n')
-            : '\nEsta cliente nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o possui agendamentos futuros registrados.'
+            ? `\n--- AGENDAMENTOS FUTUROS DESTA CLIENTE ---\n` + futureApts.map(a => ` - ${moment(a.starts_at).tz('America/Sao_Paulo').format('DD/MM [às] HH:mm')}: ${a.service_id} `).join('\n')
+            : '\nEsta cliente não possui agendamentos futuros registrados.'
 
         // 6.3 Determine if this is the start of the session (no assistant messages yet)
         const isFirstInteraction = !history.some(m => m.role === 'assistant')
@@ -155,7 +155,7 @@ export async function POST(request) {
         // Fetch Settings for Niche and Global Info
         const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single()
         const niche = settings?.niche || 'salon'
-        const bizName = settings?.business_name || 'AgendaÃ­'
+        const bizName = settings?.business_name || 'AgendaÍ'
         const welcome = settings?.welcome_message || ''
         const customPrompt = settings?.bot_prompt || ''
 
@@ -167,21 +167,19 @@ export async function POST(request) {
 
         // Create Niche-based Persona
         const personas = {
-            salon: `VocÃª Ã© a Clara, a secretÃ¡ria virtual do ${bizName}. VocÃª Ã© gentil, usa muitos emojis e Ã© especialista em beleza e estÃ©tica.`,
-            barber: `VocÃª Ã© o "Brother", o atendente gente boa da ${bizName}. VocÃª fala de forma descontraÃ­da, usa gÃ­rias de barbearia (ex: "E aÃ­, fera?", "Beleza, meu caro?") e Ã© focado no estilo do cliente.`,
-            clinic: `VocÃª Ã© a Dra. Clara, assistente da ${bizName}. VocÃª Ã© profissional, formal e extremamente organizada. Transmite confianÃ§a e saÃºde.`
+            salon: `Você é a Clara, a secretária virtual do ${bizName}. Você é gentil, usa muitos emojis e é especialista em beleza e estética.`,
+            barber: `Você é o "Brother", o atendente gente boa da ${bizName}. Você fala de forma descontraída, usa gírias de barbearia (ex: "E aí, fera?", "Beleza, meu caro?") e é focado no estilo do cliente.`,
+            clinic: `Você é a Dra. Clara, assistente da ${bizName}. Você é profissional, formal e extremamente organizada. Transmite confiança e saúde.`
         }
-        const currentPersona = customPrompt || personas[niche] || personas.salon
+        let currentPersona = customPrompt || personas[niche] || personas.salon
 
         // Fetch active services and format for AI
         const { data: dbServices } = await supabase.from('services').select('*').eq('active', true).order('name')
         const servicesListText = dbServices && dbServices.length > 0
             ? dbServices.map(s => `- ${s.name}: R$ ${s.price.toFixed(2)}`).join('\n')
-            : '- Nenhum serviÃ§o disponÃ­vel no momento.'
+            : '- Nenhum serviço disponível no momento.'
 
         let calendarLines = ''
-        // Fetch schedule overrides
-        const scheduleOverrides = await fetchScheduleOverrides();
         for (let i = 0; i < 7; i++) {
             const day = now.clone().add(i, 'days')
             const dayName = day.format('dddd')
@@ -189,8 +187,8 @@ export async function POST(request) {
             const isoDate = day.format('YYYY-MM-DD')
             const isOpen = isDayOpen(isoDate, scheduleOverrides)
             const isOverride = scheduleOverrides.some(o => o.date === isoDate)
-            const suffix = isOverride ? ' (exceÃ§Ã£o)' : ''
-            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? 'âœ… aberto' + suffix : 'âŒ fechado' + suffix} \n`
+            const suffix = isOverride ? ' (exceÃƒÂ§ÃƒÂ£o)' : ''
+            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? 'Ã¢Å“â€¦ aberto' + suffix : 'Ã¢ÂÅ’ fechado' + suffix} \n`
         }
 
         // 7. AI Brain (GPT-4o-mini)
@@ -200,48 +198,49 @@ export async function POST(request) {
 ${currentPersona}
 ${welcome ? `Mensagem de Boas-vindas/Aviso: ${welcome}` : ''}
 
-Seu objetivo Ã© agendar serviÃ§os, tirar dÃºvidas sobre preÃ§os e informar sobre o estabelecimento.
+Seu objetivo ÃƒÂ© agendar serviÃƒÂ§os, tirar dÃƒÂºvidas sobre preÃƒÂ§os e informar sobre o estabelecimento.
 
-Hoje Ã© ${todayLabel}.
+Hoje ÃƒÂ© ${todayLabel}.
 
---- CALENDÃRIO DOS PRÃ“XIMOS DIAS ---
+--- CALENDÃƒÂRIO DOS PRÃƒâ€œXIMOS DIAS-- -
     ${calendarLines}
-Normalmente funcionamos de terÃ§a a sÃ¡bado, mas pode haver exceÃ§Ãµes. Consulte SEMPRE o calendÃ¡rio acima para saber se um dia estÃ¡ aberto ou fechado.
+Normalmente funcionamos de terÃƒÂ§a a sÃƒÂ¡bado, mas pode haver exceÃƒÂ§ÃƒÂµes.Consulte SEMPRE o calendÃƒÂ¡rio acima para saber se um dia estÃƒÂ¡ aberto ou fechado.
 
     ${customerName ? `
 --- CLIENTE IDENTIFICADA ---
-Essa cliente jÃ¡ Ã© cadastrada! O nome dela Ã©: ${customerName}.
-âš ï¸ REGRA DE OURO: Chame-a pelo nome (ex: "Oi, ${customerName}!") logo na primeira frase de CADA resposta. Seja carinhosa e atenciosa.
+Essa cliente jÃƒÂ¡ ÃƒÂ© cadastrada! O nome dela ÃƒÂ©: ${customerName}.
+Ã¢Å¡Â Ã¯Â¸Â REGRA DE OURO: Chame-a pelo nome (ex: "Oi, ${customerName}!") logo na primeira frase de CADA resposta. Seja carinhosa e atenciosa.
 ` : `
 --- CLIENTE NOVA ---
-VocÃª ainda nÃ£o sabe o nome desta cliente. 
-âš ï¸ REGRA CRÃTICA: Se a cliente quiser agendar, vocÃª DEVE perguntar o nome dela antes de usar a ferramenta 'book_appointment'. VocÃª sÃ³ pode agendar se tiver o nome completo dela para o registro.
+VocÃƒÂª ainda nÃƒÂ£o sabe o nome desta cliente. 
+Ã¢Å¡Â Ã¯Â¸Â REGRA CRÃƒÂTICA: Se a cliente quiser agendar, vocÃƒÂª DEVE perguntar o nome dela antes de usar a ferramenta 'book_appointment'. VocÃƒÂª sÃƒÂ³ pode agendar se tiver o nome completo dela para o registro.
 `}
 
 ${aptsContext}
 
-${isFirstInteraction ? `REGRA DE SAUDAÃ‡ÃƒO: Como esta Ã© a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}! Sou o assistente virtual do ${bizName}. Como posso ajudar?".` : `REGRA DE SAUDAÃ‡ÃƒO: NÃƒO se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
+${isFirstInteraction ? `REGRA DE SAUDAÃƒâ€¡ÃƒÆ’O: Como esta ÃƒÂ© a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}! Sou o assistente virtual do ${bizName}. Como posso ajudar?".` : `REGRA DE SAUDAÃƒâ€¡ÃƒÆ’O: NÃƒÆ’O se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
 
 REGRAS DE COMPORTAMENTO:
-1. PRIORIDADE DE AÃ‡ÃƒO: Se o cliente mencionar um serviÃ§o e uma data/dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
-2. AGENDAMENTOS EXISTENTES: Se o cliente jÃ¡ tiver agendamentos (veja acima), mencione-os apenas uma vez. NÃ£o deixe que isso impeÃ§a de marcar NOVOS horÃ¡rios.
+1. PRIORIDADE DE AÃƒâ€¡ÃƒÆ’O: Se o cliente mencionar um serviÃƒÂ§o e uma data / dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
+2. AGENDAMENTOS EXISTENTES: Se o cliente jÃƒÂ¡ tiver agendamentos(veja acima), mencione - os apenas uma vez.NÃƒÂ£o deixe que isso impeÃƒÂ§a de marcar NOVOS horÃƒÂ¡rios.
 3. FLUXO DE AGENDAMENTO:
-- Se o cliente perguntar por horÃ¡rios ou sugerir um dia: Use 'check_calendar'.
-   - Se o cliente escolher um horÃ¡rio e vocÃª tiver o NOME: Use 'book_appointment' IMEDIATAMENTE apÃ³s verificar a disponibilidade (se o usuÃ¡rio jÃ¡ demonstrou intenÃ§Ã£o de marcar).
-   - Se nÃ£o tiver o nome da cliente nova: PeÃ§a o nome ANTES de agendar.
-4. PÃ“S-AÃ‡ÃƒO: ApÃ³s concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
-5. PROTOCOLO E PREPARO: VocÃª DEVE informar o protocolo de preparo completo sempre que um agendamento for confirmado.
+- Se o cliente perguntar por horÃƒÂ¡rios ou sugerir um dia: Use 'check_calendar'.
+   - Se o cliente escolher um horÃƒÂ¡rio e vocÃƒÂª tiver o NOME: Use 'book_appointment' IMEDIATAMENTE apÃƒÂ³s verificar a disponibilidade(se o usuÃƒÂ¡rio jÃƒÂ¡ demonstrou intenÃƒÂ§ÃƒÂ£o de marcar).
+   - Se nÃƒÂ£o tiver o nome da cliente nova: PeÃƒÂ§a o nome ANTES de agendar.
+4. PÃƒâ€œS-AÃƒâ€¡ÃƒÆ’O: ApÃƒÂ³s concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
+5. PROTOCOLO E PREPARO: VocÃƒÂª DEVE informar o protocolo de preparo (veja abaixo) COMPLETO sempre que um agendamento for confirmado. NÃƒÂ£o ignore nenhuma regra, especialmente a regra da cutÃƒÂ­cula.
 
-6. REGRAS DE INTERATIVIDADE:
-   - **Busca por PerÃ­odo**: Antes de listar os horÃ¡rios, pergunte: "VocÃª prefere na parte da manhÃ£ ou da tarde?". Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
-   - **Venda Adicional (Upsell)**: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviÃ§o?".
+6. REGRAS DE INTERATIVIDADE(NOVO):
+   - ** Busca por PerÃƒÂ­odo **: Antes de listar os horÃƒÂ¡rios, pergunte: "VocÃƒÂª prefere na parte da manhÃƒÂ£ ou da tarde?".Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
+   - ** Venda Adicional(Upsell) **: Sempre que um agendamento estiver prestes a ser confirmado, pergunte: "Gostaria de aproveitar para adicionar mais algum serviÃƒÂ§o (como uma esmaltaÃƒÂ§ÃƒÂ£o rÃƒÂ¡pida ou remoÃƒÂ§ÃƒÂ£o)?".
+   - ** PrevenÃƒÂ§ÃƒÂ£o de Conflitos **: Se a cliente quiser dois serviÃƒÂ§os juntos, tente calcular a duraÃƒÂ§ÃƒÂ£o total e fazer um ÃƒÂºnico agendamento longo em vez de dois separados.
 
---- TABELA DE PREÃ‡OS (VALORES DINÃ‚MICOS) ---
+--- TABELA DE PREÃƒâ€¡OS (VALORES DINÃƒâ€šMICOS) ---
 ${servicesListText}
 
 ${faqsText}
 
---- CANCELAMENTO E REAGENDAMENTO ---
+--- CANCELAMENTO E REAGENDAMENTO-- -
     - Use 'list_my_appointments' para gerenciar agendamentos existentes.
 - Sempre confirme a data antes de cancelar ou mudar.
 `},
@@ -253,12 +252,12 @@ ${faqsText}
                 type: "function",
                 function: {
                     name: "check_calendar",
-                    description: "Verifica horÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rios livres na agenda.",
+                    description: "Verifica horÃƒÂ¡rios livres na agenda.",
                     parameters: {
                         type: "object",
                         properties: {
                             date: { type: "string", description: "Data no formato YYYY-MM-DD." },
-                            period: { type: "string", enum: ["manha", "tarde"], description: "Filtro de perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo: 'manha' ou 'tarde'." }
+                            period: { type: "string", enum: ["manha", "tarde"], description: "Filtro de perÃƒÂ­odo: 'manha' ou 'tarde'." }
                         }
                     }
                 }
@@ -267,13 +266,13 @@ ${faqsText}
                 type: "function",
                 function: {
                     name: "book_appointment",
-                    description: "Realiza o agendamento oficial no sistema. Suporta mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºltiplos serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os.",
+                    description: "Realiza o agendamento oficial no sistema. Suporta mÃƒÂºltiplos serviÃƒÂ§os.",
                     parameters: {
                         type: "object",
                         properties: {
                             name: { type: "string", description: "Nome completo do cliente." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista de serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os. Ex: ['Banho de Gel']" },
-                            service: { type: "string", description: "ServiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºnico." },
+                            services: { type: "array", items: { type: "string" }, description: "Lista de serviÃƒÂ§os. Ex: ['Banho de Gel']" },
+                            service: { type: "string", description: "ServiÃƒÂ§o ÃƒÂºnico." },
                             startsAt: { type: "string", description: "Data e hora ISO. Ex: 2024-05-20T14:00:00" }
                         },
                         required: ["name", "startsAt"]
@@ -306,12 +305,12 @@ ${faqsText}
                 type: "function",
                 function: {
                     name: "update_appointment",
-                    description: "Atualiza um agendamento existente (ex: adicionar um serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§o novo no mesmo horÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio).",
+                    description: "Atualiza um agendamento existente (ex: adicionar um serviÃƒÂ§o novo no mesmo horÃƒÂ¡rio).",
                     parameters: {
                         type: "object",
                         properties: {
                             id: { type: "string", description: "O ID do agendamento (obtenha via list_my_appointments)." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista atualizada de serviÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os." }
+                            services: { type: "array", items: { type: "string" }, description: "Lista atualizada de serviÃƒÂ§os." }
                         },
                         required: ["id", "services"]
                     }
@@ -332,7 +331,7 @@ ${faqsText}
         let toolTurn = 0
         while (aiMsg.tool_calls && toolTurn < 3) {
             toolTurn++
-            console.log(`ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã¢â‚¬â„¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Turno de Ferramentas ${toolTurn} `)
+            console.log(`Ã°Å¸Å’â‚¬ Turno de Ferramentas ${toolTurn} `)
 
             history.push(aiMsg) // Push the assistant tool call to history
             const toolMessagesForCompletion = [...messages, ...history.slice(messages.length - 1)] // Get recent history including aiMsg
@@ -340,7 +339,7 @@ ${faqsText}
             for (const toolCall of aiMsg.tool_calls) {
                 let result = ""
                 const args = JSON.parse(toolCall.function.arguments)
-                console.log(`ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Executando: ${toolCall.function.name} `, args)
+                console.log(`Ã°Å¸â€ºÂ Ã¯Â¸Â Executando: ${toolCall.function.name} `, args)
 
                 if (toolCall.function.name === 'check_calendar') {
                     const slots = await findAvailableSlots({
