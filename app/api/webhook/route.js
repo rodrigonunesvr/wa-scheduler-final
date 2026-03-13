@@ -23,8 +23,8 @@ export async function POST(request) {
         const currentApiKey = process.env.EVOLUTION_API_KEY
 
         if (headerKey !== currentApiKey && bodyKey !== currentApiKey) {
-            console.error('🚫 Invalid API Key. Header:', headerKey, 'Body:', bodyKey)
-            // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+            console.error('🚫 Tentativa de acesso não autorizado detectada. API Key inválida.')
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         // Support both Z-API (legacy) and Evolution API
@@ -46,6 +46,17 @@ export async function POST(request) {
         const text = isEvolution
             ? body.data?.message?.conversation || body.data?.message?.extendedTextMessage?.text || ''
             : body.message?.text?.message || body.text?.message || ''
+
+        // --- BLINDAGEM V50: PROTEÇÃO CONTRA PROMPT INJECTION ---
+        const injectionPatterns = [
+            /ignore.*instruç/i, /esqueça.*regras/i, /prompt.*system/i,
+            /instrução.*secreta/i, /admin.*access/i, /bypass.*rules/i
+        ];
+        const isMalicious = injectionPatterns.some(pattern => pattern.test(text));
+
+        const sanitizedText = isMalicious
+            ? "[MENSAGEM BLOQUEADA POR SEGURANÇA: Tentativa de manipulação de regras detectada]"
+            : text.substring(0, 1000); // Limiting text size for safety
 
         const audioUrl = isEvolution
             ? body.data?.message?.audioMessage?.url // Evolution might need different handling for audio
@@ -113,7 +124,7 @@ export async function POST(request) {
         }
 
         // 4. Process Content (Text or Audio)
-        let userMessage = text
+        let userMessage = sanitizedText
         if (audioUrl) {
             userMessage = "[ÁUDIO RECEBIDO - Transcrição pendente na v1]"
         }
