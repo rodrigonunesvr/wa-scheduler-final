@@ -1411,6 +1411,19 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                                         <button onClick={() => startEdit(svc)} className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:text-violet-600 hover:bg-violet-50 hover:border-violet-200 transition-all shadow-sm">
                                             <Edit2 size={16} />
                                         </button>
+                                        <button onClick={async () => {
+                                            if (confirm('Deseja realmente excluir este serviço?')) {
+                                                setLoading(true)
+                                                try {
+                                                    const res = await fetch(`/api/services?id=${svc.id}`, { method: 'DELETE' })
+                                                    if (res.ok) refreshGlobal()
+                                                    else alert('Erro ao excluir serviço.')
+                                                } catch (e) { console.error(e) }
+                                                setLoading(false)
+                                            }
+                                        }} className="p-2.5 rounded-xl border border-slate-200 text-red-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm">
+                                            <Trash2 size={16} />
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -1573,10 +1586,12 @@ function DonutChart({ data }) {
 
 // ─── Reports Page ──────────────────────────────────────────
 function ReportsPage({ isMobile, onOpenMenu }) {
-    const [period, setPeriod] = useState(30); // days
+    const [period, setPeriod] = useState(7); // days
+    const [customRange, setCustomRange] = useState({ start: '', end: '' });
     const [mounted, setMounted] = useState(false);
     const [allHistoricalApts, setAllHistoricalApts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [filterType, setFilterType] = useState('period'); // 'period' or 'custom'
 
     useEffect(() => {
         setMounted(true);
@@ -1605,13 +1620,24 @@ function ReportsPage({ isMobile, onOpenMenu }) {
     // Filter appointments by selected period
     // If period is Infinity (Todo o período), just take all.
     const startPeriod = new Date();
-    startPeriod.setDate(today.getDate() - period);
+    if (filterType === 'period') {
+        startPeriod.setDate(today.getDate() - period);
+    } else if (customRange.start) {
+        const [y, m, d] = customRange.start.split('-').map(Number);
+        startPeriod.setFullYear(y, m - 1, d);
+    }
     startPeriod.setHours(0, 0, 0, 0);
 
+    const endPeriod = new Date();
+    if (filterType === 'custom' && customRange.end) {
+        const [y, m, d] = customRange.end.split('-').map(Number);
+        endPeriod.setFullYear(y, m - 1, d);
+    }
+    endPeriod.setHours(23, 59, 59, 999);
+
     const filteredApts = allHistoricalApts.filter(a => {
-        if (period === 9999) return true; // Todo o Período
         const d = new Date(a.starts_at);
-        return d >= startPeriod && d <= today;
+        return d >= startPeriod && d <= endPeriod;
     });
 
     const totalRevenue = filteredApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0);
@@ -1684,22 +1710,21 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                         <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8 hidden sm:block">Inteligência de negócio e acompanhamento financeiro.</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
-                    {[{ label: '7 Dias', val: 7 }, { label: '15 Dias', val: 15 }, { label: '30 Dias', val: 30 }, { label: '90 Dias', val: 90 }, { label: 'Todo Histórico', val: 9999 }].map(f => (
-                        <button key={f.val} onClick={() => setPeriod(f.val)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${period === f.val ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/30' : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-300 hover:text-violet-600'}`}>
+                <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+                    {[{ label: '7 Dias', val: 7 }, { label: '15 Dias', val: 15 }].map(f => (
+                        <button key={f.val} onClick={() => { setPeriod(f.val); setFilterType('period') }}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${filterType === 'period' && period === f.val ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/30' : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-300 hover:text-violet-600'}`}>
                             {f.label}
                         </button>
                     ))}
-                    <button onClick={() => {
-                        const rows = [['Data', 'Cliente', 'Telefone', 'Serviço', 'Status', 'Valor']]
-                        filteredApts.forEach(a => rows.push([toSPDate(a.starts_at), a.customer_name, a.customer_phone, parseServices(a.service_id).join(' + '), a.status, calcTotal(parseServices(a.service_id))]))
-                        const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
-                        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-                        const a = document.createElement('a'); a.href = url; a.download = `relatorio_${period}d_${fmt(new Date())}.csv`; a.click();
-                    }} className="ml-2 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors whitespace-nowrap">
-                        <Download size={14} /> Exportar
-                    </button>
+
+                    <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 ml-2 shadow-sm">
+                        <Calendar size={14} className="text-slate-400" />
+                        <input type="date" value={customRange.start} onChange={e => setCustomRange({ ...customRange, start: e.target.value })} className="text-[10px] md:text-xs font-bold bg-transparent outline-none text-slate-600" />
+                        <span className="text-slate-300 font-bold">à</span>
+                        <input type="date" value={customRange.end} onChange={e => setCustomRange({ ...customRange, end: e.target.value })} className="text-[10px] md:text-xs font-bold bg-transparent outline-none text-slate-600" />
+                        <button onClick={() => setFilterType('custom')} className="bg-violet-600 text-white text-[10px] font-black px-3 py-1 rounded-lg hover:bg-violet-700 transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-violet-200">OK</button>
+                    </div>
                 </div>
             </header>
 
@@ -1760,7 +1785,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                     </div>
                     {/* Horizontal scrolling if period > 15 to fit bars nicely */}
                     <div className="overflow-x-auto scrollbar-hide">
-                        <div className="flex items-end gap-1.5 min-w-[600px] md:min-w-full" style={{ height: '220px', paddingBottom: '20px' }}>
+                        <div className="flex items-end gap-1.5 min-w-full" style={{ height: '220px', paddingBottom: '20px' }}>
                             {chartData.map((day, i) => {
                                 const heightPct = maxRevenue > 0 ? (day.revenue / maxRevenue) * 100 : 0;
                                 return (
@@ -1774,8 +1799,8 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                                             <div className="absolute bottom-0 w-full bg-gradient-to-t from-violet-600 to-purple-400 transition-all duration-500 group-hover:from-violet-500 group-hover:to-purple-300"
                                                 style={{ height: `${heightPct}%`, minHeight: day.revenue > 0 ? '4px' : '0' }} />
                                         </div>
-                                        {/* X-axis Label (Show every Nth depending on period to avoid clutter, or all if short) */}
-                                        <span className={`text-[9px] font-medium text-slate-400 mt-2 absolute -bottom-6 ${period > 15 && i % 3 !== 0 ? 'hidden md:block' : 'block'}`}>
+                                        {/* X-axis Label */}
+                                        <span className={`text-[9px] font-black text-slate-500 mt-2 absolute -bottom-6`}>
                                             {day.label.split('/')[0]}
                                         </span>
                                     </div>
@@ -1836,9 +1861,6 @@ function ReportsPage({ isMobile, onOpenMenu }) {
                         <h4 className="font-black text-lg mb-1 flex items-center gap-2"><Award size={20} className="text-amber-300" /> Crescimento Constante</h4>
                         <p className="text-sm text-white/80 font-medium">Você faturou R$ {totalRevenue} no período selecionado. Continue acompanhando e promovendo seus serviços para aumentar ainda mais!</p>
                     </div>
-                    <button className="px-6 py-3 bg-white text-violet-700 font-black text-xs uppercase tracking-widest rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg whitespace-nowrap">
-                        Baixar Resumo em PDF
-                    </button>
                 </div>
 
             </div >
