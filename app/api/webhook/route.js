@@ -223,8 +223,9 @@ REGRAS DE COMPORTAMENTO:
    - ** Busca por Período **: Antes de listar os horários, pergunte: "Você prefere na parte da manhã ou da tarde?".Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
    - **Venda Adicional (Upsell)**: 
      - Se a cliente escolher **Manutenção**, **Banho de Gel** ou **Fibra ou Molde F1**, você DEVE oferecer obrigatoriamente as opções de **Esmaltação** (Básica, Premium ou Francesinha). 
+     - ⚠️ REGRA CRÍTICA DE COMBO: Se a cliente aceitar o adicional, você deve usar **UM ÚNICO** comando 'book_appointment' enviando todos os serviços juntos no campo 'services'. NÃO peça um novo horário para o serviço adicional; o sistema somará o tempo automaticamente.
      - Exemplo: "Gostaria de aproveitar para adicionar uma Esmaltação Premium ou uma Francesinha para finalizar suas unhas?".
-     - Para outros serviços, ofereça algo que faça sentido (como uma remoção, se for o caso).
+     - Para outros serviços, ofereça algo que faça sentido.
    - ** Prevenção de Conflitos **: Se a cliente quiser dois serviços juntos, tente calcular a duração total e fazer um único agendamento longo em vez de dois separados.
 
 --- TABELA DE PREÇOS (VALORES DINÂMICOS) ---
@@ -263,13 +264,13 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "book_appointment",
-                    description: "Realiza o agendamento oficial no sistema. Suporta múltiplos serviços.",
+                    description: "Realiza o agendamento oficial no sistema. Suporta múltiplos serviços (Combo) e calcula a duração total automaticamente.",
                     parameters: {
                         type: "object",
                         properties: {
                             name: { type: "string", description: "Nome completo do cliente." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista de serviços. Ex: ['Banho de Gel']" },
-                            service: { type: "string", description: "Serviço único." },
+                            services: { type: "array", items: { type: "string" }, description: "Lista de serviços. Ex: ['Manutenção', 'Esmaltação Premium']" },
+                            service: { type: "string", description: "Serviço único (use 'services' para combos)." },
                             startsAt: { type: "string", description: "Data e hora ISO. Ex: 2024-05-20T14:00:00" }
                         },
                         required: ["name", "startsAt"]
