@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
-import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, isDayOpen, fetchScheduleOverrides } from '@/lib/calendar'
+import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, isDayOpen, fetchScheduleOverrides, fetchScheduleRules } from '@/lib/calendar'
 import { sendWhatsAppMessage } from '@/lib/evolution'
 import { SAAS_CONFIG } from '@/lib/saas_config'
 
@@ -152,8 +152,11 @@ export async function POST(request) {
         // 6.3 Determine if this is the start of the session (no assistant messages yet)
         const isFirstInteraction = !history.some(m => m.role === 'assistant')
 
-        // Fetch schedule overrides to determine open/closed days dynamically
-        const scheduleOverrides = await fetchScheduleOverrides()
+        // Fetch schedule overrides and rules to determine open/closed days dynamically
+        const [scheduleOverrides, scheduleRules] = await Promise.all([
+            fetchScheduleOverrides(),
+            fetchScheduleRules()
+        ])
 
         // Fetch active services and format for AI
         const { data: dbServices } = await supabase.from('services').select('*').eq('active', true).order('name')
@@ -167,9 +170,10 @@ export async function POST(request) {
             const dayName = day.format('dddd')
             const dateLabel = day.format('DD/MM/YYYY')
             const isoDate = day.format('YYYY-MM-DD')
-            const isOpen = isDayOpen(isoDate, scheduleOverrides)
+            const isOpen = isDayOpen(isoDate, scheduleOverrides, scheduleRules)
             const isOverride = scheduleOverrides.some(o => o.date === isoDate)
-            const suffix = isOverride ? ' (exceção)' : ''
+            const specialRule = scheduleRules.find(r => isoDate >= r.start_date && isoDate <= r.end_date)
+            const suffix = isOverride ? ' (exceção)' : specialRule ? ` (especial: ${specialRule.open_time.substring(0, 5)}-${specialRule.close_time.substring(0, 5)})` : ''
             calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? '✅ aberto' + suffix : '❌ fechado' + suffix} \n`
         }
 
