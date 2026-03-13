@@ -54,6 +54,16 @@ export async function GET(request) {
             return NextResponse.json(data || [])
         }
 
+        // --- Schedule rules (Special Periods) ---
+        if (type === 'rules') {
+            const { data, error } = await supabase
+                .from('schedule_rules')
+                .select('*')
+                .order('start_date', { ascending: true })
+            if (error) throw error
+            return NextResponse.json(data || [])
+        }
+
         // --- Default: appointments (includes all statuses for visual display) ---
         let query = supabase
             .from('appointments')
@@ -116,6 +126,23 @@ export async function POST(request) {
                 .upsert({ date, is_open, reason: reason || '' }, { onConflict: 'date' })
                 .select()
                 .single()
+            if (error) throw error
+            return NextResponse.json(data)
+        }
+
+        // --- Create/Update Schedule Rule (Special Period) ---
+        if (body.type === 'rule') {
+            const { id, start_date, end_date, open_time, close_time, label } = body
+            const payload = { start_date, end_date, open_time, close_time, label: label || '' }
+
+            let query;
+            if (id) {
+                query = supabase.from('schedule_rules').update(payload).eq('id', id)
+            } else {
+                query = supabase.from('schedule_rules').insert(payload)
+            }
+
+            const { data, error } = await query.select().single()
             if (error) throw error
             return NextResponse.json(data)
         }
@@ -243,6 +270,15 @@ export async function DELETE(request) {
         if (type === 'schedule') {
             const { error } = await supabase
                 .from('schedule_overrides')
+                .delete()
+                .eq('id', id)
+            if (error) throw error
+            return NextResponse.json({ status: 'deleted' })
+        }
+
+        if (type === 'rule') {
+            const { error } = await supabase
+                .from('schedule_rules')
                 .delete()
                 .eq('id', id)
             if (error) throw error

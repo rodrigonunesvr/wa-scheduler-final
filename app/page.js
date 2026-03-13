@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle } from 'lucide-react'
+import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, ArrowRight } from 'lucide-react'
 
 const whatsappLink = (phone, text = '') => { const base = `https://wa.me/${phone.replace(/\D/g, '')}`; return text ? `${base}?text=${encodeURIComponent(text)}` : base }
 
@@ -68,6 +68,7 @@ export default function AdminDashboard() {
     const [appointments, setAppointments] = useState([])
     const [blocks, setBlocks] = useState([])
     const [overrides, setOverrides] = useState([])
+    const [scheduleRules, setScheduleRules] = useState([])
     const [globalServices, setGlobalServices] = useState(SERVICES)
     const [loading, setLoading] = useState(true)
     const [showNewModal, setShowNewModal] = useState(false)
@@ -118,14 +119,21 @@ export default function AdminDashboard() {
         const e = new Date(currentDate); e.setMonth(e.getMonth() + 2)
         const cacheBuster = `t=${Date.now()}`
         try {
-            const [aptRes, blkRes, schRes] = await Promise.all([
+            const [aptRes, blkRes, schRes, rulesRes] = await Promise.all([
                 fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}&${cacheBuster}`),
                 fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}&${cacheBuster}`),
-                fetch(`/api/admin?type=schedule&${cacheBuster}`)
+                fetch(`/api/admin?type=schedule&${cacheBuster}`),
+                fetch(`/api/admin?type=rules&${cacheBuster}`)
             ])
             const aptData = await aptRes.json()
             const blkData = await blkRes.json()
             const schData = await schRes.json()
+            const rulesData = await rulesRes.json()
+
+            setAppointments(aptData)
+            setBlocks(blkData)
+            setOverrides(schData)
+            setScheduleRules(rulesData)
 
             try {
                 const svcRes = await fetch(`/api/services?${cacheBuster}`)
@@ -223,6 +231,10 @@ export default function AdminDashboard() {
         const dateStr = fmt(date)
         const override = overrides.find(o => o.date === dateStr)
         if (override) return override.is_open
+
+        const rule = scheduleRules.find(r => dateStr >= r.start_date && dateStr <= r.end_date)
+        if (rule) return true
+
         // Default: closed Sun (0) and Mon (1)
         return ![0, 1].includes(date.getDay())
     }
@@ -359,7 +371,7 @@ export default function AdminDashboard() {
                 {activePage === 'clientes' && <ClientsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
                 {activePage === 'servicos' && <ServicesPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} globalServices={globalServices} refreshGlobal={fetchAppointments} />}
                 {activePage === 'relatorios' && <ReportsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
-                {activePage === 'horarios' && <SchedulePage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} overrides={overrides} onRefresh={fetchAppointments} isDayOpen={isDayOpen} />}
+                {activePage === 'horarios' && <SchedulePage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} overrides={overrides} rules={scheduleRules} onRefresh={fetchAppointments} isDayOpen={isDayOpen} />}
             </main>
 
             {/* Modals */}
@@ -1875,11 +1887,19 @@ function ReportsPage({ isMobile, onOpenMenu }) {
 }
 
 // ─── Schedule Page ─────────────────────────────────────────
-function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen }) {
+function SchedulePage({ isMobile, onOpenMenu, overrides, rules = [], onRefresh, isDayOpen }) {
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [saving, setSaving] = useState(null) // dateStr being saved
+    const [showRuleModal, setShowRuleModal] = useState(false)
+    const [editingRule, setEditingRule] = useState(null)
 
     const loadOverrides = async () => {
+        await onRefresh()
+    }
+
+    const deleteRule = async (id) => {
+        if (!confirm('Excluir este período especial?')) return
+        await fetch(`/api/admin?id=${id}&type=rule`, { method: 'DELETE' })
         await onRefresh()
     }
 
@@ -1950,10 +1970,49 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                     )}
                     <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2"><Clock className="text-violet-500" size={20} /> Horários</h2>
                 </div>
-                <span className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap">Clique no dia para alternar aberto/fechado</span>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => { setEditingRule(null); setShowRuleModal(true) }} className="flex items-center gap-2 bg-violet-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-violet-700 transition shadow-lg shadow-violet-200">
+                        <CalendarClock size={16} /> Novo Período Especial
+                    </button>
+                </div>
             </header>
             <div className="flex-1 overflow-auto p-2 md:p-4 space-y-4">
-                {/* Legend */}
+                {/* Horizontal Periods List */}
+                {rules.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">Períodos Especiais Ativos</h3>
+                        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                            {rules.map(rule => (
+                                <div key={rule.id} className="min-w-[280px] bg-slate-50 border border-slate-200 rounded-2xl p-4 relative group">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="bg-violet-100 text-violet-700 text-[10px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">{rule.label || 'Horário Especial'}</span>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => { setEditingRule(rule); setShowRuleModal(true) }} className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-white rounded-lg transition-colors"><Edit2 size={14} /></button>
+                                            <button onClick={() => deleteRule(rule.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors"><Trash2 size={14} /></button>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex flex-col items-center justify-center shrink-0">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">{new Date(rule.start_date + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</span>
+                                            <span className="text-lg font-black text-slate-700 leading-none mt-0.5">{rule.start_date.split('-')[2]}</span>
+                                        </div>
+                                        <ArrowRight size={14} className="text-slate-300" />
+                                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex flex-col items-center justify-center shrink-0">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">{new Date(rule.end_date + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</span>
+                                            <span className="text-lg font-black text-slate-700 leading-none mt-0.5">{rule.end_date.split('-')[2]}</span>
+                                        </div>
+                                        <div className="ml-2 border-l border-slate-200 pl-4">
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Atendimento</div>
+                                            <div className="text-sm font-black text-slate-800">{rule.open_time.substring(0, 5)} às {rule.close_time.substring(0, 5)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Legend & Month Navigation (same as before) */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-3 md:p-4 shadow-sm">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="flex items-center gap-2">
@@ -2000,6 +2059,7 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                             const inMonth = date.getMonth() === thisMonth
                             const open = isDayOpen(date)
                             const override = getOverride(dateStr)
+                            const rule = rules.find(r => dateStr >= r.start_date && dateStr <= r.end_date);
                             const isException = !!override
                             const isPast = date < new Date(fmt(new Date()) + 'T00:00:00')
                             const isSaving = saving === dateStr
@@ -2013,13 +2073,15 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                                         ${!inMonth ? 'opacity-20 cursor-default' : isPast ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50 active:scale-95'}
                                         ${inMonth && open ? 'bg-green-50' : inMonth ? 'bg-red-50' : ''}
                                         ${isException && inMonth ? 'ring-1 md:ring-2 ring-amber-300 ring-inset' : ''}
+                                        ${rule && inMonth ? 'border-2 border-violet-400' : ''}
                                     `}>
                                     <p className={`text-sm md:text-lg font-black ${inMonth ? (open ? 'text-green-700' : 'text-red-500') : 'text-slate-300'}`}>
                                         {date.getDate()}
                                     </p>
                                     <p className={`text-[7px] md:text-[10px] font-bold mt-0.5 ${open ? 'text-green-500' : 'text-red-400'}`}>
-                                        {inMonth ? (open ? 'Aberto' : 'Fechado') : ''}
+                                        {inMonth ? (open ? (rule ? rule.open_time.substring(0, 5) : 'Aberto') : 'Fechado') : ''}
                                     </p>
+                                    {rule && inMonth && <span className="absolute top-0.5 left-0.5 text-[8px]">🕒</span>}
                                     {isException && inMonth && (
                                         <span className="absolute top-0.5 right-0.5 text-[8px]">⭐</span>
                                     )}
@@ -2069,10 +2131,11 @@ function SchedulePage({ isMobile, onOpenMenu, overrides, onRefresh, isDayOpen })
                 {/* Info */}
                 <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 text-center">
                     <p className="text-sm text-violet-700 font-medium">
-                        💡 As mudanças feitas aqui são aplicadas instantaneamente. O bot já saberá quais dias estão abertos ou fechados.
+                        💡 Periodos Especiais sobressaem ao horário padrão. Exceções diárias (estrelas) sobressaem a tudo.
                     </p>
                 </div>
             </div>
+            {showRuleModal && <ScheduleRuleModal rule={editingRule} onClose={() => setShowRuleModal(false)} onSave={() => { setShowRuleModal(false); onRefresh() }} />}
         </>
     )
 }
