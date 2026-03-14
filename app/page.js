@@ -565,7 +565,7 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
                                     <div key={apt.id} onClick={() => setSelectedDate(dateStr)} className="mb-1 px-2 py-1.5 bg-violet-100 rounded-lg cursor-pointer hover:bg-violet-200 transition-colors" style={{ borderLeft: '3px solid rgb(139 92 246)' }}>
                                         <p className="text-[10px] font-bold text-violet-700">{toSPTime(apt.starts_at)}</p>
                                         <p className="text-[10px] font-semibold text-slate-700 truncate">{apt.customer_name}</p>
-                                        <p className="text-[9px] text-slate-500 truncate">{svcs.join(', ')}</p>
+                                        <p className="text-[9px] text-slate-500 truncate">{getServiceNames(svcs).join(', ')}</p>
                                     </div>
                                 )
                             })}
@@ -749,7 +749,7 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                                         <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="hover:underline">{apt.customer_phone}</a>
                                     </p>
                                     <div className="flex flex-wrap gap-1 mt-1.5">
-                                        {svcs.map((s, i) => <span key={i} className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>)}
+                                        {getServiceNames(svcs).map((s, i) => <span key={i} className="bg-white/20 text-[10px] font-semibold px-2 py-0.5 rounded-full">{s}</span>)}
                                     </div>
                                     <p className="text-white/70 text-[10px] mt-1">{time} — {endH}:{endM} ({dur}min) • R$ {total}</p>
                                 </div>
@@ -832,7 +832,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Serviços</span>
                             <div className="flex flex-wrap gap-1 justify-end">
-                                {svcs.map((s, i) => <span key={i} className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{s}</span>)}
+                                {getServiceNames(svcs).map((s, i) => <span key={i} className="bg-violet-100 text-violet-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{s}</span>)}
                             </div>
                         </div>
                         <div className="flex items-center justify-between pt-2 border-t border-slate-200">
@@ -918,7 +918,7 @@ function CancelConfirmModal({ apt, onClose, onConfirm }) {
                         <div className="bg-white rounded-lg p-3 border border-red-100">
                             <p className="font-bold text-slate-800">{apt.customer_name}</p>
                             <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} às {toSPTime(apt.starts_at)}</p>
-                            <p className="text-sm text-slate-500">{svcs.join(' + ')}</p>
+                            <p className="text-sm text-slate-500">{getServiceNames(svcs).join(' + ')}</p>
                             <p className="text-sm font-bold text-red-600 mt-1">Valor: R$ {total}</p>
                         </div>
                     </div>
@@ -987,7 +987,7 @@ function RescheduleModal({ apt, onClose, onConfirm, scheduleRules = [] }) {
                         <div className="bg-slate-50 rounded-xl p-4 space-y-3">
                             <p className="font-bold text-slate-800 text-sm">{apt.customer_name}</p>
                             <p className="text-sm text-slate-500 flex items-center gap-1"><Phone size={12} /> <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="hover:text-green-600 hover:underline transition-colors">{apt.customer_phone}</a> <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full hover:bg-green-100 transition-colors">WhatsApp <ExternalLink size={9} /></a></p>
-                            <p className="text-sm text-slate-500">{svcs.join(' + ')} — R$ {total}</p>
+                            <p className="text-sm text-slate-500">{getServiceNames(svcs).join(' + ')} — R$ {total}</p>
 
                             <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
                                 <div>
@@ -1033,7 +1033,7 @@ function RescheduleModal({ apt, onClose, onConfirm, scheduleRules = [] }) {
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Agendamento atual</p>
                         <p className="font-bold text-slate-800">{apt.customer_name}</p>
                         <p className="text-sm text-slate-500">{toSPFull(apt.starts_at)} às {toSPTime(apt.starts_at)}</p>
-                        <p className="text-sm text-slate-500">{svcs.join(' + ')} — R$ {total}</p>
+                        <p className="text-sm text-slate-500">{getServiceNames(svcs).join(' + ')} — R$ {total}</p>
                     </div>
 
                     {/* New date/time */}
@@ -1351,7 +1351,7 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${a.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : a.status === 'CANCELLED' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'
                                                     }`}>{a.status === 'CONFIRMED' ? 'Confirmado' : a.status === 'CANCELLED' ? 'Cancelado' : a.status}</span>
                                             </div>
-                                            <p className="text-xs text-slate-500 mt-0.5">{svcs.join(' + ')}</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">{getServiceNames(svcs).join(' + ')}</p>
                                         </div>
                                         <span className="text-sm font-bold text-green-600 ml-3">R$ {total}</span>
                                     </div>
