@@ -749,6 +749,7 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                     const endH = String(Math.floor(endMin / 60)).padStart(2, '0')
                     const endM = String(endMin % 60).padStart(2, '0')
 
+                    const isCancelled = apt.status === 'CANCELLED'
                     const needsHelp = helpRequests?.some(h => h.phone === apt.customer_phone)
 
                     return (
