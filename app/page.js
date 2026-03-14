@@ -206,7 +206,7 @@ export default function AdminDashboard() {
         const e = new Date(currentDate); e.setMonth(e.getMonth() + 2)
         const cacheBuster = `t=${Date.now()}`
         try {
-            const [aptRes, blkRes, schRes, rulesRes] = await Promise.all([
+            const [aptRes, blkRes, schRes, rulesRes, helpRes] = await Promise.all([
                 fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}&${cacheBuster}`),
                 fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}&${cacheBuster}`),
                 fetch(`/api/admin?type=schedule&${cacheBuster}`),
