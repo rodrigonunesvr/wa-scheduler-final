@@ -202,7 +202,7 @@ export async function POST(request) {
             service_id,
             starts_at,
             ends_at,
-            status: 'CONFIRMED'
+            status: 'PENDING'
         }
         if (notes) insertData.notes = notes
 

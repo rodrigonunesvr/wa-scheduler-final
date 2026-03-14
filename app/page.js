@@ -44,6 +44,12 @@ function parseServices(s) {
     if (!s) return []
     try { const arr = JSON.parse(s); return Array.isArray(arr) ? arr : [s] } catch { return [s] }
 }
+function getServiceNames(svcs) {
+    return svcs.map(idOrName => {
+        const found = SERVICES.find(s => s.id === idOrName || s.name === idOrName)
+        return found ? found.name : idOrName
+    })
+}
 function calcTotal(svcs) { return svcs.reduce((sum, id) => sum + (SERVICES.find(s => s.id === id || s.name === id)?.price || 0), 0) }
 function calcDuration(svcs) { return svcs.reduce((sum, id) => sum + (SERVICES.find(s => s.id === id || s.name === id)?.duration || 60), 0) }
 
@@ -807,8 +813,8 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                             <div className="text-sm text-slate-500 flex flex-col md:flex-row md:items-center gap-2 mt-2">
                                 <span className="flex items-center justify-center md:justify-start gap-1"><Phone size={12} /> {apt.customer_phone}</span>
                                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                    <a href={whatsappLink(apt.customer_phone, `Olá ${apt.customer_name}, tudo bem? Passando para lembrar e confirmar o seu agendamento de ${svcs.join(' + ')}, dia ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })} às ${toSPTime(apt.starts_at)}. Podemos confirmar?`)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
-                                        <MessageCircle size={10} /> Lembrar / Confirmar
+                                    <a href={whatsappLink(apt.customer_phone, `Olá ${apt.customer_name}, tudo bem? Passando para confirmar o seu agendamento de ${getServiceNames(svcs).join(' + ')}, dia ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })} às ${toSPTime(apt.starts_at)}. Podemos confirmar?`)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
+                                        <MessageCircle size={10} /> Confirmar via WhatsApp
                                     </a>
                                     <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors">
                                         Chat <ExternalLink size={9} />
