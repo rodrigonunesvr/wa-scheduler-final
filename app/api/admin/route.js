@@ -156,25 +156,20 @@ export async function POST(request) {
         const dayStart = dayPrefix + 'T00:00:00-03:00'
         const dayEnd = dayPrefix + 'T23:59:59-03:00'
 
-        // Check appointment conflicts
+        // Check appointment conflicts (Strict Overlap Check)
         const { data: existing } = await supabase
             .from('appointments')
-            .select('*')
+            .select('id, customer_name, starts_at, ends_at')
             .in('status', ['CONFIRMED', 'PENDING'])
-            .gte('starts_at', dayStart)
-            .lte('starts_at', dayEnd)
+            .lt('starts_at', ends_at)
+            .gt('ends_at', starts_at)
 
-        if (existing) {
-            for (const apt of existing) {
-                const aptStart = new Date(apt.starts_at).getTime()
-                const aptEnd = new Date(apt.ends_at).getTime()
-                if (newStart < aptEnd && newEnd > aptStart) {
-                    const time = new Date(apt.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
-                    return NextResponse.json({
-                        error: `Conflito de horário! Já existe agendamento de ${apt.customer_name} às ${time}.`
-                    }, { status: 409 })
-                }
-            }
+        if (existing && existing.length > 0) {
+            const apt = existing[0]
+            const time = new Date(apt.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+            return NextResponse.json({
+                error: `Conflito de horário! Já existe agendamento de ${apt.customer_name} às ${time}.`
+            }, { status: 409 })
         }
 
         // Check block conflicts
@@ -230,6 +225,25 @@ export async function PATCH(request) {
     try {
         const body = await request.json()
         const { id, status, starts_at, ends_at, notes } = body
+
+        // If rescheduling, check for conflicts
+        if (starts_at && ends_at) {
+            const { data: existing } = await supabase
+                .from('appointments')
+                .select('id, customer_name, starts_at')
+                .neq('id', id)
+                .in('status', ['CONFIRMED', 'PENDING'])
+                .lt('starts_at', ends_at)
+                .gt('ends_at', starts_at)
+
+            if (existing && existing.length > 0) {
+                const apt = existing[0]
+                const time = new Date(apt.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+                return NextResponse.json({
+                    error: `Conflito! Esse horário já está ocupado por ${apt.customer_name} (${time}).`
+                }, { status: 409 })
+            }
+        }
 
         const update = {}
         if (status) update.status = status

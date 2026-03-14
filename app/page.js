@@ -296,9 +296,18 @@ export default function AdminDashboard() {
         const startsAt = toISO_SP(newDate, newTime)
         const endMs = new Date(startsAt).getTime() + duration * 60000
         const endsAt = new Date(endMs).toISOString()
-        await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, starts_at: startsAt, ends_at: endsAt }) })
-        closeAction()
-        setRefreshKey(k => k + 1)
+        try {
+            const res = await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, starts_at: startsAt, ends_at: endsAt }) })
+            const data = await res.json()
+            if (!res.ok || data.error) {
+                alert(data.error || 'Erro ao reagendar.')
+                return
+            }
+            closeAction()
+            setRefreshKey(k => k + 1)
+        } catch (e) {
+            alert('Erro de conexão ou no servidor ao reagendar.')
+        }
     }
 
     const confirmed = appointments.filter(a => a.status === 'CONFIRMED')
@@ -583,11 +592,11 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
     const SLOT_HEIGHT = 48
     const GRID_START = 7 * 60 // 07:00 in minutes
 
-    const confirmedApts = appointments.filter(a => a.status === 'CONFIRMED')
+    const activeApts = appointments.filter(a => a.status === 'CONFIRMED' || a.status === 'PENDING')
 
-    // Calculate which slots are occupied (only confirmed)
+    // Calculate which slots are occupied
     const occupiedSlots = new Set()
-    confirmedApts.forEach(apt => {
+    activeApts.forEach(apt => {
         const time = toSPTime(apt.starts_at)
         const [h, m] = time.split(':').map(Number)
         const startMin = h * 60 + m
