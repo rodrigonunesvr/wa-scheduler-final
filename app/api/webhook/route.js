@@ -253,6 +253,10 @@ ${servicesListText}
 --- CANCELAMENTO E REAGENDAMENTO-- -
     - Use 'list_my_appointments' para gerenciar agendamentos existentes.
 - Sempre confirme a data antes de cancelar ou mudar.
+7. TRANSBORDO HUMANO (SUPORTE):
+   - Se a cliente pedir explicitamente para falar com um humano, atendente ou demonstrar frustração/dificuldade repetida com o bot, use a ferramenta 'request_human_help'.
+   - Informe à cliente: "Entendi! Vou sinalizar agora mesmo para a nossa atendente te ajudar. Só um minutinho que ela já entra em contato com você aqui por esse chat! 😊"
+   - Não tente continuar o fluxo de agendamento se o cliente pediu transbordo.
 `},
             ...history
         ]
@@ -337,6 +341,19 @@ ${servicesListText}
                             date: { type: "string", description: "Data no formato YYYY-MM-DD." }
                         },
                         required: ["date"]
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "request_human_help",
+                    description: "Solicita ajuda humana ou transbordo para um atendente quando o cliente está com dificuldade ou pede explicitamente.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            reason: { type: "string", description: "Breve motivo da solicitação de ajuda." }
+                        }
                     }
                 }
             }
@@ -446,6 +463,16 @@ ${servicesListText}
                     try {
                         const updated = await updateAppointment({ id: args.id, services: args.services })
                         result = JSON.stringify({ status: "success", updated })
+                    } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
+                }
+                else if (toolCall.function.name === 'request_human_help') {
+                    try {
+                        await supabase.from('customers').update({
+                            help_requested: true,
+                            help_requested_at: new Date().toISOString(),
+                            help_notes: args.reason || 'Cliente solicitou ajuda.'
+                        }).eq('phone', phone)
+                        result = JSON.stringify({ status: "success", message: "Suporte humano solicitado. O administrador foi notificado." })
                     } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
                 }
                 else if (toolCall.function.name === 'confirm_appointment') {

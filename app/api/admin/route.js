@@ -24,6 +24,17 @@ export async function GET(request) {
             return NextResponse.json(data)
         }
 
+        // --- Help Requests (Support) ---
+        if (type === 'help_requests') {
+            const { data, error } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('help_requested', true)
+                .order('help_requested_at', { ascending: false })
+            if (error) throw error
+            return NextResponse.json(data)
+        }
+
         // --- Blocks ---
         if (type === 'blocks') {
             let query = supabase.from('blocks').select('*').order('starts_at', { ascending: true })
@@ -250,6 +261,18 @@ export async function PATCH(request) {
         if (starts_at) update.starts_at = starts_at
         if (ends_at) update.ends_at = ends_at
         if (notes !== undefined) update.notes = notes
+
+        // Support for updating customer (marking help as resolved)
+        const help_requested = body.help_requested
+        const customer_id = body.customer_id
+        if (customer_id && help_requested !== undefined) {
+            const { error: custError } = await supabase
+                .from('customers')
+                .update({ help_requested: help_requested })
+                .eq('id', customer_id)
+            if (custError) throw custError
+            return NextResponse.json({ status: 'customer updated' })
+        }
 
         const { data, error } = await supabase
             .from('appointments')

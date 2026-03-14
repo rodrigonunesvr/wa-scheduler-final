@@ -156,6 +156,7 @@ export default function AdminDashboard() {
     const [overrides, setOverrides] = useState([])
     const [scheduleRules, setScheduleRules] = useState([])
     const [globalServices, setGlobalServices] = useState(SERVICES)
+    const [helpRequests, setHelpRequests] = useState([])
     const [loading, setLoading] = useState(true)
     const [showNewModal, setShowNewModal] = useState(false)
     const [showBlockModal, setShowBlockModal] = useState(false)
@@ -209,17 +210,20 @@ export default function AdminDashboard() {
                 fetch(`/api/admin?start=${fmt(s)}&end=${fmt(e)}&${cacheBuster}`),
                 fetch(`/api/admin?type=blocks&start=${fmt(s)}&end=${fmt(e)}&${cacheBuster}`),
                 fetch(`/api/admin?type=schedule&${cacheBuster}`),
-                fetch(`/api/admin?type=rules&${cacheBuster}`)
+                fetch(`/api/admin?type=rules&${cacheBuster}`),
+                fetch(`/api/admin?type=help_requests&${cacheBuster}`) // Fetch help requests
             ])
             const aptData = await aptRes.json()
             const blkData = await blkRes.json()
             const schData = await schRes.json()
             const rulesData = await rulesRes.json()
+            const helpData = await helpRes.json() // Parse help data
 
             setAppointments(Array.isArray(aptData) ? aptData : [])
             setBlocks(Array.isArray(blkData) ? blkData : [])
             setOverrides(Array.isArray(schData) ? schData : [])
             setScheduleRules(Array.isArray(rulesData) ? rulesData : [])
+            setHelpRequests(Array.isArray(helpData) ? helpData : []) // Set state
 
             try {
                 const svcRes = await fetch(`/api/services?${cacheBuster}`)
@@ -365,8 +369,14 @@ export default function AdminDashboard() {
                 <nav className="flex-1 py-3 space-y-0.5 px-2">
                     {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Horários' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
                         <button key={item.id} onClick={() => { setActivePage(item.id); setNewBadge(0); if (isMobile) setSidebarOpen(false) }}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${activePage === item.id ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}>
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all relative ${activePage === item.id ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}>
                             <item.icon size={18} />{(sidebarOpen || isMobile) && item.label}
+                            {item.id === 'agenda' && helpRequests.length > 0 && (
+                                <span className="absolute left-7 top-2 flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white"></span>
+                                </span>
+                            )}
                             {item.id === 'agenda' && newBadge > 0 && (sidebarOpen || isMobile) && <span className="ml-auto bg-green-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">+{newBadge}</span>}
                         </button>
                     ))}
@@ -459,7 +469,7 @@ export default function AdminDashboard() {
                         <div className="flex-1 overflow-auto p-2 md:p-4">
                             {viewMode === 'month' && <MonthView currentDate={currentDate} selectedDate={selectedDate} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} isMobile={isMobile} isDayOpen={isDayOpen} />}
                             {viewMode === 'week' && <WeekView weekDates={weekDates} setSelectedDate={(d) => { setSelectedDate(d); setViewMode('day') }} getCount={getCount} appointments={confirmed} isMobile={isMobile} isDayOpen={isDayOpen} />}
-                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={filteredDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} isMobile={isMobile} scheduleRules={scheduleRules} />}
+                            {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={filteredDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} isMobile={isMobile} scheduleRules={scheduleRules} helpRequests={helpRequests} />}
                         </div>
                     </>
                 )}
@@ -472,7 +482,7 @@ export default function AdminDashboard() {
             {/* Modals */}
             {showNewModal && <NewAppointmentModal selectedDate={selectedDate} onClose={() => setShowNewModal(false)} onSave={() => { setShowNewModal(false); setRefreshKey(k => k + 1) }} scheduleRules={scheduleRules} />}
             {showBlockModal && <BlockModal selectedDate={selectedDate} onClose={() => setShowBlockModal(false)} onSave={() => { setShowBlockModal(false); setRefreshKey(k => k + 1) }} />}
-            {actionApt && actionType === 'view' && <AppointmentDetailModal apt={actionApt} onClose={closeAction} onCancel={() => setActionType('cancel')} onReschedule={() => setActionType('reschedule')} onSaveNotes={async (id, notes) => { await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, notes }) }); setRefreshKey(k => k + 1) }} />}
+            {actionApt && actionType === 'view' && <AppointmentDetailModal apt={actionApt} onClose={closeAction} onCancel={() => setActionType('cancel')} onReschedule={() => setActionType('reschedule')} onSaveNotes={async (id, notes) => { await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, notes }) }); setRefreshKey(k => k + 1) }} helpRequests={helpRequests} onResolveHelp={async (customerId) => { await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: customerId, help_requested: false }) }); setRefreshKey(k => k + 1) }} />}
             {actionApt && actionType === 'cancel' && <CancelConfirmModal apt={actionApt} onClose={closeAction} onConfirm={() => doCancelAppointment(actionApt.id)} />}
             {actionApt && actionType === 'reschedule' && <RescheduleModal apt={actionApt} onClose={closeAction} onConfirm={doReschedule} scheduleRules={scheduleRules} />}
         </div >
@@ -588,7 +598,7 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
 }
 
 // ─── Day View (with blocks + status colors) ───────────────
-function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue, onDeleteBlock, isMobile, scheduleRules = [] }) {
+function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue, onDeleteBlock, isMobile, scheduleRules = [], helpRequests = [] }) {
     const SLOT_HEIGHT = 48
     const GRID_START = 7 * 60 // 07:00 in minutes
 
@@ -739,17 +749,18 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                     const endH = String(Math.floor(endMin / 60)).padStart(2, '0')
                     const endM = String(endMin % 60).padStart(2, '0')
 
-                    const isCancelled = apt.status === 'CANCELLED'
+                    const needsHelp = helpRequests?.some(h => h.phone === apt.customer_phone)
 
                     return (
                         <div key={apt.id}
                             onClick={() => !isCancelled && onAction(apt, 'view')}
-                            className={`absolute ${getStatusStyle(apt.status)} rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-all ${isCancelled ? 'cursor-default' : 'cursor-pointer'} group z-10 overflow-hidden`}
+                            className={`absolute ${getStatusStyle(apt.status)} rounded-xl px-3 py-2 shadow-md hover:shadow-lg transition-all ${isCancelled ? 'cursor-default' : 'cursor-pointer'} group z-10 overflow-hidden ${needsHelp ? 'ring-2 ring-red-500 ring-offset-1' : ''}`}
                             style={{ top: `${topPx + 2}px`, height: `${heightPx}px`, left: '68px', right: '8px' }}>
                             <div className="flex items-start justify-between h-full">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                         <p className={`font-bold text-sm ${isCancelled ? 'line-through' : ''}`}>{apt.customer_name}</p>
+                                        {needsHelp && <span className="animate-pulse flex items-center gap-1 bg-red-600 text-[9px] font-black px-2 py-0.5 rounded-full text-white shadow-lg"><Headset size={10} /> SUPORTE</span>}
                                         {isCancelled && <span className="bg-white/30 text-[9px] font-bold px-1.5 py-0.5 rounded-full">CANCELADO</span>}
                                         {apt.notes && <FileText size={12} className="text-white/70" title={apt.notes} />}
                                     </div>
@@ -784,7 +795,7 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
 }
 
 // ─── Appointment Detail Modal ──────────────────────────────
-function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNotes }) {
+function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNotes, helpRequests = [], onResolveHelp }) {
     const svcs = parseServices(apt.service_id)
     const total = calcTotal(svcs)
     const dur = calcDuration(svcs)
@@ -838,6 +849,24 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Horário</span>
                             <span className="text-sm font-bold text-slate-800">{toSPTime(apt.starts_at)} ({dur}min)</span>
                         </div>
+
+                        {helpRequests?.find(h => h.phone === apt.customer_phone) && (
+                            <div className="bg-red-50 border border-red-100 rounded-xl p-3 flex items-center justify-between animate-pulse">
+                                <div className="flex items-center gap-3">
+                                    <Headset className="text-red-600" size={20} />
+                                    <div>
+                                        <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">Solicitação de Ajuda Humana</p>
+                                        <p className="text-xs text-red-700 font-medium">{helpRequests.find(h => h.phone === apt.customer_phone).help_notes || 'O cliente solicitou transbordo para atendente.'}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => onResolveHelp(helpRequests.find(h => h.phone === apt.customer_phone).id)}
+                                    className="bg-red-600 text-white text-[10px] font-bold px-3 py-2 rounded-lg hover:bg-red-700 transition shadow-sm"
+                                >
+                                    MARCAR ATENDIDA
+                                </button>
+                            </div>
+                        )}
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Serviços</span>
                             <div className="flex flex-wrap gap-1 justify-end">
