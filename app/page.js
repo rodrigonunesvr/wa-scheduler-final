@@ -367,7 +367,7 @@ export default function AdminDashboard() {
                     {isMobile && <button onClick={() => setSidebarOpen(false)} className="p-1 text-white/50 hover:text-white"><X size={20} /></button>}
                 </div>
                 <nav className="flex-1 py-3 space-y-0.5 px-2">
-                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'horarios', icon: Clock, label: 'Horários' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
+                    {[{ id: 'agenda', icon: Calendar, label: 'Agenda' }, { id: 'suporte', icon: Headset, label: 'Suporte' }, { id: 'horarios', icon: Clock, label: 'Horários' }, { id: 'clientes', icon: Users, label: 'Clientes' }, { id: 'servicos', icon: Scissors, label: 'Serviços' }, { id: 'relatorios', icon: BarChart3, label: 'Relatórios' }].map(item => (
                         <button key={item.id} onClick={() => { setActivePage(item.id); setNewBadge(0); if (isMobile) setSidebarOpen(false) }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all relative ${activePage === item.id ? 'bg-white/20 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}>
                             <item.icon size={18} />{(sidebarOpen || isMobile) && item.label}
@@ -378,6 +378,7 @@ export default function AdminDashboard() {
                                 </span>
                             )}
                             {item.id === 'agenda' && newBadge > 0 && (sidebarOpen || isMobile) && <span className="ml-auto bg-green-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">+{newBadge}</span>}
+                            {item.id === 'suporte' && helpRequests.length > 0 && (sidebarOpen || isMobile) && <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-bounce">{helpRequests.length}</span>}
                         </button>
                     ))}
                 </nav>
@@ -444,6 +445,28 @@ export default function AdminDashboard() {
                             </div>
                         </header>
 
+                        {helpRequests.length > 0 && (
+                            <div className="px-4 pt-4 shrink-0">
+                                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <div className="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-25"></div>
+                                            <div className="relative w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                                                <Headset className="text-red-600" size={24} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-red-900 text-sm">ATENÇÃO: {helpRequests.length} Cliente{helpRequests.length > 1 ? 's' : ''} esperando ajuda!</h4>
+                                            <p className="text-xs text-red-700 font-medium">Existem solicitações de suporte humano pendentes no sistema.</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setActivePage('suporte')} className="w-full md:w-auto px-6 py-2.5 bg-red-600 text-white text-xs font-black rounded-xl hover:bg-red-700 transition shadow-lg shadow-red-200 active:scale-95">
+                                        VER SOLICITAÇÕES
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Summary Cards */}
                         {viewMode === 'day' && (
                             <div className="px-4 pt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -472,6 +495,21 @@ export default function AdminDashboard() {
                             {viewMode === 'day' && <DayView selectedDate={selectedDate} appointments={filteredDayApts} blocks={dayBlocks} onAction={openAction} dayRevenue={dayRevenue} onDeleteBlock={async (id) => { await fetch(`/api/admin?id=${id}&type=block`, { method: 'DELETE' }); setRefreshKey(k => k + 1) }} isMobile={isMobile} scheduleRules={scheduleRules} helpRequests={helpRequests} />}
                         </div>
                     </>
+                )}
+                {activePage === 'suporte' && (
+                    <SupportPage
+                        helpRequests={helpRequests}
+                        isMobile={isMobile}
+                        onOpenMenu={() => setSidebarOpen(true)}
+                        onResolve={async (customerId) => {
+                            await fetch('/api/admin', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ customer_id: customerId, help_requested: false })
+                            });
+                            setRefreshKey(k => k + 1)
+                        }}
+                    />
                 )}
                 {activePage === 'clientes' && <ClientsPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} />}
                 {activePage === 'servicos' && <ServicesPage isMobile={isMobile} onOpenMenu={() => setSidebarOpen(true)} globalServices={globalServices} refreshGlobal={fetchAppointments} />}
@@ -1401,6 +1439,87 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                 </div>
             )}
         </>
+    )
+}
+
+// ─── Support Page (New Center) ─────────────────────────────
+function SupportPage({ helpRequests, isMobile, onOpenMenu, onResolve }) {
+    return (
+        <div className="flex flex-col h-full bg-slate-50">
+            <header className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex items-center justify-between shrink-0 shadow-sm z-10">
+                <div className="flex items-center gap-3">
+                    {isMobile && (
+                        <button onClick={onOpenMenu} className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+                            <LayoutGrid size={20} />
+                        </button>
+                    )}
+                    <div>
+                        <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                            <Headset className="text-red-500" size={24} />
+                            Centro de Suporte
+                        </h2>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-8">Atendimento humano aos clientes em tempo real.</p>
+                    </div>
+                </div>
+                <div className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    {helpRequests.length} Chamado{helpRequests.length !== 1 ? 's' : ''}
+                </div>
+            </header>
+
+            <div className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
+                {helpRequests.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                            <CheckCircle2 size={32} className="text-slate-200" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-400">Tudo em dia!</h3>
+                        <p className="text-sm text-slate-300">Não há nenhum cliente precisando de ajuda no momento.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {helpRequests.map(req => (
+                            <div key={req.id} className="bg-white rounded-3xl border border-red-100 shadow-lg shadow-red-500/5 p-5 flex flex-col justify-between hover:border-red-300 transition-all animate-in zoom-in-95">
+                                <div>
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold">
+                                                {req.name?.charAt(0) || '?'}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">{req.name || 'Cliente Novo'}</h4>
+                                                <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-widest mt-0.5">
+                                                    <Clock size={10} /> Solicitado em {new Date(req.help_requested_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-red-50 rounded-2xl p-4 mb-4 border border-red-100">
+                                        <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Motivo / Problema:</p>
+                                        <p className="text-sm text-red-800 leading-relaxed italic">"{req.help_notes || 'O cliente solicitou falar com um atendente.'}"</p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <p className="text-white/80 text-xs flex items-center gap-1">
+                                            <a href={whatsappLink(req.phone)} target="_blank" rel="noopener" className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-xl text-xs font-bold hover:scale-105 transition-all shadow-md shadow-green-200 w-full justify-center">
+                                                <MessageCircle size={16} /> CHAMAR NO WHATSAPP
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => onResolve(req.id)}
+                                    className="w-full py-2.5 rounded-xl border-2 border-slate-100 text-slate-400 font-bold text-xs hover:border-green-200 hover:text-green-600 hover:bg-green-50 transition-all uppercase tracking-widest"
+                                >
+                                    Arquivar / Resolvida
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
     )
 }
 
