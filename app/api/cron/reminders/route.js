@@ -29,7 +29,7 @@ export async function GET(request) {
         const { data: appointments, error } = await supabase
             .from('appointments')
             .select('*')
-            .eq('status', 'CONFIRMED')
+            .in('status', ['CONFIRMED', 'PENDING'])
             .gte('starts_at', dayStart)
             .lte('starts_at', dayEnd);
 
@@ -44,7 +44,14 @@ export async function GET(request) {
         for (const apt of appointments) {
             try {
                 const timeStr = moment(apt.starts_at).tz(TIMEZONE).format('HH:mm');
-                const message = `Olá ${apt.customer_name}! Passando para lembrar do seu agendamento amanhã, dia ${moment(tomorrow).format('DD/MM')}, às ${timeStr}. ✨ Nos vemos em breve!`;
+                let message = '';
+
+                if (apt.status === 'PENDING') {
+                    message = `Olá ${apt.customer_name}! Passando para confirmar seu agendamento amanhã, dia ${moment(tomorrow).format('DD/MM')}, às ${timeStr}. ✨\n\n*Clique no link abaixo ou responda "Sim" para confirmar:*`;
+                    // O bot Clara está treinado para entender "Sim" e confirmar via ferramenta confirm_appointment.
+                } else {
+                    message = `Olá ${apt.customer_name}! Lembrete do seu agendamento amanhã, dia ${moment(tomorrow).format('DD/MM')}, às ${timeStr}. ✨ Nos vemos em breve!`;
+                }
 
                 const result = await sendWhatsAppMessage(apt.customer_phone, message);
                 if (result?.error) {

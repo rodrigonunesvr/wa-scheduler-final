@@ -624,7 +624,8 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
 
     const getStatusStyle = (status) => {
         switch (status) {
-            case 'CONFIRMED': return 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
+            case 'CONFIRMED': return 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-green-100'
+            case 'PENDING': return 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-amber-100'
             case 'CANCELLED': return 'bg-gradient-to-r from-red-400 to-red-500 text-white opacity-50'
             default: return 'bg-gradient-to-r from-slate-400 to-slate-500 text-white opacity-60'
         }
@@ -638,10 +639,13 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
                     {new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </h3>
                 <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
-                        <span className="w-2.5 h-2.5 rounded-full bg-violet-500" /> {confirmedApts.length} confirmado{confirmedApts.length !== 1 ? 's' : ''}
+                    <span className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-slate-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500" /> {appointments.filter(a => a.status === 'CONFIRMED').length} confirmado(s)
                     </span>
-                    {blocks.length > 0 && <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                    <span className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-slate-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> {appointments.filter(a => a.status === 'PENDING').length} pendente(s)
+                    </span>
+                    {blocks.length > 0 && <span className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-slate-400">
                         <span className="w-2.5 h-2.5 rounded-full bg-slate-400" /> {blocks.length} bloqueio{blocks.length !== 1 ? 's' : ''}
                     </span>}
                 </div>
@@ -853,6 +857,12 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
 
                     {/* Action Buttons */}
                     <div className="grid grid-cols-2 gap-3">
+                        {apt.status === 'PENDING' && (
+                            <button onClick={async () => { await onSaveNotes(apt.id, notes || ''); await fetch('/api/admin', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: apt.id, status: 'CONFIRMED' }) }); onClose() }}
+                                className="col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl bg-green-600 text-white font-bold text-sm hover:bg-green-700 transition-all active:scale-[0.98] shadow-lg shadow-green-200">
+                                <CheckCircle2 size={16} /> Confirmar Agendamento
+                            </button>
+                        )}
                         <button onClick={onReschedule}
                             className="flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-50 border-2 border-amber-200 text-amber-700 font-bold text-sm hover:bg-amber-100 transition-all active:scale-[0.98]">
                             <CalendarClock size={16} /> Reagendar

@@ -160,7 +160,7 @@ export async function POST(request) {
         const { data: existing } = await supabase
             .from('appointments')
             .select('*')
-            .eq('status', 'CONFIRMED')
+            .in('status', ['CONFIRMED', 'PENDING'])
             .gte('starts_at', dayStart)
             .lte('starts_at', dayEnd)
 

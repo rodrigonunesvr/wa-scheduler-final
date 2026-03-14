@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
-import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, isDayOpen, fetchScheduleOverrides, fetchScheduleRules } from '@/lib/calendar'
+import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, confirmAppointment, isDayOpen, fetchScheduleOverrides, fetchScheduleRules } from '@/lib/calendar'
 import { sendWhatsAppMessage } from '@/lib/evolution'
 import { SAAS_CONFIG } from '@/lib/saas_config'
 
@@ -315,14 +315,28 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "update_appointment",
-                    description: "Atualiza um agendamento existente (ex: adicionar um serviço novo no mesmo horário).",
+                    description: "Atualiza um agendamento existente.",
                     parameters: {
                         type: "object",
                         properties: {
-                            id: { type: "string", description: "O ID do agendamento (obtenha via list_my_appointments)." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista atualizada de serviços." }
+                            id: { type: "string", description: "ID do agendamento." },
+                            services: { type: "array", items: { type: "string" } }
                         },
                         required: ["id", "services"]
+                    }
+                }
+            },
+            {
+                type: "function",
+                function: {
+                    name: "confirm_appointment",
+                    description: "Confirma um agendamento pendente.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            date: { type: "string", description: "Data no formato YYYY-MM-DD." }
+                        },
+                        required: ["date"]
                     }
                 }
             }
@@ -426,20 +440,19 @@ ${servicesListText}
                     try {
                         const cancelled = await cancelAppointment(phone, args.date)
                         result = JSON.stringify({ status: "success", cancelled })
-                    } catch (err) {
-                        result = JSON.stringify({ status: "error", message: err.message })
-                    }
+                    } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
                 }
                 else if (toolCall.function.name === 'update_appointment') {
                     try {
-                        const updated = await updateAppointment({
-                            id: args.id,
-                            services: args.services
-                        })
+                        const updated = await updateAppointment({ id: args.id, services: args.services })
                         result = JSON.stringify({ status: "success", updated })
-                    } catch (err) {
-                        result = JSON.stringify({ status: "error", message: err.message })
-                    }
+                    } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
+                }
+                else if (toolCall.function.name === 'confirm_appointment') {
+                    try {
+                        const confirmed = await confirmAppointment(phone, args.date)
+                        result = JSON.stringify(confirmed)
+                    } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
                 }
 
                 const toolResult = { role: "tool", tool_call_id: toolCall.id, content: result }
