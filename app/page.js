@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, ArrowRight } from 'lucide-react'
+import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, ArrowRight, Headset } from 'lucide-react'
 
 const whatsappLink = (phone, text = '') => { const base = `https://wa.me/${phone.replace(/\D/g, '')}`; return text ? `${base}?text=${encodeURIComponent(text)}` : base }
 
