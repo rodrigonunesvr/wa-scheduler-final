@@ -232,15 +232,31 @@ export default function AdminDashboard() {
                     if (Array.isArray(svcData) && svcData.length > 0) {
                         const merged = [...DEFAULT_SERVICES]
                         svcData.forEach(dbSvc => {
+                            // Encontrar índice por ID (UUID) OU por Nome (para itens que ainda são nomes amigáveis)
                             const idx = merged.findIndex(s => s.id === dbSvc.id || s.name === dbSvc.name)
                             if (idx >= 0) {
+                                // Se encontrou, substitui o padrão pelas infos do Banco (inclusive o ID vira UUID)
                                 merged[idx] = { ...merged[idx], ...dbSvc }
-                            } else {
+                            } else if (dbSvc.active) {
+                                // Se não encontrou e está ativo, adiciona como novo
                                 merged.push(dbSvc)
                             }
                         })
-                        SERVICES = merged
-                        setGlobalServices(merged)
+                        // Filtro final: remover duplicatas que podem ter sobrado por erro de nome
+                        const finalServices = []
+                        const seenNames = new Set()
+                        merged.forEach(s => {
+                            if (!seenNames.has(s.name)) {
+                                finalServices.push(s)
+                                seenNames.add(s.name)
+                            } else if (s.id.includes('-')) {
+                                // Se já vimos esse nome, mas o atual tem UUID, ele substitui o anterior (provavelmente o hardcoded)
+                                const existingIdx = finalServices.findIndex(fs => fs.name === s.name)
+                                finalServices[existingIdx] = s
+                            }
+                        })
+                        SERVICES = finalServices
+                        setGlobalServices(finalServices)
                     } else {
                         setGlobalServices(SERVICES)
                     }
@@ -1544,11 +1560,25 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
     const saveEdit = async (id) => {
         setLoading(true)
         try {
+            const originalSvc = services.find(s => s.id === id);
             const isDefault = !id.includes('-');
+            const nameChanged = originalSvc && originalSvc.name !== editForm.name;
+
+            // Se for padrão e mudou o nome, precisamos "matar" o nome antigo no banco para não duplicar
+            if (isDefault && nameChanged) {
+                await fetch('/api/services', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: originalSvc.name, price: originalSvc.price, duration: originalSvc.duration, active: false })
+                });
+            }
+
             const res = await fetch('/api/services', {
-                method: isDefault ? 'POST' : 'PATCH', headers: { 'Content-Type': 'application/json' },
+                method: isDefault ? 'POST' : 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...(isDefault ? {} : { id }), ...editForm })
             })
+
             if (!res.ok) {
                 const err = await res.json()
                 alert(`Erro ao salvar no banco de dados do Supabase.\nDetalhe: ${err.error || res.statusText}\nSua tabela 'services' pode estar ausente ou bloqueada por segurança RLS.`)
