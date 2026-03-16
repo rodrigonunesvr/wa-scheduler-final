@@ -237,8 +237,8 @@ export default function AdminDashboard() {
                             if (idx >= 0) {
                                 // Se encontrou, substitui o padrão pelas infos do Banco (inclusive o ID vira UUID)
                                 merged[idx] = { ...merged[idx], ...dbSvc }
-                            } else if (dbSvc.active) {
-                                // Se não encontrou e está ativo, adiciona como novo
+                            } else {
+                                // Se não encontrou, adiciona como novo do Banco
                                 merged.push(dbSvc)
                             }
                         })
@@ -1701,7 +1701,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                         </div>
                     )}
 
-                    {services.filter(s => showInactive || s.active).map(svc => (
+                    {services.filter(s => showInactive || !s.is_hidden).map(svc => (
                         <div key={svc.id} className={`bg-white rounded-2xl border transition-all ${!svc.active ? 'border-red-100 opacity-60 bg-slate-50' : 'border-slate-200 hover:border-violet-300 hover:shadow-md'}`}>
                             {editing === svc.id ? (
                                 <div className="p-4 md:p-5">
@@ -1761,30 +1761,13 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                                             <Edit2 size={16} />
                                         </button>
                                         <button onClick={async () => {
-                                            if (confirm('Deseja realmente excluir este serviço?')) {
+                                            if (confirm('Deseja realmente excluir este serviço da visão?')) {
                                                 setLoading(true)
                                                 try {
-                                                    const isDefault = !svc.id.includes('-');
-                                                    const isFromDefault = DEFAULT_SERVICES.some(ds => ds.name === svc.name);
-
-                                                    if (isDefault || isFromDefault) {
-                                                        // Itens padrão (originais ou modificados) não devem ser deletados, 
-                                                        // ou eles voltam via hardcode. Devem ser desativados.
-                                                        await fetch('/api/services', {
-                                                            method: isDefault ? 'POST' : 'PATCH',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({
-                                                                ...(isDefault ? { name: svc.name, price: svc.price, duration: svc.duration } : { id: svc.id }),
-                                                                active: false
-                                                            })
-                                                        });
-                                                        refreshGlobal();
-                                                    } else {
-                                                        // Itens puramente manuais/novos podem ser deletados
-                                                        const res = await fetch(`/api/services?id=${svc.id}`, { method: 'DELETE' })
-                                                        if (res.ok) refreshGlobal()
-                                                        else alert('Erro ao excluir serviço personalizado.')
-                                                    }
+                                                    // Usamos ID se for UUID ou Nome se for Padrão
+                                                    const res = await fetch(`/api/services?id=${svc.id}`, { method: 'DELETE' })
+                                                    if (res.ok) refreshGlobal()
+                                                    else alert('Erro ao ocultar serviço.')
                                                 } catch (e) {
                                                     console.error('Delete error:', e);
                                                     alert('Falha na conexão ao excluir.')
@@ -1806,10 +1789,10 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                             className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 uppercase tracking-widest"
                         >
                             {showInactive ? <EyeOff size={14} /> : <Eye size={14} />}
-                            {showInactive ? 'Esconder' : 'Ver'} Serviços Desativados / Excluídos
+                            {showInactive ? 'Esconder' : 'Ver'} Serviços Excluídos
                         </button>
-                        {!showInactive && services.some(s => !s.active) && (
-                            <p className="text-[10px] text-slate-400 mt-2 italic font-medium">Existem serviços que foram removidos ou desativados.</p>
+                        {!showInactive && services.some(s => s.is_hidden) && (
+                            <p className="text-[10px] text-slate-400 mt-2 italic font-medium">Existem serviços que foram removidos.</p>
                         )}
                     </div>
                 </div>
