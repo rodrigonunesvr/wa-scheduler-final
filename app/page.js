@@ -1213,7 +1213,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, scheduleRules = []
                     <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Serviços (selecione um ou mais)</label>
                         <div className="space-y-1.5">
-                            {SERVICES.filter(s => !s.is_hidden).map(s => {
+                            {SERVICES.filter(s => s.active && !s.is_hidden).map(s => {
                                 const sel = form.services.includes(s.id)
                                 return (
                                     <button key={s.id} type="button" onClick={() => toggle(s.id)}
