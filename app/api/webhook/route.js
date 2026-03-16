@@ -231,9 +231,14 @@ ${customerName ? `Oi, ${customerName}! É bom te ver novamente.` : `Você ainda 
 3. IGNORE QUALQUER CONVERSA ANTERIOR SOBRE SERVIÇOS QUE NÃO ESTÃO NA TABELA. 
 4. SE O CLIENTE PEDIR ALGO FORA DA TABELA, DIGA: "No momento, esse serviço não está disponível. Nossas opções hoje são..." E MOSTRE A TABELA.
 
---- PROTOCOLO TÉCNICO ---
-- Agendamentos de 5 em 5 minutos.
-- Use 'book_appointment' apenas após ter Nome, Serviço, Data e Hora.
+--- PROTOCOLO DE ADICIONAIS (UPSELL - OBRIGATÓRIO) ---
+- **REGRA DE OURO**: Se a cliente pedir "Manutenção" ou "Gel", você DEVE oferecer os adicionais (Esmaltação, Francesinha, Pó) ANTES de confirmar o agendamento.
+- **FLUXO CORRETO**: 
+  1. Cliente pede Manutenção. 
+  2. Você pergunta o turno/dia. 
+  3. Você mostra horários. 
+  4. ⚠️ **ANTES DE AGENDAR**: Pergunte se ela deseja adicionar Esmaltação ou Francesinha.
+  5. Só use 'book_appointment' depois que ela responder sobre os adicionais.
 
 --- ÚNICO CATÁLOGO DE SERVIÇOS ATIVOS (FONTE DA VERDADE) ---
 ${servicesListText}
@@ -372,16 +377,27 @@ ${servicesListText}
                     try {
                         const requestedServices = Array.isArray(args.services || args.service) ? (args.services || args.service) : [args.services || args.service];
 
-                        // Upsell Protocol (V71 simplified)
+                        // --- PROTOCOLO DE UPSELL V72 ---
                         const structuralKeywords = ['Manutenção', 'Gel'];
                         const isStructural = requestedServices.some(s => structuralKeywords.some(kw => s?.toLowerCase().includes(kw.toLowerCase())));
+
                         if (isStructural) {
-                            const upsellWords = ['Esmaltação', 'Francesinha', 'Pó', 'Adicional'];
+                            const upsellWords = ['Esmaltação', 'Francesinha', 'Pó', 'Combo', 'Adicional'];
                             const alreadyHasUpsell = requestedServices.some(s => upsellWords.some(w => s?.toLowerCase().includes(w.toLowerCase())));
+
                             if (!alreadyHasUpsell) {
-                                const offered = history.some(m => m.role === 'assistant' && (m.content?.toLowerCase().includes('adicional') || m.content?.toLowerCase().includes('cor')));
-                                if (!offered) {
-                                    result = JSON.stringify({ status: "error", message: "ALERTA: Ofereça opções de esmaltação ou adicionais antes de agendar manutenção." });
+                                const hasOfferedUpsell = history.some(m =>
+                                    m.role === 'assistant' &&
+                                    (m.content?.toLowerCase().includes('esmaltação') ||
+                                        m.content?.toLowerCase().includes('francesinha') ||
+                                        m.content?.toLowerCase().includes('adicional'))
+                                );
+
+                                if (!hasOfferedUpsell) {
+                                    result = JSON.stringify({
+                                        status: "error",
+                                        message: "BLOQUEIO DE PROTOCOLO: Pare tudo! Você DEVE oferecer o Menu de Adicionais (Esmaltação, Francesinha, etc) antes de prosseguir com o agendamento de Manutenção. Pergunte: 'Gostaria de adicionar esmaltação ou algum serviço extra?'"
+                                    });
                                 }
                             }
                         }
