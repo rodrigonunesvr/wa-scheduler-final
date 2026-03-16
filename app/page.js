@@ -5,18 +5,8 @@ import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle
 
 const whatsappLink = (phone, text = '') => { const base = `https://wa.me/${phone.replace(/\D/g, '')}`; return text ? `${base}?text=${encodeURIComponent(text)}` : base }
 
-const DEFAULT_SERVICES = [
-    { id: 'Fibra ou Molde F1', name: 'Fibra ou Molde F1', price: 190, duration: 120, active: true },
-    { id: 'Banho de Gel', name: 'Banho de Gel', price: 150, duration: 90, active: true },
-    { id: 'Manutenção', name: 'Manutenção', price: 150, duration: 90, active: true },
-    { id: 'Manutenção (outra prof.)', name: 'Manutenção (outra prof.)', price: 170, duration: 90, active: true },
-    { id: 'Remoção', name: 'Remoção', price: 45, duration: 30, active: true },
-    { id: 'Esmaltação Básica', name: 'Esmaltação Básica', price: 20, duration: 30, active: true },
-    { id: 'Esmaltação Premium', name: 'Esmaltação Premium', price: 25, duration: 45, active: true },
-    { id: 'Esm. ou Pó + Francesinha', name: 'Esm. ou Pó + Francesinha', price: 35, duration: 45, active: true },
-    { id: 'Esm. + Francesinha + Pó', name: 'Esm. + Francesinha + Pó', price: 45, duration: 60, active: true },
-]
-let SERVICES = [...DEFAULT_SERVICES]
+const DEFAULT_SERVICES = []
+let SERVICES = []
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']

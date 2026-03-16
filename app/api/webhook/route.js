@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
-import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, confirmAppointment, isDayOpen, fetchScheduleOverrides, fetchScheduleRules } from '@/lib/calendar'
+import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, confirmAppointment, isDayOpen, fetchScheduleOverrides, fetchScheduleRules, calculateTotalPrice } from '@/lib/calendar'
 import { sendWhatsAppMessage } from '@/lib/evolution'
 import { SAAS_CONFIG } from '@/lib/saas_config'
 
@@ -222,9 +222,9 @@ ${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Apresente-se: "${greeting}${custome
      - Se você buscar por um período, responda listando os **DIAS** que possuem vaga: "Temos disponibilidade na [Manhã/Tarde] nos dias: Terça (17/03), Quinta (19/03) e Sábado (21/03). Qual desses dias fica melhor para você?".
      - Se a cliente escolher um dia específico, aí sim você lista os **HORÁRIOS** exatos daquele dia.
    - **Fase 3: Venda Obrigatória (Upsell)**: Se o serviço for de estrutura (Manutenção, Gel, Fibra, Outra Profissional), após escolher o horário, você **ESTÁ PROIBIDA** de usar 'book_appointment' agora. Você deve dizer: "Perfeito! Mas antes de marcarmos, para suas unhas ficarem perfeitas, você gostaria de incluir algum desses serviços adicionais junto? ✨" e enviar o Cardápio de Adicionais.
-   - **Fase 4: Registro**: Use 'book_appointment' com o COMBO final (Ex: ['Manutenção', 'Esmaltação Premium']).
+   - **Fase 4: Registro**: Use 'book_appointment' após confirmar o serviço e oferecer adicionais.
 
-   - **Cardápio de Adicionais OBRIGATÓRIO**: 
+   - **Cardápio de Adicionais**: Ofereça os serviços de Esmaltação ou Francesinha da tabela abaixo.
      1. Esmaltação Básica
      2. Esmaltação Premium
      3. Esmaltação ou Pó + Francesinha
