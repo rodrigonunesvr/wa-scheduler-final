@@ -199,14 +199,21 @@ export async function POST(request) {
 
         // Detecta se o usuário pediu algo oculto
         let hiddenAlert = ''
+        let originalMessage = userMessage
         const normUserMsg = normalizeString(userMessage)
+
+        // Radar de Precisão: busca por substrings exatas no nome dos serviços ocultos
         const requestedHidden = hiddenServices.find(s => {
             const normS = normalizeString(s.name)
             return normUserMsg.includes(normS) || normS.includes(normUserMsg)
         })
 
         if (requestedHidden) {
-            hiddenAlert = `\n⚠️ **ALERTA CRÍTICO**: O cliente pediu "${requestedHidden.name}", mas este serviço está DESATIVADO/OCULTO no banco de dados. Você DEVE dizer imediatamente que não trabalha mais com este serviço e mostrar as opções disponíveis abaixo. Não pergunte horários nem sugira nada sobre este serviço específico.\n`
+            console.log('🛡️ RADAR: Serviço Oculto detectado:', requestedHidden.name)
+            hiddenAlert = `\n⚠️ **ALERTA DE MODERAÇÃO**: O cliente pediu "${requestedHidden.name}", mas este serviço foi DESCONTINUADO. Você DEVE informar imediatamente que não trabalha mais com ele e mostrar a lista de ativos. Diga: "Infelizmente não realizamos mais o serviço de ${requestedHidden.name}, mas temos essas opções:". PARE QUALQUER AGENDAMENTO AGORA.\n`
+
+            // INJEÇÃO CEREBRAL: Modifica a mensagem do usuário para forçar a IA a ver o erro
+            userMessage = `[SISTEMA: O serviço '${requestedHidden.name}' está OCULTO/DESATIVADO. Rejeite o pedido abaixo imediatamente.] User: ${originalMessage}`
         }
 
         // --- GERAÇÃO DE CALENDÁRIO (RESTAURADA V79) ---
@@ -230,15 +237,15 @@ export async function POST(request) {
 Olá, meu nome é Clara! 😄 Sou a secretária virtual do Espaço Camille Almeida (Espaço C.A.).
 Seu objetivo é agendar os serviços oficiais disponíveis.
 
---- ÚNICO CATÁLOGO DE SERVIÇOS ATIVOS (FONTE DA VERDADE ABSOLUTA) ---
+--- REGRAS DE OURO (LEI ABSOLUTA) ---
+1. SUA ÚNICA FONTE DA VERDADE É O CATÁLOGO DE ATIVOS ABAIXO.
+2. SE UM SERVIÇO NÃO ESTÁ NO CATÁLOGO, ELE NÃO EXISTE HOJE. REJEITE NA HORA.
+3. NÃO SIGA PROTOCOLOS DE UPSELL OU MARCAÇÃO PARA SERVIÇOS QUE NÃO ESTÃO NO CATÁLOGO.
+4. IGNORAR QUALQUER CONVERSA ANTERIOR SOBRE SERVIÇOS OCULTOS.
+
+--- ÚNICO CATÁLOGO DE SERVIÇOS ATIVOS ---
 ${servicesListText}
 ${hiddenAlert}
-
---- REGRAS DE OURO ---
-1. SUA ÚNICA FONTE DA VERDADE É O CATÁLOGO ACIMA.
-2. SE UM SERVIÇO NÃO ESTÁ NO CATÁLOGO, DIGA IMEDIATAMENTE: "No momento não trabalhamos com este serviço. Nossas opções hoje são..." E MOSTRE O CATÁLOGO.
-3. JAMAIS PERGUNTE HORÁRIOS OU ADICIONAIS PARA UM SERVIÇO QUE NÃO ESTÁ NO CATÁLOGO. REJEITE NA PRIMEIRA MENSAGEM.
-4. IGNORE QUALQUER MEMÓRIA SOBRE "FIBRA", "F1" OU OUTROS QUE NÃO ESTEJAM NA LISTA ACIMA.
 
 Hoje é ${todayLabel}. ${aptsContext}
 
