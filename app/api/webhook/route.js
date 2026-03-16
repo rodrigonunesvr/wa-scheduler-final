@@ -177,44 +177,36 @@ export async function POST(request) {
             fetchScheduleRules()
         ])
 
-        // --- DEDUPLICAÇÃO NUCLEAR DE SERVIÇOS NO BOT (V71) ---
-        const { data: rawServices, error: svcError } = await supabase.from('services').select('*').eq('active', true).eq('is_hidden', false).order('name')
-        if (svcError) console.error('ERRO AO BUSCAR SERVICOS:', svcError);
+        // --- RADAR DE SERVIÇOS OCULTOS (V78) ---
+        const { data: allServices, error: allSvcError } = await supabase.from('services').select('*').eq('active', true)
+        const hiddenServices = (allServices || []).filter(s => s.is_hidden)
+        const activeServices = (allServices || []).filter(s => !s.is_hidden)
 
+        // Deduplicação Nuclear de Ativos
         const dbServices = []
         const seenNames = new Set()
-        if (rawServices) {
-            rawServices.forEach(s => {
-                const norm = s.name.trim().toLowerCase()
-                if (!seenNames.has(norm)) {
-                    dbServices.push(s)
-                    seenNames.add(norm)
-                }
-            })
-        }
+        activeServices.forEach(s => {
+            const norm = s.name.trim().toLowerCase()
+            if (!seenNames.has(norm)) {
+                dbServices.push(s)
+                seenNames.add(norm)
+            }
+        })
 
-        const servicesListText = dbServices && dbServices.length > 0
+        const servicesListText = dbServices.length > 0
             ? dbServices.map(s => `- ${s.name}: R$ ${s.price.toFixed(2)}`).join('\n')
             : '- Nenhum serviço disponível no momento.'
 
-        // Detect current mismatch if user mentions a missing service
-        const missingKeywords = ['fibra', 'f1', 'molde'];
-        const userAsksMissing = missingKeywords.some(kw => userMessage.toLowerCase().includes(kw));
-        if (userAsksMissing) {
-            console.log('🛡️ Alerta de Serviço Fantasma detectado. Reforçando catálogo.');
-        }
+        // Detecta se o usuário pediu algo oculto
+        let hiddenAlert = ''
+        const normUserMsg = normalizeString(userMessage)
+        const requestedHidden = hiddenServices.find(s => {
+            const normS = normalizeString(s.name)
+            return normUserMsg.includes(normS) || normS.includes(normUserMsg)
+        })
 
-        let calendarLines = ''
-        for (let i = 0; i < 7; i++) {
-            const day = now.clone().add(i, 'days')
-            const dayName = day.format('dddd')
-            const dateLabel = day.format('DD/MM/YYYY')
-            const isoDate = day.format('YYYY-MM-DD')
-            const isOpen = isDayOpen(isoDate, scheduleOverrides, scheduleRules)
-            const isOverride = scheduleOverrides.some(o => o.date === isoDate)
-            const specialRule = scheduleRules.find(r => isoDate >= r.start_date && isoDate <= r.end_date)
-            const suffix = isOverride ? ' (exceção)' : specialRule ? ` (especial: ${specialRule.open_time.substring(0, 5)}-${specialRule.close_time.substring(0, 5)})` : ''
-            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? '✅ aberto' + suffix : '❌ fechado' + suffix} \n`
+        if (requestedHidden) {
+            hiddenAlert = `\n⚠️ **ALERTA CRÍTICO**: O cliente pediu "${requestedHidden.name}", mas este serviço está DESATIVADO/OCULTO no banco de dados. Você DEVE dizer imediatamente que não trabalha mais com este serviço e mostrar as opções disponíveis abaixo. Não pergunte horários nem sugira nada sobre este serviço específico.\n`
         }
 
         // 7. AI Brain (GPT-4o-mini)
@@ -222,43 +214,34 @@ export async function POST(request) {
             {
                 role: "system", content: `
 Olá, meu nome é Clara! 😄 Sou a secretária virtual do Espaço Camille Almeida (Espaço C.A.).
-Seu objetivo é agendar os serviços disponíveis, tirar dúvidas e informar o protocolo.
+Seu objetivo é agendar os serviços oficiais disponíveis.
+
+--- ÚNICO CATÁLOGO DE SERVIÇOS ATIVOS (FONTE DA VERDADE ABSOLUTA) ---
+${servicesListText}
+${hiddenAlert}
+
+--- REGRAS DE OURO ---
+1. SUA ÚNICA FONTE DA VERDADE É O CATÁLOGO ACIMA.
+2. SE UM SERVIÇO NÃO ESTÁ NO CATÁLOGO, DIGA IMEDIATAMENTE: "No momento não trabalhamos com este serviço. Nossas opções hoje são..." E MOSTRE O CATÁLOGO.
+3. JAMAIS PERGUNTE HORÁRIOS OU ADICIONAIS PARA UM SERVIÇO QUE NÃO ESTÁ NO CATÁLOGO. REJEITE NA PRIMEIRA MENSAGEM.
+4. IGNORE QUALQUER MEMÓRIA SOBRE "FIBRA", "F1" OU OUTROS QUE NÃO ESTEJAM NA LISTA ACIMA.
 
 Hoje é ${todayLabel}.
 
---- CALENDÁRIO DOS PRÓXIMOS DIAS-- -
+--- CALENDÁRIO DOS PRÓXIMOS DIAS ---
 ${calendarLines}
 Consulte SEMPRE o calendário acima.
 
 ${customerName
-                        ? `--- RECONHECIMENTO DE CLIENTE (LEI) ---\nVocê JÁ SABE que o nome da cliente é **${customerName}**. \nPROIBIDO perguntar o nome dela. Inicie a conversa chamando-a pelo nome: "Olá ${customerName}, ${greeting.toLowerCase()}! Em que posso te ajudar hoje?"`
+                        ? `--- RECONHECIMENTO DE CLIENTE (LEI) ---\nVocê JÁ SABE que o nome da cliente é **${customerName}**. \nPROIBIDO perguntar o nome dela. Inicie a conversa chamando-a pelo nome.`
                         : `Você ainda não sabe o nome desta cliente. Pergunte o nome completo antes de confirmar o agendamento.`}
-
---- PROTOCOLO DE BLINDAGEM NUCLEAR (V71) ---
-1. SUA ÚNICA FONTE DA VERDADE É A TABELA ABAIXO.
-2. SE UM SERVIÇO NÃO ESTÁ NA TABELA, ELE NÃO EXISTE HOJE.
-3. IGNORE QUALQUER CONVERSA ANTERIOR SOBRE SERVIÇOS QUE NÃO ESTÃO NA TABELA. 
-4. SE O CLIENTE PEDIR ALGO FORA DA TABELA, DIGA: "No momento, esse serviço não está disponível. Nossas opções hoje são..." E MOSTRE A TABELA.
 
 --- PROTOCOLO DE ADICIONAIS (UPSELL SEQUENCIAL V75) ---
 ⚠️ **REGRA DE BLOQUEIO ABSOLUTO**: Se a cliente pedir "Manutenção" ou "Gel", você está terminantemente proibida de agendar sem antes perguntar se ela deseja adicionar Esmaltação ou Francesinha.
-- **PASSO A PASSO**: 
-  1. Cliente pede Manutenção. 
-  2. Você mostra horários livres. 
-  3. **OBRIGATÓRIO**: Pergunte "Gostaria de aproveitar e adicionar uma esmaltação básica ou premium?".
-  4. **NÃO AGENDE** até que ela responda "Sim" ou "Não" sobre os adicionais.
-  5. Somente após a resposta dela, use 'book_appointment'.
 
---- ÚNICO CATÁLOGO DE SERVIÇOS ATIVOS (FONTE DA VERDADE) ---
-${servicesListText}
+⚠️ **REGRA DE COMBOS**: Se a cliente pedir mais de um serviço (ex: Gel + Esmaltação), use o parâmetro 'services' como uma LISTA e agende em uma ÚNICA operação.
 
-⚠️ **REGRA DE COMBOS**: Se a cliente pedir mais de um serviço (ex: Gel + Esmaltação), você DEVE:
-1. Usar o parâmetro 'services' como uma LISTA: ["Gel", "Esmaltação"].
-2. Chamar 'check_calendar' ou 'book_appointment' UMA ÚNICA VEZ com a lista completa.
-3. O sistema somará automaticamente o tempo e o preço de todos os serviços da lista.
-4. NUNCA tente agendar os serviços separadamente.
-
-⚠️ AVISO CRÍTICO: SE VOCÊ TENTAR AGENDAR MANUTENÇÃO SEM TER OFERECIDO ADICIONAIS NA ÚLTIMA MENSAGEM, O SISTEMA REJEITARÁ A AÇÃO.
+⚠️ AVISO: SE VOCÊ TENTAR AGENDAR MANUTENÇÃO SEM TER OFERECIDO ADICIONAIS NA ÚLTIMA MENSAGEM, O SISTEMA REJEITARÁ A AÇÃO.
 `},
             ...history
         ]
