@@ -252,6 +252,12 @@ ${customerName
 --- ÚNICO CATÁLOGO DE SERVIÇOS ATIVOS (FONTE DA VERDADE) ---
 ${servicesListText}
 
+⚠️ **REGRA DE COMBOS**: Se a cliente pedir mais de um serviço (ex: Gel + Esmaltação), você DEVE:
+1. Usar o parâmetro 'services' como uma LISTA: ["Gel", "Esmaltação"].
+2. Chamar 'check_calendar' ou 'book_appointment' UMA ÚNICA VEZ com a lista completa.
+3. O sistema somará automaticamente o tempo e o preço de todos os serviços da lista.
+4. NUNCA tente agendar os serviços separadamente.
+
 ⚠️ AVISO CRÍTICO: SE VOCÊ TENTAR AGENDAR MANUTENÇÃO SEM TER OFERECIDO ADICIONAIS NA ÚLTIMA MENSAGEM, O SISTEMA REJEITARÁ A AÇÃO.
 `},
             ...history
@@ -262,11 +268,12 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "check_calendar",
-                    description: "Verifica horários livres.",
+                    description: "Verifica horários livres. Se houver mais de um serviço, use o parâmetro 'services'.",
                     parameters: {
                         type: "object",
                         properties: {
                             date: { type: "string" },
+                            services: { type: "array", items: { type: "string" }, description: "Lista de serviços para calcular a duração total do combo." },
                             period: { type: "string", enum: ["manha", "tarde"] }
                         }
                     }
