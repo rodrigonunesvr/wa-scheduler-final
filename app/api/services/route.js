@@ -31,10 +31,10 @@ export async function POST(request) {
 
         const { data, error } = await supabase
             .from('services')
-            .insert({ 
-                name, 
-                price: Number(price), 
-                duration: Number(duration), 
+            .insert({
+                name,
+                price: Number(price),
+                duration: Number(duration),
                 active: body.active ?? true,
                 is_hidden: body.is_hidden ?? false
             })
@@ -83,31 +83,29 @@ export async function DELETE(request) {
 
         if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
-        // Validação básica de UUID para evitar erro 500 do Postgres
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-        
-        if (!isUUID) {
-            // Se não é UUID, é item padrão. Precisamos "escondê-lo" no BD.
-            // Tentamos inserir um registro com o nome do ID e marcá-lo como oculto/inativo
-            // Isso é para lidar com itens "padrão" que não existem no banco mas precisam ser "removidos" da UI
-            const { data, error: insertError } = await supabase
-                .from('services')
-                .insert({ name: id, is_hidden: true, active: false })
-                .select();
-            
-            // Se houver um erro de conflito (item já existe), ignoramos e consideramos sucesso
-            // Caso contrário, se for outro erro, lançamos
-            if (insertError && insertError.code !== '23505') { // 23505 é código para unique_violation
-                throw insertError;
+
+        if (isUUID) {
+            const { data: svc } = await supabase.from('services').select('name').eq('id', id).single();
+            const protectedNames = [
+                'Fibra ou Molde F1', 'Banho de Gel', 'Manutenção',
+                'Manutenção (outra prof.)', 'Remoção', 'Esmaltação Básica',
+                'Esmaltação Premium', 'Esm. ou Pó + Francesinha', 'Esm. + Francesinha + Pó'
+            ];
+
+            if (svc && protectedNames.includes(svc.name)) {
+                await supabase.from('services').update({ is_hidden: true, active: false }).eq('id', id);
+                return NextResponse.json({ success: true, message: 'Item padrão modificado ocultado' })
+            } else {
+                const { error } = await supabase.from('services').delete().eq('id', id)
+                if (error) throw error
+                return NextResponse.json({ success: true, message: 'Item personalizado deletado' })
             }
-            return NextResponse.json({ success: true, message: 'Item padrão ocultado' })
+        } else {
+            const { error } = await supabase.from('services').insert({ name: id, is_hidden: true, active: false });
+            if (error && error.code !== '23505') throw error;
+            return NextResponse.json({ success: true, message: 'Item padrão puro ocultado' })
         }
-
-        // Para itens já no banco, apenas marcamos como ocultos
-        const { error } = await supabase.from('services').update({ is_hidden: true }).eq('id', id)
-        if (error) throw error
-
-        return NextResponse.json({ success: true })
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }

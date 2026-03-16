@@ -1543,11 +1543,10 @@ function SupportPage({ helpRequests, isMobile, onOpenMenu, onResolve }) {
 function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
     const [services, setServices] = useState(globalServices || [])
     const [editing, setEditing] = useState(null)
-    const [editForm, setEditForm] = useState({})
+    const [editForm, setEditForm] = useState({ name: '', price: '', duration: '' })
     const [isAdding, setIsAdding] = useState(false)
     const [addForm, setAddForm] = useState({ name: '', price: '', duration: '', active: true })
     const [loading, setLoading] = useState(false)
-    const [showInactive, setShowInactive] = useState(false)
 
     useEffect(() => {
         setServices(globalServices || [])
@@ -1555,7 +1554,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
 
     const startEdit = (svc) => {
         setEditing(svc.id)
-        setEditForm({ name: svc.name, price: svc.price, duration: svc.duration, active: svc.active })
+        setEditForm({ name: svc.name, price: svc.price, duration: svc.duration })
     }
 
     const saveEdit = async (id) => {
@@ -1570,14 +1569,14 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                 await fetch('/api/services', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: originalSvc.name, price: originalSvc.price, duration: originalSvc.duration, active: false })
+                    body: JSON.stringify({ name: originalSvc.name, price: originalSvc.price, duration: originalSvc.duration, is_hidden: true })
                 });
             }
 
             const res = await fetch('/api/services', {
                 method: isDefault ? 'POST' : 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...(isDefault ? {} : { id }), ...editForm })
+                body: JSON.stringify({ ...(isDefault ? {} : { id }), ...editForm, ...(isDefault && !nameChanged ? { is_hidden: false } : {}) })
             })
 
             if (!res.ok) {
@@ -1627,7 +1626,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
 
             if (!res.ok) {
                 const err = await res.json()
-                alert(`Ocultação falhou!\nErro BD: ${err.error || res.statusText}\nA tabela "services" do seu Supabase não permite acesso. Crie a tabela e desabilite a segurança RLS.`)
+                alert(`Erro ao atualizar status!\nDB: ${err.error || res.statusText}`)
             } else {
                 refreshGlobal()
             }
@@ -1701,7 +1700,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                         </div>
                     )}
 
-                    {services.filter(s => showInactive || !s.is_hidden).map(svc => (
+                    {services.filter(s => !s.is_hidden).map(svc => (
                         <div key={svc.id} className={`bg-white rounded-2xl border transition-all ${!svc.active ? 'border-red-100 opacity-60 bg-slate-50' : 'border-slate-200 hover:border-violet-300 hover:shadow-md'}`}>
                             {editing === svc.id ? (
                                 <div className="p-4 md:p-5">
@@ -1782,19 +1781,6 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                             )}
                         </div>
                     ))}
-
-                    <div className="pt-8 border-t border-slate-200 mt-8 flex flex-col items-center">
-                        <button
-                            onClick={() => setShowInactive(!showInactive)}
-                            className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 uppercase tracking-widest"
-                        >
-                            {showInactive ? <EyeOff size={14} /> : <Eye size={14} />}
-                            {showInactive ? 'Esconder' : 'Ver'} Serviços Excluídos
-                        </button>
-                        {!showInactive && services.some(s => s.is_hidden) && (
-                            <p className="text-[10px] text-slate-400 mt-2 italic font-medium">Existem serviços que foram removidos.</p>
-                        )}
-                    </div>
                 </div>
             </div>
         </div>
