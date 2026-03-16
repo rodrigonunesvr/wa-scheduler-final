@@ -1547,6 +1547,7 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
     const [isAdding, setIsAdding] = useState(false)
     const [addForm, setAddForm] = useState({ name: '', price: '', duration: '', active: true })
     const [loading, setLoading] = useState(false)
+    const [showInactive, setShowInactive] = useState(false)
 
     useEffect(() => {
         setServices(globalServices || [])
@@ -1699,7 +1700,8 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                             <p className="text-xs text-slate-400 mt-1">Clique em "Novo Serviço" para começar a preencher o catálogo do Bot.</p>
                         </div>
                     )}
-                    {services.map(svc => (
+
+                    {services.filter(s => showInactive || s.active).map(svc => (
                         <div key={svc.id} className={`bg-white rounded-2xl border transition-all ${!svc.active ? 'border-red-100 opacity-60 bg-slate-50' : 'border-slate-200 hover:border-violet-300 hover:shadow-md'}`}>
                             {editing === svc.id ? (
                                 <div className="p-4 md:p-5">
@@ -1797,6 +1799,19 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                             )}
                         </div>
                     ))}
+
+                    <div className="pt-8 border-t border-slate-200 mt-8 flex flex-col items-center">
+                        <button
+                            onClick={() => setShowInactive(!showInactive)}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 uppercase tracking-widest"
+                        >
+                            {showInactive ? <EyeOff size={14} /> : <Eye size={14} />}
+                            {showInactive ? 'Esconder' : 'Ver'} Serviços Desativados / Excluídos
+                        </button>
+                        {!showInactive && services.some(s => !s.active) && (
+                            <p className="text-[10px] text-slate-400 mt-2 italic font-medium">Existem serviços que foram removidos ou desativados.</p>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
