@@ -28,7 +28,6 @@ export async function POST(request) {
         }
 
         // Support both Z-API (legacy) and Evolution API
-        // Evolution API usually sends phone in body.data.key.remoteJid
         const isEvolution = body.event === 'messages.upsert'
 
         const isGroup = isEvolution ? body.data?.key?.remoteJid?.includes('@g.us') : body.isGroup
@@ -59,7 +58,7 @@ export async function POST(request) {
             : text.substring(0, 1000); // Limiting text size for safety
 
         const audioUrl = isEvolution
-            ? body.data?.message?.audioMessage?.url // Evolution might need different handling for audio
+            ? body.data?.message?.audioMessage?.url
             : body.message?.audio?.audioUrl
 
         if (!phone) {
@@ -119,8 +118,6 @@ export async function POST(request) {
         if (customer) {
             customerName = customer.name
             console.log('👤 Cliente reconhecida:', customerName)
-        } else {
-            console.log('👤 Cliente nova. Phone:', phone, 'Error:', customerError?.message)
         }
 
         // 4. Process Content (Text or Audio)
@@ -137,7 +134,6 @@ export async function POST(request) {
         let history = session.context_json || []
         history.push({ role: 'user', content: userMessage })
 
-        // Smart Slicing: Ensure we don't end up with a tool message as the first message
         if (history.length > 40) {
             history = history.slice(-40)
             while (history.length > 0 && (history[0].role === 'tool' || (history[0].role === 'assistant' && history[0].tool_calls))) {
@@ -204,7 +200,7 @@ Hoje é ${todayLabel}.
 
 --- CALENDÁRIO DOS PRÓXIMOS DIAS-- -
     ${calendarLines}
-Normalmente funcionamos de terça a sábado, mas pode haver exceções.Consulte SEMPRE o calendário acima para saber se um dia está aberto ou fechado.
+Consulte SEMPRE o calendário acima para saber se um dia está aberto ou fechado.
 
     ${customerName ? `
 --- CLIENTE IDENTIFICADA ---
@@ -213,50 +209,44 @@ Essa cliente já é cadastrada! O nome dela é: ${customerName}.
 ` : `
 --- CLIENTE NOVA ---
 Você ainda não sabe o nome desta cliente. 
-⚠️ REGRA CRÍTICA: Se a cliente quiser agendar, você DEVE perguntar o nome dela antes de usar a ferramenta 'book_appointment'. Você só pode agendar se tiver o nome completo dela para o registro.
+⚠️ REGRA CRÍTICA: Se a cliente quiser agendar, você DEVE perguntar o nome dela antes de usar a ferramenta 'book_appointment'. 
 `}
 
 ${aptsContext}
 
-${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Como esta é a primeira mensagem da conversa, apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}, meu nome é Clara! Sou a secretária virtual do Espaço C.A. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: NÃO se apresente novamente. Comece a resposta direto com o nome dela: "Oi, ${customerName}..."`}
+${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}, meu nome é Clara! Sou a secretária virtual do Espaço C.A. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: Comece direto com o nome dela: "Oi, ${customerName}..."`}
 
-3. FLUXO DE AGENDAMENTO (PROTOCOLO V49 - BLINDADO):
-   - **Fase 1: Consulta**: Se o cliente perguntar por horários ou sugerir um dia, use 'check_calendar'.
-   - **Fase 2: Venda Obrigatória**: Se o serviço for de estrutura (Manutenção, Gel, Fibra, Outra Profissional), você **ESTÁ PROIBIDA** de usar 'book_appointment' agora. Você deve responder com os horários e dizer: "Temos esses horários! Mas antes de marcarmos, para suas unhas ficarem perfeitas, você gostaria de incluir algum desses serviços adicionais junto? ✨" e enviar o Cardápio abaixo.
-   - **Fase 3: Registro**: Use 'book_appointment' **SOMENTE** no próximo turno, após a cliente responder sobre os adicionais.
-   - **Trava de Código Ativa**: Se você tentar agendar sem oferecer o menu, o sistema vai REJEITAR tecnicamente o seu comando.
-   
+3. FLUXO DE AGENDAMENTO (PROTOCOLO V59 - TURNOS E PRECISÃO):
+   - **Fase 1: Intenção e Turno**: Assim que a cliente informar o serviço, você **DEVE** perguntar: "Você prefere na parte da manhã ou da tarde? 😊".
+   - **Fase 2: Sugestão de Dias**: Use 'check_calendar' com o argumento 'period' (manha ou tarde).
+     - Se você buscar por um período, responda listando os **DIAS** que possuem vaga: "Temos disponibilidade na [Manhã/Tarde] nos dias: Terça (17/03), Quinta (19/03) e Sábado (21/03). Qual desses dias fica melhor para você?".
+     - Se a cliente escolher um dia específico, aí sim você lista os **HORÁRIOS** exatos daquele dia.
+   - **Fase 3: Venda Obrigatória (Upsell)**: Se o serviço for de estrutura (Manutenção, Gel, Fibra, Outra Profissional), após escolher o horário, você **ESTÁ PROIBIDA** de usar 'book_appointment' agora. Você deve dizer: "Perfeito! Mas antes de marcarmos, para suas unhas ficarem perfeitas, você gostaria de incluir algum desses serviços adicionais junto? ✨" e enviar o Cardápio de Adicionais.
+   - **Fase 4: Registro**: Use 'book_appointment' com o COMBO final (Ex: ['Manutenção', 'Esmaltação Premium']).
+
    - **Cardápio de Adicionais OBRIGATÓRIO**: 
      1. Esmaltação Básica
      2. Esmaltação Premium
      3. Esmaltação ou Pó + Francesinha
      4. Esmaltação + Francesinha + Pó
-   - Se não tiver o nome da cliente nova: Peça o nome ANTES de agendar.
-4. PÓS-AÇÃO: Após concluir um agendamento ou cancelamento, encerre perguntando: "Posso ajudar em mais alguma coisa?".
-5. PROTOCOLO E PREPARO: Você DEVE informar o protocolo de preparo (veja abaixo) COMPLETO sempre que um agendamento for confirmado. Não ignore nenhuma regra, especialmente a regra da cutícula.
 
-6. REGRAS DE INTERATIVIDADE(NOVO):
-   - ** Busca por Período **: Antes de listar os horários, pergunte: "Você prefere na parte da manhã ou da tarde?".Use o argumento 'period' na ferramenta 'check_calendar' para filtrar os resultados.
-     - Fluxo correto: 1. Cliente pede data -> 2. Você usa 'check_calendar' para ver se tem vaga -> 3. Você informa os horários e apresenta o **Cardápio de Esmaltações** acima -> 4. A cliente escolhe -> 5. Aí sim você usa 'book_appointment' com o COMBO (Ex: ['Manutenção', 'Esmaltação Premium']).
-   - ** Prevenção de Conflitos **: Se a cliente quiser dois serviços juntos, tente calcular a duração total e fazer um único agendamento longo em vez de dois separados.
+4. REGRAS TÉCNICAS (GRANULARIDADE):
+   - O sistema agora entende intervalos de 5 em 5 minutos. Não arredonde horários para 30min se a cliente quiser algo colado (ex: 8:30 após um término às 8:30).
+   - Se for uma cliente nova, peça o nome completo ANTES de agendar.
 
 --- TABELA DE PREÇOS (VALORES DINÂMICOS) ---
 ${servicesListText}
 
 --- PROTOCOLO DE ATENDIMENTO-- -
-    - ✅ Enviamos confirmação 1 dia antes.
+- ✅ Enviamos confirmação 1 dia antes.
 - ⚠️ Cancelamentos com menos de 24h: multa de 50 %.
 - ⏰ Tolerância de 20 minutos para atrasos.
 - 💅 Não faça a cutícula até 3 dias antes.
 - 📅 Manutenções: a cada 25 / 30 dias.
 
---- CANCELAMENTO E REAGENDAMENTO-- -
-    - Use 'list_my_appointments' para gerenciar agendamentos existentes.
-- Sempre confirme a data antes de cancelar ou mudar.
 7. TRANSBORDO HUMANO (SUPORTE):
-   - Se a cliente pedir explicitamente para falar com um humano, atendente ou demonstrar frustração/dificuldade repetida com o bot, use a ferramenta 'request_human_help'.
-   - Informe à cliente: "Entendi! Vou sinalizar agora mesmo para a nossa atendente te ajudar. Só um minutinho que ela já entra em contato com você aqui por esse chat! 😊"
-   - Não tente continuar o fluxo de agendamento se o cliente pediu transbordo.
+   - Se a cliente pedir explicitamente atendente ou demonstrar frustração, use 'request_human_help'.
+   - Informe: "Entendi! Vou sinalizar para a nossa atendente te ajudar aqui no chat! 😊"
 `},
             ...history
         ]
@@ -286,7 +276,7 @@ ${servicesListText}
                         properties: {
                             name: { type: "string", description: "Nome completo do cliente." },
                             services: { type: "array", items: { type: "string" }, description: "Lista de serviços. Ex: ['Manutenção', 'Esmaltação Premium']" },
-                            service: { type: "string", description: "Serviço único (use 'services' para combos)." },
+                            service: { type: "string", description: "Serviço único." },
                             startsAt: { type: "string", description: "Data e hora ISO. Ex: 2024-05-20T14:00:00" }
                         },
                         required: ["name", "startsAt"]
@@ -348,7 +338,7 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "request_human_help",
-                    description: "Solicita ajuda humana ou transbordo para um atendente quando o cliente está com dificuldade ou pede explicitamente.",
+                    description: "Solicita ajuda humana ou transbordo.",
                     parameters: {
                         type: "object",
                         properties: {
@@ -372,10 +362,7 @@ ${servicesListText}
         let toolTurn = 0
         while (aiMsg.tool_calls && toolTurn < 3) {
             toolTurn++
-            console.log(`🌀 Turno de Ferramentas ${toolTurn} `)
-
-            history.push(aiMsg) // Push the assistant tool call to history
-            const toolMessagesForCompletion = [...messages, ...history.slice(messages.length - 1)] // Get recent history including aiMsg
+            history.push(aiMsg)
 
             for (const toolCall of aiMsg.tool_calls) {
                 let result = ""
@@ -383,12 +370,10 @@ ${servicesListText}
                 try {
                     args = JSON.parse(toolCall.function.arguments)
                 } catch (e) {
-                    console.error("Erro ao parsear argumentos da ferramenta:", e)
                     result = JSON.stringify({ status: "error", message: "Arguments parsing failed" })
                 }
 
-                console.log(`🛠️ Executando: ${toolCall.function.name} `, args)
-                if (result) { /* Already handled error above */ }
+                if (result) { /* Error */ }
                 else if (toolCall.function.name === 'check_calendar') {
                     const slots = await findAvailableSlots({
                         requestedDate: args.date,
@@ -398,33 +383,30 @@ ${servicesListText}
                 }
                 else if (toolCall.function.name === 'book_appointment') {
                     try {
-                        // --- PROTOCOLO V48: TRAVA DE SEGURANÇA DE UPSELL ---
                         const structuralServices = ['Manutenção', 'Gel', 'Fibra', 'Banho de Gel', 'Molde F1'];
                         const requestedServices = Array.isArray(args.services || args.service) ? (args.services || args.service) : [args.services || args.service];
                         const isStructural = requestedServices.some(s => structuralServices.some(ss => s?.toLowerCase().includes(ss.toLowerCase())));
 
                         if (isStructural) {
-                            // Verifica se os serviços solicitados JÁ INCLUEM um adicional (upsell)
                             const upsellWords = ['Esmaltação', 'Francesinha', 'Pó'];
                             const alreadyHasUpsell = requestedServices.some(s => upsellWords.some(w => s?.toLowerCase().includes(w.toLowerCase())));
 
                             if (!alreadyHasUpsell) {
-                                // Verifica se o bot já ofereceu o cardápio no histórico recente
                                 const hasOfferedUpsell = history.some(m =>
                                     m.role === 'assistant' &&
-                                    (m.content?.includes('Esmaltação') || m.content?.includes('Francesinha') || m.content?.includes('adicionar mais algum serviço'))
+                                    (m.content?.includes('Esmaltação') || m.content?.includes('Francesinha'))
                                 );
 
                                 if (!hasOfferedUpsell) {
                                     result = JSON.stringify({
                                         status: "error",
-                                        message: "PROTOCOLO V49 BLOQUEADO: Você está tentando agendar um serviço de estrutura sem oferecer o Menu de Adicionais antes. Para agendar, você DEVE PRIMEIRO perguntar se a cliente quer esmaltação básica, premium, etc. Envie o menu agora e aguarde a resposta dela."
+                                        message: "PROTOCOLO V49 BLOQUEADO: Ofereça o Menu de Adicionais primeiro."
                                     });
                                 }
                             }
                         }
 
-                        if (!result) { // Se não foi bloqueado pela trava
+                        if (!result) {
                             const appointment = await bookAppointment({
                                 phone: phone,
                                 name: args.name,
@@ -449,9 +431,7 @@ ${servicesListText}
                     try {
                         const appointments = await getAppointmentsByPhone(phone)
                         result = JSON.stringify(appointments)
-                    } catch (err) {
-                        result = JSON.stringify({ status: "error", message: err.message })
-                    }
+                    } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
                 }
                 else if (toolCall.function.name === 'cancel_appointment') {
                     try {
@@ -472,7 +452,7 @@ ${servicesListText}
                             help_requested_at: new Date().toISOString(),
                             help_notes: args.reason || 'Cliente solicitou ajuda.'
                         }).eq('phone', phone)
-                        result = JSON.stringify({ status: "success", message: "Suporte humano solicitado. O administrador foi notificado." })
+                        result = JSON.stringify({ status: "success", message: "Suporte humano solicitado." })
                     } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
                 }
                 else if (toolCall.function.name === 'confirm_appointment') {
@@ -486,7 +466,6 @@ ${servicesListText}
                 history.push(toolResult)
             }
 
-            // Next completion to see if more tools are needed or final text
             const nextCompletion = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
                 messages: [messages[0], ...history],
@@ -504,9 +483,8 @@ ${servicesListText}
                 .update({ context_json: history, updated_at: new Date().toISOString() })
                 .eq('phone', phone)
 
-            // 9. Send back to WhatsApp (Z-API)
+            // 9. Send back to WhatsApp
             await sendWhatsAppMessage(phone, responseText)
-            console.log('AI Response sent:', responseText)
         }
 
         return NextResponse.json({ status: 'processed', reply: responseText })
@@ -516,4 +494,3 @@ ${servicesListText}
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 }
-
