@@ -171,7 +171,7 @@ export async function POST(request) {
         ])
 
         // Fetch active services and format for AI
-        const { data: dbServices } = await supabase.from('services').select('*').eq('active', true).order('name')
+        const { data: dbServices } = await supabase.from('services').select('*').eq('active', true).eq('is_hidden', false).order('name')
         const servicesListText = dbServices && dbServices.length > 0
             ? dbServices.map(s => `- ${s.name}: R$ ${s.price.toFixed(2)}`).join('\n')
             : '- Nenhum serviço disponível no momento.'

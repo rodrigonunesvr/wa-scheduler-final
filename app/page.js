@@ -242,15 +242,16 @@ export default function AdminDashboard() {
                                 merged.push(dbSvc)
                             }
                         })
-                        // Filtro final: remover duplicatas que podem ter sobrado por erro de nome
+                        // Filtro final: remover duplicatas e garantir que OCULTOS sumam do sistema
                         const finalServices = []
                         const seenNames = new Set()
                         merged.forEach(s => {
+                            if (s.is_hidden) return; // Se está escondido, ignora totalmente
+
                             if (!seenNames.has(s.name)) {
                                 finalServices.push(s)
                                 seenNames.add(s.name)
                             } else if (s.id.includes('-')) {
-                                // Se já vimos esse nome, mas o atual tem UUID, ele substitui o anterior (provavelmente o hardcoded)
                                 const existingIdx = finalServices.findIndex(fs => fs.name === s.name)
                                 finalServices[existingIdx] = s
                             }

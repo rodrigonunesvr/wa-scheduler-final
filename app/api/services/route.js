@@ -6,7 +6,7 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url)
         const activeOnly = searchParams.get('active_only') === 'true'
 
-        let query = supabase.from('services').select('*').order('name', { ascending: true })
+        let query = supabase.from('services').select('*').eq('is_hidden', false).order('name', { ascending: true })
         if (activeOnly) {
             query = query.eq('active', true)
         }
