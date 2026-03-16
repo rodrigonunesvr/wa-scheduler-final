@@ -226,19 +226,16 @@ export default function AdminDashboard() {
             setHelpRequests(Array.isArray(helpData) ? helpData : []) // Set state
 
             try {
-                const svcRes = await fetch(`/api/services?${cacheBuster}`)
+                const svcRes = await fetch(`/api/services?include_hidden=true&${cacheBuster}`)
                 if (svcRes.ok) {
                     const svcData = await svcRes.json()
                     if (Array.isArray(svcData) && svcData.length > 0) {
                         const merged = [...DEFAULT_SERVICES]
                         svcData.forEach(dbSvc => {
-                            // Encontrar índice por ID (UUID) OU por Nome (para itens que ainda são nomes amigáveis)
                             const idx = merged.findIndex(s => s.id === dbSvc.id || s.name === dbSvc.name)
                             if (idx >= 0) {
-                                // Se encontrou, substitui o padrão pelas infos do Banco (inclusive o ID vira UUID)
                                 merged[idx] = { ...merged[idx], ...dbSvc }
                             } else {
-                                // Se não encontrou, adiciona como novo do Banco
                                 merged.push(dbSvc)
                             }
                         })
@@ -1226,7 +1223,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, scheduleRules = []
                     <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Serviços (selecione um ou mais)</label>
                         <div className="space-y-1.5">
-                            {SERVICES.map(s => {
+                            {SERVICES.filter(s => !s.is_hidden).map(s => {
                                 const sel = form.services.includes(s.id)
                                 return (
                                     <button key={s.id} type="button" onClick={() => toggle(s.id)}

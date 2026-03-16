@@ -4,9 +4,13 @@ import { supabase } from '@/lib/supabase'
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url)
+        const includeHidden = searchParams.get('include_hidden') === 'true'
         const activeOnly = searchParams.get('active_only') === 'true'
 
-        let query = supabase.from('services').select('*').eq('is_hidden', false).order('name', { ascending: true })
+        let query = supabase.from('services').select('*').order('name', { ascending: true })
+        if (!includeHidden) {
+            query = query.eq('is_hidden', false)
+        }
         if (activeOnly) {
             query = query.eq('active', true)
         }
@@ -103,7 +107,9 @@ export async function DELETE(request) {
             }
         } else {
             const { error } = await supabase.from('services').insert({ name: id, is_hidden: true, active: false });
-            if (error && error.code !== '23505') throw error;
+            if (error && error.code === '23505') {
+                await supabase.from('services').update({ is_hidden: true, active: false }).eq('name', id);
+            } else if (error) throw error;
             return NextResponse.json({ success: true, message: 'Item padrão puro ocultado' })
         }
     } catch (error) {
