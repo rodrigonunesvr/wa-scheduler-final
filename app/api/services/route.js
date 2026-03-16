@@ -76,6 +76,15 @@ export async function DELETE(request) {
 
         if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
+        // Validação básica de UUID para evitar erro 500 do Postgres
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+        if (!isUUID) {
+            // Se não é UUID, provavelmente é um item padrão que não está no banco
+            // Retornamos sucesso pois para o usuário o objetivo "excluir" foi ok (mesmo que não houvesse o que deletar no BD)
+            return NextResponse.json({ success: true, message: 'Item padrão ignorado no BD' })
+        }
+
         const { error } = await supabase.from('services').delete().eq('id', id)
         if (error) throw error
 

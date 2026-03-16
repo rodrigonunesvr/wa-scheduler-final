@@ -1762,10 +1762,31 @@ function ServicesPage({ isMobile, onOpenMenu, globalServices, refreshGlobal }) {
                                             if (confirm('Deseja realmente excluir este serviço?')) {
                                                 setLoading(true)
                                                 try {
-                                                    const res = await fetch(`/api/services?id=${svc.id}`, { method: 'DELETE' })
-                                                    if (res.ok) refreshGlobal()
-                                                    else alert('Erro ao excluir serviço.')
-                                                } catch (e) { console.error(e) }
+                                                    const isDefault = !svc.id.includes('-');
+                                                    const isFromDefault = DEFAULT_SERVICES.some(ds => ds.name === svc.name);
+
+                                                    if (isDefault || isFromDefault) {
+                                                        // Itens padrão (originais ou modificados) não devem ser deletados, 
+                                                        // ou eles voltam via hardcode. Devem ser desativados.
+                                                        await fetch('/api/services', {
+                                                            method: isDefault ? 'POST' : 'PATCH',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                                ...(isDefault ? { name: svc.name, price: svc.price, duration: svc.duration } : { id: svc.id }),
+                                                                active: false
+                                                            })
+                                                        });
+                                                        refreshGlobal();
+                                                    } else {
+                                                        // Itens puramente manuais/novos podem ser deletados
+                                                        const res = await fetch(`/api/services?id=${svc.id}`, { method: 'DELETE' })
+                                                        if (res.ok) refreshGlobal()
+                                                        else alert('Erro ao excluir serviço personalizado.')
+                                                    }
+                                                } catch (e) {
+                                                    console.error('Delete error:', e);
+                                                    alert('Falha na conexão ao excluir.')
+                                                }
                                                 setLoading(false)
                                             }
                                         }} className="p-2.5 rounded-xl border border-slate-200 text-red-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm">
