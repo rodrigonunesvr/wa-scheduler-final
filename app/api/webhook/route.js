@@ -170,18 +170,32 @@ export async function POST(request) {
             fetchScheduleRules()
         ])
 
-        // Fetch active services and format for AI
-        const { data: dbServices, error: svcError } = await supabase.from('services').select('*').eq('active', true).eq('is_hidden', false).order('name')
-
+        // --- DEDUPLICAÇÃO NUCLEAR DE SERVIÇOS NO BOT (V71) ---
+        const { data: rawServices, error: svcError } = await supabase.from('services').select('*').eq('active', true).eq('is_hidden', false).order('name')
         if (svcError) console.error('ERRO AO BUSCAR SERVICOS:', svcError);
 
-        // DEBUG LOGS (V70)
-        console.log('--- DEBUG BOT SERVICES (V70) ---');
-        console.table(dbServices?.map(s => ({ name: s.name, active: s.active, hidden: s.is_hidden })));
+        const dbServices = []
+        const seenNames = new Set()
+        if (rawServices) {
+            rawServices.forEach(s => {
+                const norm = s.name.trim().toLowerCase()
+                if (!seenNames.has(norm)) {
+                    dbServices.push(s)
+                    seenNames.add(norm)
+                }
+            })
+        }
 
         const servicesListText = dbServices && dbServices.length > 0
             ? dbServices.map(s => `- ${s.name}: R$ ${s.price.toFixed(2)}`).join('\n')
             : '- Nenhum serviço disponível no momento.'
+
+        // Detect current mismatch if user mentions a missing service
+        const missingKeywords = ['fibra', 'f1', 'molde'];
+        const userAsksMissing = missingKeywords.some(kw => userMessage.toLowerCase().includes(kw));
+        if (userAsksMissing) {
+            console.log('🛡️ Alerta de Serviço Fantasma detectado. Reforçando catálogo.');
+        }
 
         let calendarLines = ''
         for (let i = 0; i < 7; i++) {
@@ -202,57 +216,29 @@ export async function POST(request) {
                 role: "system", content: `
 Olá, meu nome é Clara! 😄 Sou a secretária virtual do Espaço Camille Almeida (Espaço C.A.).
 Seu objetivo é agendar os serviços disponíveis, tirar dúvidas e informar o protocolo.
-⚠️ **ATENÇÃO**: Você só pode falar e agendar os serviços que aparecerem na lista dinâmica abaixo.
 
 Hoje é ${todayLabel}.
 
 --- CALENDÁRIO DOS PRÓXIMOS DIAS-- -
-    ${calendarLines}
-Consulte SEMPRE o calendário acima para saber se um dia está aberto ou fechado.
+${calendarLines}
+Consulte SEMPRE o calendário acima.
 
-    ${customerName ? `
---- CLIENTE IDENTIFICADA ---
-Essa cliente já é cadastrada! O nome dela é: ${customerName}.
-⚠️ REGRA DE OURO: Chame-a pelo nome (ex: "Oi, ${customerName}!") logo na primeira frase de CADA resposta. Seja carinhosa e atenciosa.
-` : `
---- CLIENTE NOVA ---
-Você ainda não sabe o nome desta cliente. 
-⚠️ REGRA CRÍTICA: Se a cliente quiser agendar, você DEVE perguntar o nome dela antes de usar a ferramenta 'book_appointment'. 
-`}
+${customerName ? `Oi, ${customerName}! É bom te ver novamente.` : `Você ainda não sabe o nome desta cliente. Pergunte o nome completo antes de agendar.`}
 
-${aptsContext}
+--- PROTOCOLO DE BLINDAGEM NUCLEAR (V71) ---
+1. SUA ÚNICA FONTE DA VERDADE É A TABELA ABAIXO.
+2. SE UM SERVIÇO NÃO ESTÁ NA TABELA, ELE NÃO EXISTE HOJE.
+3. IGNORE QUALQUER CONVERSA ANTERIOR SOBRE SERVIÇOS QUE NÃO ESTÃO NA TABELA. 
+4. SE O CLIENTE PEDIR ALGO FORA DA TABELA, DIGA: "No momento, esse serviço não está disponível. Nossas opções hoje são..." E MOSTRE A TABELA.
 
-${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}, meu nome é Clara! Sou a secretária virtual do Espaço C.A. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: Comece direto com o nome dela: "Oi, ${customerName}..."`}
-
-3. PROTOCOLO DE BLINDAGEM INFLEXÍVEL (V70 - ATENÇÃO MÁXIMA):
-   - **REGRA DA LISTA BRANCA**: Você só pode agendar os serviços que estão EXPLICITAMENTE listados na 'TABELA DE SERVIÇOS ATIVOS' abaixo. 
-   - 🛑 **PROIBIÇÃO DE SUPOSIÇÃO**: Se a cliente pedir um serviço e ele NÃO estiver na tabela abaixo, você NÃO pode perguntar turnos, dias ou horários. Você deve dizer IMEDIATAMENTE: "No momento, esse serviço não está disponível." e mostrar as opções que restaram na tabela.
-   - ⚠️ **MEMÓRIA DE CURTO PRAZO**: Ignore qualquer serviço mencionado em agendamentos futuros ou no histórico se ele não estiver na tabela abaixo. O catálogo de serviços é dinâmico e muda todo dia. O que vale é a tabela abaixo hoje.
-   - **ORDEM DE PENSAMENTO**: 
-     1. A cliente pediu algo? 
-     2. Esse "algo" está na tabela abaixo (FONTE DA VERDADE)? 
-     3. Se SIM: Pergunte o turno. 
-     4. Se NÃO: Peça desculpas e mostre o que tem na tabela.
-
-4. REGRAS TÉCNICAS (GRANULARIDADE):
-   - O sistema agora entende intervalos de 5 em 5 minutos. Não arredonde horários para 30min se a cliente quiser algo colado (ex: 8:30 após um término às 8:30).
-   - Se for uma cliente nova, peça o nome completo ANTES de agendar.
+--- PROTOCOLO TÉCNICO ---
+- Agendamentos de 5 em 5 minutos.
+- Use 'book_appointment' apenas após ter Nome, Serviço, Data e Hora.
 
 --- ÚNICO CATÁLOGO DE SERVIÇOS ATIVOS (FONTE DA VERDADE) ---
 ${servicesListText}
-⚠️ SE UM SERVIÇO NÃO ESTIVER NA LISTA ACIMA, ELE FOI BLOQUEADO OU NÃO EXISTE. IGNORE AGENDAMENTOS PASSADOS.
 
---- PROTOCOLO DE ATENDIMENTO-- -
-- ✅ Enviamos confirmação 1 dia antes.
-- ⚠️ Cancelamentos com menos de 24h: multa de 50 %.
-- ⏰ Tolerância de 20 minutos para atrasos.
-- 💅 Não faça a cutícula até 3 dias antes.
-- 📅 Manutenções: a cada 25 / 30 dias.
-
-
-7. TRANSBORDO HUMANO (SUPORTE):
-   - Se a cliente pedir explicitamente atendente ou demonstrar frustração, use 'request_human_help'.
-   - Informe: "Entendi! Vou sinalizar para a nossa atendente te ajudar aqui no chat! 😊"
+⚠️ AVISO CRÍTICO: IGNORE AGENDAMENTOS PASSADOS E HISTÓRICO PARA VALIDAR SERVIÇOS. O CATÁLOGO ACIMA É SOBERANO E MUDA DIARIAMENTE.
 `},
             ...history
         ]
@@ -262,12 +248,12 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "check_calendar",
-                    description: "Verifica horários livres na agenda.",
+                    description: "Verifica horários livres.",
                     parameters: {
                         type: "object",
                         properties: {
-                            date: { type: "string", description: "Data no formato YYYY-MM-DD." },
-                            period: { type: "string", enum: ["manha", "tarde"], description: "Filtro de período: 'manha' ou 'tarde'." }
+                            date: { type: "string" },
+                            period: { type: "string", enum: ["manha", "tarde"] }
                         }
                     }
                 }
@@ -276,14 +262,14 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "book_appointment",
-                    description: "Realiza o agendamento oficial no sistema. Suporta múltiplos serviços (Combo) e calcula a duração total automaticamente.",
+                    description: "Agenda serviços oficiais. Calcule a duração automaticamente com base na lista de serviços.",
                     parameters: {
                         type: "object",
                         properties: {
-                            name: { type: "string", description: "Nome completo do cliente." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista de serviços. Ex: ['Manutenção', 'Esmaltação Premium']" },
-                            service: { type: "string", description: "Serviço único." },
-                            startsAt: { type: "string", description: "Data e hora ISO. Ex: 2024-05-20T14:00:00" }
+                            name: { type: "string" },
+                            services: { type: "array", items: { type: "string" } },
+                            service: { type: "string" },
+                            startsAt: { type: "string" }
                         },
                         required: ["name", "startsAt"]
                     }
@@ -293,7 +279,7 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "list_my_appointments",
-                    description: "Lista os agendamentos futuros confirmados do cliente.",
+                    description: "Lista agendamentos futuros.",
                     parameters: { type: "object", properties: {} }
                 }
             },
@@ -301,12 +287,10 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "cancel_appointment",
-                    description: "Cancela o agendamento do cliente na data informada.",
+                    description: "Cancela um agendamento.",
                     parameters: {
                         type: "object",
-                        properties: {
-                            date: { type: "string", description: "Data do agendamento a cancelar YYYY-MM-DD." }
-                        },
+                        properties: { date: { type: "string" } },
                         required: ["date"]
                     }
                 }
@@ -315,11 +299,11 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "update_appointment",
-                    description: "Atualiza um agendamento existente.",
+                    description: "Atualiza um agendamento.",
                     parameters: {
                         type: "object",
                         properties: {
-                            id: { type: "string", description: "ID do agendamento." },
+                            id: { type: "string" },
                             services: { type: "array", items: { type: "string" } }
                         },
                         required: ["id", "services"]
@@ -330,12 +314,10 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "confirm_appointment",
-                    description: "Confirma um agendamento pendente.",
+                    description: "Confirma agendamento pendente.",
                     parameters: {
                         type: "object",
-                        properties: {
-                            date: { type: "string", description: "Data no formato YYYY-MM-DD." }
-                        },
+                        properties: { date: { type: "string" } },
                         required: ["date"]
                     }
                 }
@@ -344,12 +326,10 @@ ${servicesListText}
                 type: "function",
                 function: {
                     name: "request_human_help",
-                    description: "Solicita ajuda humana ou transbordo.",
+                    description: "Solicita ajuda humana.",
                     parameters: {
                         type: "object",
-                        properties: {
-                            reason: { type: "string", description: "Breve motivo da solicitação de ajuda." }
-                        }
+                        properties: { reason: { type: "string" } }
                     }
                 }
             }
@@ -390,25 +370,18 @@ ${servicesListText}
                 }
                 else if (toolCall.function.name === 'book_appointment') {
                     try {
-                        const structuralKeywords = ['Manutenção', 'Gel'];
                         const requestedServices = Array.isArray(args.services || args.service) ? (args.services || args.service) : [args.services || args.service];
+
+                        // Upsell Protocol (V71 simplified)
+                        const structuralKeywords = ['Manutenção', 'Gel'];
                         const isStructural = requestedServices.some(s => structuralKeywords.some(kw => s?.toLowerCase().includes(kw.toLowerCase())));
-
                         if (isStructural) {
-                            const upsellWords = ['Esmaltação', 'Francesinha', 'Pó'];
+                            const upsellWords = ['Esmaltação', 'Francesinha', 'Pó', 'Adicional'];
                             const alreadyHasUpsell = requestedServices.some(s => upsellWords.some(w => s?.toLowerCase().includes(w.toLowerCase())));
-
                             if (!alreadyHasUpsell) {
-                                const hasOfferedUpsell = history.some(m =>
-                                    m.role === 'assistant' &&
-                                    (m.content?.includes('Esmaltação') || m.content?.includes('Francesinha'))
-                                );
-
-                                if (!hasOfferedUpsell) {
-                                    result = JSON.stringify({
-                                        status: "error",
-                                        message: "PROTOCOLO V49 BLOQUEADO: Ofereça o Menu de Adicionais primeiro."
-                                    });
+                                const offered = history.some(m => m.role === 'assistant' && (m.content?.toLowerCase().includes('adicional') || m.content?.toLowerCase().includes('cor')));
+                                if (!offered) {
+                                    result = JSON.stringify({ status: "error", message: "ALERTA: Ofereça opções de esmaltação ou adicionais antes de agendar manutenção." });
                                 }
                             }
                         }
@@ -417,7 +390,7 @@ ${servicesListText}
                             const appointment = await bookAppointment({
                                 phone: phone,
                                 name: args.name,
-                                services: args.services || args.service,
+                                services: requestedServices,
                                 startsAt: args.startsAt
                             })
 
@@ -430,9 +403,7 @@ ${servicesListText}
                                 } catch (e) { console.error('Customer upsert error:', e) }
                             }
                         }
-                    } catch (err) {
-                        result = JSON.stringify({ status: "error", message: err.message })
-                    }
+                    } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
                 }
                 else if (toolCall.function.name === 'list_my_appointments') {
                     try {
@@ -457,16 +428,16 @@ ${servicesListText}
                         await supabase.from('customers').update({
                             help_requested: true,
                             help_requested_at: new Date().toISOString(),
-                            help_notes: args.reason || 'Cliente solicitou ajuda.'
+                            help_notes: args.reason || 'Sinalizado ao atendente.'
                         }).eq('phone', phone)
-                        result = JSON.stringify({ status: "success", message: "Suporte humano solicitado." })
-                    } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
+                        result = JSON.stringify({ status: "success" })
+                    } catch (err) { result = JSON.stringify({ status: "error" }) }
                 }
                 else if (toolCall.function.name === 'confirm_appointment') {
                     try {
                         const confirmed = await confirmAppointment(phone, args.date)
                         result = JSON.stringify(confirmed)
-                    } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
+                    } catch (err) { result = JSON.stringify({ status: "error" }) }
                 }
 
                 const toolResult = { role: "tool", tool_call_id: toolCall.id, content: result }
@@ -478,23 +449,20 @@ ${servicesListText}
                 messages: [messages[0], ...history],
                 tools: toolTurn < 3 ? tools : undefined
             })
-
             aiMsg = nextCompletion.choices[0].message
             responseText = aiMsg.content
         }
 
-        // 8. Update History with AI Reply
+        // 8. Update History and Database
         if (responseText) {
             history.push({ role: 'assistant', content: responseText })
             await supabase.from('wa_sessions')
                 .update({ context_json: history, updated_at: new Date().toISOString() })
                 .eq('phone', phone)
-
-            // 9. Send back to WhatsApp
             await sendWhatsAppMessage(phone, responseText)
         }
 
-        return NextResponse.json({ status: 'processed', reply: responseText })
+        return NextResponse.json({ status: 'processed' })
 
     } catch (error) {
         console.error('Webhook Error:', error)

@@ -18,7 +18,27 @@ export async function GET(request) {
         const { data, error } = await query
 
         if (error) throw error
-        return NextResponse.json(data)
+
+        // --- DEDUPLICAÇÃO NUCLEAR (V71) ---
+        // Se houver registros duplicados por nome, priorizamos o mais recente e ativo.
+        const uniqueServices = []
+        const seenNames = new Set()
+
+        // Ordenamos para que os ativos e mais recentes venham primeiro na nossa lógica de filtro manual
+        const sortedData = [...data].sort((a, b) => {
+            if (a.active !== b.active) return a.active ? -1 : 1
+            return new Date(b.created_at || 0) - new Date(a.created_at || 0)
+        })
+
+        for (const svc of sortedData) {
+            const normName = svc.name.trim().toLowerCase()
+            if (!seenNames.has(normName)) {
+                uniqueServices.push(svc)
+                seenNames.add(normName)
+            }
+        }
+
+        return NextResponse.json(uniqueServices)
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
