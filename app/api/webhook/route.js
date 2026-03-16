@@ -377,15 +377,16 @@ ${servicesListText}
                 else if (toolCall.function.name === 'check_calendar') {
                     const slots = await findAvailableSlots({
                         requestedDate: args.date,
+                        services: args.services || args.service,
                         period: args.period
                     })
                     result = JSON.stringify(slots)
                 }
                 else if (toolCall.function.name === 'book_appointment') {
                     try {
-                        const structuralServices = ['Manutenção', 'Gel', 'Fibra', 'Banho de Gel', 'Molde F1'];
+                        const structuralKeywords = ['Manutenção', 'Gel', 'Fibra', 'F1'];
                         const requestedServices = Array.isArray(args.services || args.service) ? (args.services || args.service) : [args.services || args.service];
-                        const isStructural = requestedServices.some(s => structuralServices.some(ss => s?.toLowerCase().includes(ss.toLowerCase())));
+                        const isStructural = requestedServices.some(s => structuralKeywords.some(kw => s?.toLowerCase().includes(kw.toLowerCase())));
 
                         if (isStructural) {
                             const upsellWords = ['Esmaltação', 'Francesinha', 'Pó'];

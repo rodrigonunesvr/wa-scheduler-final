@@ -98,18 +98,19 @@ export async function DELETE(request) {
             ];
 
             if (svc && protectedNames.includes(svc.name)) {
-                await supabase.from('services').update({ is_hidden: true, active: false }).eq('id', id);
-                return NextResponse.json({ success: true, message: 'Item padrão modificado ocultado' })
+                // Oculta todas as instâncias com esse nome para garantir extermínio
+                await supabase.from('services').update({ is_hidden: true, active: false }).eq('name', svc.name);
+                return NextResponse.json({ success: true, message: 'Item padrão ocultado em todas as instâncias' })
             } else {
                 const { error } = await supabase.from('services').delete().eq('id', id)
                 if (error) throw error
                 return NextResponse.json({ success: true, message: 'Item personalizado deletado' })
             }
         } else {
-            const { error } = await supabase.from('services').insert({ name: id, is_hidden: true, active: false });
-            if (error && error.code === '23505') {
-                await supabase.from('services').update({ is_hidden: true, active: false }).eq('name', id);
-            } else if (error) throw error;
+            // Se veio apenas o nome, oculta todas as instâncias com esse nome
+            await supabase.from('services').update({ is_hidden: true, active: false }).eq('name', id);
+            // Também tenta inserir um registro de "bloqueio" caso ainda não exista
+            await supabase.from('services').upsert({ name: id, is_hidden: true, active: false }, { onConflict: 'name' });
             return NextResponse.json({ success: true, message: 'Item padrão puro ocultado' })
         }
     } catch (error) {
