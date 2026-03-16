@@ -171,7 +171,14 @@ export async function POST(request) {
         ])
 
         // Fetch active services and format for AI
-        const { data: dbServices } = await supabase.from('services').select('*').eq('active', true).eq('is_hidden', false).order('name')
+        const { data: dbServices, error: svcError } = await supabase.from('services').select('*').eq('active', true).eq('is_hidden', false).order('name')
+
+        if (svcError) console.error('ERRO AO BUSCAR SERVICOS:', svcError);
+
+        // DEBUG LOGS (V70)
+        console.log('--- DEBUG BOT SERVICES (V70) ---');
+        console.table(dbServices?.map(s => ({ name: s.name, active: s.active, hidden: s.is_hidden })));
+
         const servicesListText = dbServices && dbServices.length > 0
             ? dbServices.map(s => `- ${s.name}: R$ ${s.price.toFixed(2)}`).join('\n')
             : '- Nenhum serviço disponível no momento.'
@@ -217,16 +224,15 @@ ${aptsContext}
 
 ${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Apresente-se: "${greeting}${customerName ? `, ${customerName}` : ''}, meu nome é Clara! Sou a secretária virtual do Espaço C.A. Como posso ajudar?".` : `REGRA DE SAUDAÇÃO: Comece direto com o nome dela: "Oi, ${customerName}..."`}
 
-3. PROTOCOLO DE BLINDAGEM INFLEXÍVEL (V67 - ATENÇÃO MÁXIMA):
+3. PROTOCOLO DE BLINDAGEM INFLEXÍVEL (V70 - ATENÇÃO MÁXIMA):
    - **REGRA DA LISTA BRANCA**: Você só pode agendar os serviços que estão EXPLICITAMENTE listados na 'TABELA DE SERVIÇOS ATIVOS' abaixo. 
-   - 🛑 **PROIBIÇÃO DE SUPOSIÇÃO**: Se a cliente pedir um serviço (ex: "Banho de Gel") e ele NÃO estiver na tabela abaixo, você NÃO pode perguntar turnos, dias ou horários. Você deve dizer IMEDIATAMENTE: "No momento, esse serviço não está disponível." e mostrar as opções que restaram na tabela.
+   - 🛑 **PROIBIÇÃO DE SUPOSIÇÃO**: Se a cliente pedir um serviço e ele NÃO estiver na tabela abaixo, você NÃO pode perguntar turnos, dias ou horários. Você deve dizer IMEDIATAMENTE: "No momento, esse serviço não está disponível." e mostrar as opções que restaram na tabela.
+   - ⚠️ **MEMÓRIA DE CURTO PRAZO**: Ignore qualquer serviço mencionado em agendamentos futuros ou no histórico se ele não estiver na tabela abaixo. O catálogo de serviços é dinâmico e muda todo dia. O que vale é a tabela abaixo hoje.
    - **ORDEM DE PENSAMENTO**: 
      1. A cliente pediu algo? 
      2. Esse "algo" está na tabela abaixo (FONTE DA VERDADE)? 
      3. Se SIM: Pergunte o turno. 
      4. Se NÃO: Peça desculpas e mostre o que tem na tabela.
-
-⚠️ **ALERTA DE SEGURANÇA**: Se você vir um serviço no histórico de mensagens que não está na lista abaixo, ignore o histórico. O catálogo atual mudou e o serviço foi BLOQUEADO. Siga APENAS a tabela abaixo.
 
 4. REGRAS TÉCNICAS (GRANULARIDADE):
    - O sistema agora entende intervalos de 5 em 5 minutos. Não arredonde horários para 30min se a cliente quiser algo colado (ex: 8:30 após um término às 8:30).
@@ -234,7 +240,7 @@ ${isFirstInteraction ? `REGRA DE SAUDAÇÃO: Apresente-se: "${greeting}${custome
 
 --- ÚNICO CATÁLOGO DE SERVIÇOS ATIVOS (FONTE DA VERDADE) ---
 ${servicesListText}
-⚠️ SE UM SERVIÇO NÃO ESTIVER NA LISTA ACIMA, ELE FOI BLOQUEADO OU NÃO EXISTE.
+⚠️ SE UM SERVIÇO NÃO ESTIVER NA LISTA ACIMA, ELE FOI BLOQUEADO OU NÃO EXISTE. IGNORE AGENDAMENTOS PASSADOS.
 
 --- PROTOCOLO DE ATENDIMENTO-- -
 - ✅ Enviamos confirmação 1 dia antes.
@@ -384,7 +390,7 @@ ${servicesListText}
                 }
                 else if (toolCall.function.name === 'book_appointment') {
                     try {
-                        const structuralKeywords = ['Manutenção', 'Gel', 'Fibra', 'F1'];
+                        const structuralKeywords = ['Manutenção', 'Gel'];
                         const requestedServices = Array.isArray(args.services || args.service) ? (args.services || args.service) : [args.services || args.service];
                         const isStructural = requestedServices.some(s => structuralKeywords.some(kw => s?.toLowerCase().includes(kw.toLowerCase())));
 
