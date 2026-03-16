@@ -65,11 +65,15 @@ export async function POST(request) {
             return NextResponse.json({ status: 'no-phone' })
         }
 
+        // --- LIMPEZA DE TELEFONE (V75) ---
+        // Garante que o telefone para busca no banco seja apenas números, sem caracteres especiais
+        const cleanPhone = phone.replace(/\D/g, '');
+
         // 3. Load or Create Session
         const { data: existingSession, error: fetchError } = await supabase
             .from('wa_sessions')
             .select('*')
-            .eq('phone', phone)
+            .eq('phone', cleanPhone)
             .maybeSingle()
 
         if (fetchError) {
@@ -79,10 +83,10 @@ export async function POST(request) {
         let session = existingSession
 
         if (!session) {
-            console.log('🆕 Criando nova sessão para:', phone)
+            console.log('🆕 Criando nova sessão para:', cleanPhone)
             const { data: newSession, error: insertError } = await supabase
                 .from('wa_sessions')
-                .insert({ phone, state: 'START', context_json: [] })
+                .insert({ phone: cleanPhone, state: 'START', context_json: [] })
                 .select()
                 .maybeSingle()
 
@@ -113,11 +117,14 @@ export async function POST(request) {
         const { data: customer, error: customerError } = await supabase
             .from('customers')
             .select('name')
-            .eq('phone', phone)
+            .eq('phone', cleanPhone)
             .maybeSingle()
+
         if (customer) {
             customerName = customer.name
-            console.log('👤 Cliente reconhecida:', customerName)
+            console.log('👤 CLIENTE IDENTIFICADA NO BANCO:', customerName, 'TELEFONE:', cleanPhone)
+        } else {
+            console.log('❓ CLIENTE NÃO ENCONTRADA COM TELEFONE:', cleanPhone)
         }
 
         // 4. Process Content (Text or Audio)
@@ -155,7 +162,7 @@ export async function POST(request) {
         else greeting = 'Boa noite'
 
         // 6.2 Fetch Existing Appointments for the client
-        const futureApts = await getAppointmentsByPhone(phone)
+        const futureApts = await getAppointmentsByPhone(cleanPhone)
         const hasApts = futureApts && futureApts.length > 0
         const aptsContext = hasApts
             ? `\n-- - AGENDAMENTOS FUTUROS DESTA CLIENTE-- -\n` + futureApts.map(a => ` - ${moment(a.starts_at).tz('America/Sao_Paulo').format('DD/MM [às] HH:mm')}: ${a.service_id} `).join('\n')
@@ -224,8 +231,8 @@ ${calendarLines}
 Consulte SEMPRE o calendário acima.
 
 ${customerName
-                        ? `--- RECONHECIMENTO DE CLIENTE ---\nVocê JÁ SABE o nome desta cliente: **${customerName}**. \nNUNCA pergunte o nome dela. Comece a conversa tratando-a pelo nome: "Olá ${customerName}, que bom falar com você novamente!", ou algo similar.`
-                        : `Você ainda não sabe o nome desta cliente. Pergunte o nome completo antes de confirmar qualquer agendamento.`}
+                        ? `--- RECONHECIMENTO DE CLIENTE (LEI) ---\nVocê JÁ SABE que o nome da cliente é **${customerName}**. \nPROIBIDO perguntar o nome dela. Inicie a conversa chamando-a pelo nome: "Olá ${customerName}, ${greeting.toLowerCase()}! Em que posso te ajudar hoje?"`
+                        : `Você ainda não sabe o nome desta cliente. Pergunte o nome completo antes de confirmar o agendamento.`}
 
 --- PROTOCOLO DE BLINDAGEM NUCLEAR (V71) ---
 1. SUA ÚNICA FONTE DA VERDADE É A TABELA ABAIXO.
@@ -233,19 +240,19 @@ ${customerName
 3. IGNORE QUALQUER CONVERSA ANTERIOR SOBRE SERVIÇOS QUE NÃO ESTÃO NA TABELA. 
 4. SE O CLIENTE PEDIR ALGO FORA DA TABELA, DIGA: "No momento, esse serviço não está disponível. Nossas opções hoje são..." E MOSTRE A TABELA.
 
---- PROTOCOLO DE ADICIONAIS (UPSELL NUCLEAR - OBRIGATÓRIO V74) ---
-⚠️ **REGRA INVIOLÁVEL**: Se a cliente pedir "Manutenção" ou "Gel", você está PROIBIDA de usar a ferramenta 'book_appointment' sem antes oferecer o Menu de Adicionais (Esmaltação Básica, Premium, Francesinha, Pó) e aguardar a resposta dela.
-- **PASSO A PASSO FORÇADO**: 
+--- PROTOCOLO DE ADICIONAIS (UPSELL SEQUENCIAL V75) ---
+⚠️ **REGRA DE BLOQUEIO ABSOLUTO**: Se a cliente pedir "Manutenção" ou "Gel", você está terminantemente proibida de agendar sem antes perguntar se ela deseja adicionar Esmaltação ou Francesinha.
+- **PASSO A PASSO**: 
   1. Cliente pede Manutenção. 
   2. Você mostra horários livres. 
   3. **OBRIGATÓRIO**: Pergunte "Gostaria de aproveitar e adicionar uma esmaltação básica ou premium?".
-  4. **AGUARDE A RESPOSTA**: Não agende nada enquanto ela não responder sobre os adicionais.
-  5. Use 'book_appointment' apenas incluindo os adicionais escolhidos OU se ela explicitamente recusar.
+  4. **NÃO AGENDE** até que ela responda "Sim" ou "Não" sobre os adicionais.
+  5. Somente após a resposta dela, use 'book_appointment'.
 
 --- ÚNICO CATÁLOGO DE SERVIÇOS ATIVOS (FONTE DA VERDADE) ---
 ${servicesListText}
 
-⚠️ AVISO CRÍTICO: SE VOCÊ AGENDAR MANUTENÇÃO SEM OFERECER ADICIONAIS, VOCÊ ESTARÁ VIOLANDO O PROTOCOLO E O AGENDAMENTO SERÁ REJEITADO PELO SERVIDOR.
+⚠️ AVISO CRÍTICO: SE VOCÊ TENTAR AGENDAR MANUTENÇÃO SEM TER OFERECIDO ADICIONAIS NA ÚLTIMA MENSAGEM, O SISTEMA REJEITARÁ A AÇÃO.
 `},
             ...history
         ]
@@ -379,9 +386,8 @@ ${servicesListText}
                     try {
                         const requestedServices = Array.isArray(args.services || args.service) ? (args.services || args.service) : [args.services || args.service];
 
-                        // --- PROTOCOLO DE UPSELL V73 (BLINDADO) ---
-                        const structuralKeywords = ['manutencao', 'manutencao', 'gel'];
-
+                        // --- PROTOCOLO DE UPSELL V75 (SEQUENCIAL/RADICAL) ---
+                        const structuralKeywords = ['manutencao', 'gel'];
                         const isStructural = requestedServices.some(s => {
                             const norm = normalizeString(s);
                             return structuralKeywords.some(kw => norm.includes(kw));
@@ -395,9 +401,12 @@ ${servicesListText}
                             });
 
                             if (!alreadyHasUpsell) {
-                                // Buscamos no histórico por termos normalizados
-                                const hasOfferedUpsell = history.some(m => {
-                                    if (m.role !== 'assistant' || !m.content) return false;
+                                // Buscamos no histórico RECENTE (últimas 3 mensagens do assistente)
+                                const recentAssistantMessages = history
+                                    .filter(m => m.role === 'assistant' && m.content)
+                                    .slice(-3);
+
+                                const hasOfferedUpsell = recentAssistantMessages.some(m => {
                                     const normContent = normalizeString(m.content);
                                     return upsellWords.some(w => normContent.includes(w));
                                 });
@@ -405,7 +414,7 @@ ${servicesListText}
                                 if (!hasOfferedUpsell) {
                                     result = JSON.stringify({
                                         status: "error",
-                                        message: "BLOQUEIO DE PROTOCOLO V73: Pare tudo! Você DEVE oferecer o Menu de Adicionais (Esmaltação Básica, Premium, Francesinha, etc) antes de prosseguir com o agendamento de Manutenção. Pergunte IMEDIATAMENTE: 'Gostaria de aproveitar e adicionar uma esmaltação básica ou algo extra?'"
+                                        message: "ERRO DE PROTOCOLO V75: Você NÃO pode agendar esta manutenção agora. Você esqueceu de oferecer o menu de adicionais (esmaltação básica/premium) na última mensagem. Pare o agendamento, responda a cliente oferecendo os adicionais e espere ela decidir."
                                     });
                                 }
                             }
@@ -413,8 +422,8 @@ ${servicesListText}
 
                         if (!result) {
                             const appointment = await bookAppointment({
-                                phone: phone,
-                                name: args.name,
+                                phone: cleanPhone,
+                                name: args.name || customerName,
                                 services: requestedServices,
                                 startsAt: args.startsAt
                             })
@@ -424,7 +433,7 @@ ${servicesListText}
                             } else {
                                 result = JSON.stringify({ status: "success", appointment })
                                 try {
-                                    await supabase.from('customers').upsert({ phone: phone, name: args.name }, { onConflict: 'phone' })
+                                    await supabase.from('customers').upsert({ phone: cleanPhone, name: args.name || customerName }, { onConflict: 'phone' })
                                 } catch (e) { console.error('Customer upsert error:', e) }
                             }
                         }
@@ -432,13 +441,13 @@ ${servicesListText}
                 }
                 else if (toolCall.function.name === 'list_my_appointments') {
                     try {
-                        const appointments = await getAppointmentsByPhone(phone)
+                        const appointments = await getAppointmentsByPhone(cleanPhone)
                         result = JSON.stringify(appointments)
                     } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
                 }
                 else if (toolCall.function.name === 'cancel_appointment') {
                     try {
-                        const cancelled = await cancelAppointment(phone, args.date)
+                        const cancelled = await cancelAppointment(cleanPhone, args.date)
                         result = JSON.stringify({ status: "success", cancelled })
                     } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
                 }
@@ -454,13 +463,13 @@ ${servicesListText}
                             help_requested: true,
                             help_requested_at: new Date().toISOString(),
                             help_notes: args.reason || 'Sinalizado ao atendente.'
-                        }).eq('phone', phone)
+                        }).eq('phone', cleanPhone)
                         result = JSON.stringify({ status: "success" })
                     } catch (err) { result = JSON.stringify({ status: "error" }) }
                 }
                 else if (toolCall.function.name === 'confirm_appointment') {
                     try {
-                        const confirmed = await confirmAppointment(phone, args.date)
+                        const confirmed = await confirmAppointment(cleanPhone, args.date)
                         result = JSON.stringify(confirmed)
                     } catch (err) { result = JSON.stringify({ status: "error" }) }
                 }
@@ -483,8 +492,8 @@ ${servicesListText}
             history.push({ role: 'assistant', content: responseText })
             await supabase.from('wa_sessions')
                 .update({ context_json: history, updated_at: new Date().toISOString() })
-                .eq('phone', phone)
-            await sendWhatsAppMessage(phone, responseText)
+                .eq('phone', cleanPhone)
+            await sendWhatsAppMessage(cleanPhone, responseText)
         }
 
         return NextResponse.json({ status: 'processed' })
