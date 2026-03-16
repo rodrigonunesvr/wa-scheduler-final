@@ -318,7 +318,7 @@ export default function AdminDashboard() {
         }
     }
 
-    const confirmed = appointments.filter(a => a.status === 'CONFIRMED')
+    const confirmed = appointments.filter(a => a.status === 'CONFIRMED' || a.status === 'PENDING')
     const allDayApts = appointments.filter(a => toSPDate(a.starts_at) === selectedDate).sort((a, b) => a.starts_at.localeCompare(b.starts_at))
     const filteredDayApts = allDayApts.filter(a => {
         if (!showCancelled && a.status === 'CANCELLED') return false
@@ -327,7 +327,7 @@ export default function AdminDashboard() {
     })
     const dayApts = confirmed.filter(a => toSPDate(a.starts_at) === selectedDate).sort((a, b) => a.starts_at.localeCompare(b.starts_at))
     const dayBlocks = blocks.filter(b => toSPDate(b.starts_at) === selectedDate)
-    const getCount = (d) => confirmed.filter(a => toSPDate(a.starts_at) === d).length
+    const getCount = (d) => appointments.filter(a => (a.status === 'CONFIRMED' || a.status === 'PENDING') && toSPDate(a.starts_at) === d).length
     const dayRevenue = dayApts.reduce((sum, a) => sum + calcTotal(parseServices(a.service_id)), 0)
 
     const isDayOpen = (date) => {
@@ -550,7 +550,13 @@ function MonthView({ currentDate, selectedDate, setSelectedDate, getCount, isMob
                         <button key={i} onClick={() => !isClosed && isThisMonth && setSelectedDate(dateStr)} disabled={isClosed || !isThisMonth}
                             className={`relative h-16 md:h-24 p-1 md:p-2 border-b border-r border-slate-50 text-left transition-all ${!isThisMonth ? 'opacity-30' : isClosed ? 'bg-slate-50 opacity-40 cursor-not-allowed' : 'hover:bg-violet-50 cursor-pointer'}`}>
                             <span className={`text-[10px] md:text-sm font-bold ${isToday(date) ? 'bg-violet-600 text-white w-5 h-5 md:w-7 md:h-7 rounded-full flex items-center justify-center today-pulse' : 'text-slate-700'}`}>{date.getDate()}</span>
-                            {count > 0 && <div className="mt-0.5 md:mt-1"><span className="bg-violet-100 text-violet-700 text-[8px] md:text-[10px] font-bold px-1 md:px-1.5 py-0.5 rounded">{count}{!isMobile && ' agend.'}</span></div>}
+                            {count > 0 && (
+                                <div className="mt-0.5 md:mt-1 flex flex-col gap-0.5">
+                                    <span className="bg-violet-100 text-violet-700 text-[8px] md:text-[10px] font-bold px-1 md:px-1.5 py-0.5 rounded shadow-sm">
+                                        {count}{!isMobile && ' agend.'}
+                                    </span>
+                                </div>
+                            )}
                         </button>
                     )
                 })}
@@ -617,7 +623,7 @@ function WeekView({ weekDates, setSelectedDate, getCount, appointments, isMobile
                 {weekDates.map((date, dayIdx) => {
                     const dateStr = fmt(date)
                     const isClosed = date.getDay() === 0 || date.getDay() === 1
-                    const dayApts = appointments.filter(a => toSPDate(a.starts_at) === dateStr)
+                    const dayApts = appointments.filter(a => (a.status === 'CONFIRMED' || a.status === 'PENDING') && toSPDate(a.starts_at) === dateStr)
                     return (
                         <div key={dayIdx} className={`border-r border-slate-100 last:border-r-0 min-h-[200px] p-1.5 ${isClosed ? 'bg-slate-50/50' : ''}`}>
                             {dayApts.slice(0, 5).map(apt => {

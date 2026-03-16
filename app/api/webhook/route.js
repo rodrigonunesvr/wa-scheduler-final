@@ -489,11 +489,18 @@ ${servicesListText}
 
         // 8. Update History and Database
         if (responseText) {
+            // --- SANITIZAÇÃO DE MENSAGEM PARA WHATSAPP (V76) ---
+            // Converte o negrito da IA (**texto**) para o padrão do WhatsApp (*texto*)
+            const sanitizedResponse = responseText
+                .replace(/\*\*\s*(.*?)\s*\*\*/g, '*$1*') // Transforma ** texto ** em *texto*
+                .replace(/\*\*(.*?)\*\*/g, '*$1*');     // Transforma **texto** em *texto*
+
             history.push({ role: 'assistant', content: responseText })
             await supabase.from('wa_sessions')
                 .update({ context_json: history, updated_at: new Date().toISOString() })
                 .eq('phone', cleanPhone)
-            await sendWhatsAppMessage(cleanPhone, responseText)
+
+            await sendWhatsAppMessage(cleanPhone, sanitizedResponse)
         }
 
         return NextResponse.json({ status: 'processed' })
