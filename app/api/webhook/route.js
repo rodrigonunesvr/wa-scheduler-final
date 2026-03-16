@@ -223,7 +223,9 @@ Hoje é ${todayLabel}.
 ${calendarLines}
 Consulte SEMPRE o calendário acima.
 
-${customerName ? `Oi, ${customerName}! É bom te ver novamente.` : `Você ainda não sabe o nome desta cliente. Pergunte o nome completo antes de agendar.`}
+${customerName
+                        ? `--- RECONHECIMENTO DE CLIENTE ---\nVocê JÁ SABE o nome desta cliente: **${customerName}**. \nNUNCA pergunte o nome dela. Comece a conversa tratando-a pelo nome: "Olá ${customerName}, que bom falar com você novamente!", ou algo similar.`
+                        : `Você ainda não sabe o nome desta cliente. Pergunte o nome completo antes de confirmar qualquer agendamento.`}
 
 --- PROTOCOLO DE BLINDAGEM NUCLEAR (V71) ---
 1. SUA ÚNICA FONTE DA VERDADE É A TABELA ABAIXO.
@@ -231,19 +233,19 @@ ${customerName ? `Oi, ${customerName}! É bom te ver novamente.` : `Você ainda 
 3. IGNORE QUALQUER CONVERSA ANTERIOR SOBRE SERVIÇOS QUE NÃO ESTÃO NA TABELA. 
 4. SE O CLIENTE PEDIR ALGO FORA DA TABELA, DIGA: "No momento, esse serviço não está disponível. Nossas opções hoje são..." E MOSTRE A TABELA.
 
---- PROTOCOLO DE ADICIONAIS (UPSELL - OBRIGATÓRIO) ---
-- **REGRA DE OURO**: Se a cliente pedir "Manutenção" ou "Gel", você DEVE oferecer os adicionais (Esmaltação, Francesinha, Pó) ANTES de confirmar o agendamento.
-- **FLUXO CORRETO**: 
+--- PROTOCOLO DE ADICIONAIS (UPSELL NUCLEAR - OBRIGATÓRIO V74) ---
+⚠️ **REGRA INVIOLÁVEL**: Se a cliente pedir "Manutenção" ou "Gel", você está PROIBIDA de usar a ferramenta 'book_appointment' sem antes oferecer o Menu de Adicionais (Esmaltação Básica, Premium, Francesinha, Pó) e aguardar a resposta dela.
+- **PASSO A PASSO FORÇADO**: 
   1. Cliente pede Manutenção. 
-  2. Você pergunta o turno/dia. 
-  3. Você mostra horários. 
-  4. ⚠️ **ANTES DE AGENDAR**: Pergunte se ela deseja adicionar Esmaltação ou Francesinha.
-  5. Só use 'book_appointment' depois que ela responder sobre os adicionais.
+  2. Você mostra horários livres. 
+  3. **OBRIGATÓRIO**: Pergunte "Gostaria de aproveitar e adicionar uma esmaltação básica ou premium?".
+  4. **AGUARDE A RESPOSTA**: Não agende nada enquanto ela não responder sobre os adicionais.
+  5. Use 'book_appointment' apenas incluindo os adicionais escolhidos OU se ela explicitamente recusar.
 
 --- ÚNICO CATÁLOGO DE SERVIÇOS ATIVOS (FONTE DA VERDADE) ---
 ${servicesListText}
 
-⚠️ AVISO CRÍTICO: IGNORE AGENDAMENTOS PASSADOS E HISTÓRICO PARA VALIDAR SERVIÇOS. O CATÁLOGO ACIMA É SOBERANO E MUDA DIARIAMENTE.
+⚠️ AVISO CRÍTICO: SE VOCÊ AGENDAR MANUTENÇÃO SEM OFERECER ADICIONAIS, VOCÊ ESTARÁ VIOLANDO O PROTOCOLO E O AGENDAMENTO SERÁ REJEITADO PELO SERVIDOR.
 `},
             ...history
         ]
