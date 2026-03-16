@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
-import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, confirmAppointment, isDayOpen, fetchScheduleOverrides, fetchScheduleRules, calculateTotalPrice } from '@/lib/calendar'
+import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, confirmAppointment, isDayOpen, fetchScheduleOverrides, fetchScheduleRules, calculateTotalPrice, normalizeString } from '@/lib/calendar'
 import { sendWhatsAppMessage } from '@/lib/evolution'
 import { SAAS_CONFIG } from '@/lib/saas_config'
 
@@ -377,26 +377,33 @@ ${servicesListText}
                     try {
                         const requestedServices = Array.isArray(args.services || args.service) ? (args.services || args.service) : [args.services || args.service];
 
-                        // --- PROTOCOLO DE UPSELL V72 ---
-                        const structuralKeywords = ['Manutenção', 'Gel'];
-                        const isStructural = requestedServices.some(s => structuralKeywords.some(kw => s?.toLowerCase().includes(kw.toLowerCase())));
+                        // --- PROTOCOLO DE UPSELL V73 (BLINDADO) ---
+                        const structuralKeywords = ['manutencao', 'manutencao', 'gel'];
+
+                        const isStructural = requestedServices.some(s => {
+                            const norm = normalizeString(s);
+                            return structuralKeywords.some(kw => norm.includes(kw));
+                        });
 
                         if (isStructural) {
-                            const upsellWords = ['Esmaltação', 'Francesinha', 'Pó', 'Combo', 'Adicional'];
-                            const alreadyHasUpsell = requestedServices.some(s => upsellWords.some(w => s?.toLowerCase().includes(w.toLowerCase())));
+                            const upsellWords = ['esmaltacao', 'francesinha', 'po', 'combo', 'adicional'];
+                            const alreadyHasUpsell = requestedServices.some(s => {
+                                const norm = normalizeString(s);
+                                return upsellWords.some(w => norm.includes(w));
+                            });
 
                             if (!alreadyHasUpsell) {
-                                const hasOfferedUpsell = history.some(m =>
-                                    m.role === 'assistant' &&
-                                    (m.content?.toLowerCase().includes('esmaltação') ||
-                                        m.content?.toLowerCase().includes('francesinha') ||
-                                        m.content?.toLowerCase().includes('adicional'))
-                                );
+                                // Buscamos no histórico por termos normalizados
+                                const hasOfferedUpsell = history.some(m => {
+                                    if (m.role !== 'assistant' || !m.content) return false;
+                                    const normContent = normalizeString(m.content);
+                                    return upsellWords.some(w => normContent.includes(w));
+                                });
 
                                 if (!hasOfferedUpsell) {
                                     result = JSON.stringify({
                                         status: "error",
-                                        message: "BLOQUEIO DE PROTOCOLO: Pare tudo! Você DEVE oferecer o Menu de Adicionais (Esmaltação, Francesinha, etc) antes de prosseguir com o agendamento de Manutenção. Pergunte: 'Gostaria de adicionar esmaltação ou algum serviço extra?'"
+                                        message: "BLOQUEIO DE PROTOCOLO V73: Pare tudo! Você DEVE oferecer o Menu de Adicionais (Esmaltação Básica, Premium, Francesinha, etc) antes de prosseguir com o agendamento de Manutenção. Pergunte IMEDIATAMENTE: 'Gostaria de aproveitar e adicionar uma esmaltação básica ou algo extra?'"
                                     });
                                 }
                             }
