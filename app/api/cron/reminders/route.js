@@ -18,37 +18,26 @@ export async function GET(request) {
             return new Response('Unauthorized', { status: 401 });
         }
 
-        // Lógica de Janela Relativa (24h exatas) - v84
-        // Busca agendamentos que começam entre 23h e 26h a partir de AGORA
-        // Isso garante que se o cron de 1h falhar, o próximo pegue o agendamento.
+        // Lógica de Janela Relativa (24h exatas) - v85 (Final Boss)
+        // Busca agendamentos que começam entre 23h e 27h a partir de AGORA
+        // Janela ampliada para 4 horas de margem.
         const targetStart = moment().tz(TIMEZONE).add(23, 'hours').toISOString();
-        const targetEnd = moment().tz(TIMEZONE).add(26, 'hours').toISOString();
+        const targetEnd = moment().tz(TIMEZONE).add(27, 'hours').toISOString();
 
-        console.log(`[v84] Checking reminders window: ${targetStart} to ${targetEnd}`);
+        console.log(`[v85] Radar de Lembretes: ${targetStart} -> ${targetEnd}`);
 
         // Fetch confirmed appointments for this specific window
-        let query = supabase
+        // Filtro .or garante que pegamos quem nunca teve a coluna (null) ou quem acabou de criar (false)
+        const { data: appointments, error } = await supabase
             .from('appointments')
             .select('*')
             .in('status', ['CONFIRMED', 'PENDING'])
+            .or('reminder_sent.is.null,reminder_sent.eq.false')
             .gte('starts_at', targetStart)
             .lte('starts_at', targetEnd);
 
-        // Tentamos filtrar pela coluna nova, mas o código não quebra se ela não existir
-        try {
-            query = query.is('reminder_sent', null);
-        } catch (e) {
-            console.warn("⚠️ Coluna 'reminder_sent' ausente ou erro no filtro. Ignorando trava de duplicados.");
-        }
-
-        const { data: appointments, error } = await query;
-
         if (error) {
-            console.error("❌ Erro ao buscar agendamentos (v84):", error.message);
-            // Se for erro de coluna, o usuário precisa rodar o SQL
-            if (error.message.includes("reminder_sent")) {
-                throw new Error("Atenção: A coluna 'reminder_sent' não existe. Execute o SQL no painel Supabase.");
-            }
+            console.error("❌ Erro Crítico no Banco (v85):", error.message);
             throw error;
         }
 
@@ -56,7 +45,7 @@ export async function GET(request) {
             return NextResponse.json({ status: 'no_appointments', window: { targetStart, targetEnd } });
         }
 
-        console.log(`[v84] Found ${appointments.length} appointments in window.`);
+        console.log(`[v85] Encontrados ${appointments.length} agendamentos na janela.`);
         const stats = { sent: 0, failed: 0 };
 
         for (const apt of appointments) {
