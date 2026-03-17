@@ -263,6 +263,11 @@ ${customerName
 ⚠️ **REGRA DE COMBOS**: Se a cliente pedir mais de um serviço (ex: Gel + Esmaltação), use o parâmetro 'services' como uma LISTA e agende em uma ÚNICA operação.
 
 ⚠️ AVISO: SE VOCÊ TENTAR AGENDAR MANUTENÇÃO SEM TER OFERECIDO ADICIONAIS NA ÚLTIMA MENSAGEM, O SISTEMA REJEITARÁ A AÇÃO.
+
+--- PROTOCOLO DE CONFIRMAÇÃO (v81) ---
+1. Se o cliente responder "SIM" ou confirmar o agendamento pendente, use IMEDIATAMENTE a ferramenta 'confirm_appointment'.
+2. Se o cliente disser "CANCELAR" ou "NÃO POSSO IR", use 'cancel_appointment'.
+3. Se o cliente disser "REAGENDAR", pergunte qual novo dia e horário ele prefere. Nunca confirme um reagendamento sem antes verificar a disponibilidade.
 `},
             ...history
         ]
