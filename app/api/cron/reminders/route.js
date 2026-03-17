@@ -18,20 +18,20 @@ export async function GET(request) {
             return new Response('Unauthorized', { status: 401 });
         }
 
-        // Get tomorrow's date range in Brazil timezone
-        const tomorrow = moment().tz(TIMEZONE).add(1, 'day').format('YYYY-MM-DD');
-        const dayStart = moment.tz(tomorrow, 'YYYY-MM-DD', TIMEZONE).startOf('day').toISOString();
-        const dayEnd = moment.tz(tomorrow, 'YYYY-MM-DD', TIMEZONE).endOf('day').toISOString();
+        // Lógica de Janela Relativa (24h exatas) - v83
+        // Busca agendamentos que começam entre 23.5h e 24.5h a partir de AGORA
+        const targetStart = moment().tz(TIMEZONE).add(23, 'hours').add(30, 'minutes').toISOString();
+        const targetEnd = moment().tz(TIMEZONE).add(24, 'hours').add(30, 'minutes').toISOString();
 
-        console.log(`Checking reminders for tomorrow: ${tomorrow} (${dayStart} to ${dayEnd})`);
+        console.log(`Checking reminders for window: ${targetStart} to ${targetEnd}`);
 
-        // Fetch confirmed appointments for tomorrow
+        // Fetch confirmed appointments for this specific window
         const { data: appointments, error } = await supabase
             .from('appointments')
             .select('*')
             .in('status', ['CONFIRMED', 'PENDING'])
-            .gte('starts_at', dayStart)
-            .lte('starts_at', dayEnd);
+            .gte('starts_at', targetStart)
+            .lte('starts_at', targetEnd);
 
         if (error) throw error;
 
