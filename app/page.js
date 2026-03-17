@@ -1165,7 +1165,7 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, scheduleRules = []
         if (form.services.length === 0) { setError('Selecione ao menos um serviço.'); return }
         setSaving(true); setError('')
 
-        const startsAt = toISO_SP(form.date, form.time)
+        const startsAt = new Date(toISO_SP(form.date, form.time)).toISOString()
         const endMs = new Date(startsAt).getTime() + totalDuration * 60000
         const endsAt = new Date(endMs).toISOString()
 

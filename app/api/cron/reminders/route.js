@@ -19,17 +19,18 @@ export async function GET(request) {
         }
 
         // Lógica de Janela Relativa (24h exatas) - v83
-        // Busca agendamentos que começam entre 23.5h e 24.5h a partir de AGORA
-        const targetStart = moment().tz(TIMEZONE).add(23, 'hours').add(30, 'minutes').toISOString();
-        const targetEnd = moment().tz(TIMEZONE).add(24, 'hours').add(30, 'minutes').toISOString();
+        // Busca agendamentos que começam entre 23h:15m e 24h:15m a partir de AGORA
+        // Isso cobre a execução de hora em hora com folga para evitar duplicados se o cron atrasar.
+        const targetStart = moment().tz(TIMEZONE).add(23, 'hours').add(15, 'minutes').toISOString();
+        const targetEnd = moment().tz(TIMEZONE).add(24, 'hours').add(15, 'minutes').toISOString();
 
-        console.log(`Checking reminders for window: ${targetStart} to ${targetEnd}`);
+        console.log(`Checking reminders window: ${targetStart} to ${targetEnd}`);
 
-        // Fetch confirmed appointments for this specific window
         const { data: appointments, error } = await supabase
             .from('appointments')
             .select('*')
             .in('status', ['CONFIRMED', 'PENDING'])
+            .is('reminder_sent', null) // v83: Evita reenvio
             .gte('starts_at', targetStart)
             .lte('starts_at', targetEnd);
 
@@ -58,6 +59,8 @@ export async function GET(request) {
                     stats.failed++;
                 } else {
                     stats.sent++;
+                    // v83: Marca como enviado para evitar duplicados
+                    await supabase.from('appointments').update({ reminder_sent: true }).eq('id', apt.id);
                 }
             } catch (sentErr) {
                 console.error(`Failed to send reminder to ${apt.customer_phone}:`, sentErr);
