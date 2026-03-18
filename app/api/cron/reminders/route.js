@@ -21,8 +21,8 @@ export async function GET(request) {
         // Lógica de Janela Relativa (24h exatas) - v85 (Final Boss)
         // Busca agendamentos que começam entre 23h e 27h a partir de AGORA
         // Janela ampliada para 4 horas de margem.
-        const targetStart = moment().tz(TIMEZONE).add(23, 'hours').toISOString();
-        const targetEnd = moment().tz(TIMEZONE).add(27, 'hours').toISOString();
+        const targetStart = moment().tz(TIMEZONE).add(1, 'day').startOf('day').toISOString();
+        const targetEnd = moment().tz(TIMEZONE).add(1, 'day').endOf('day').toISOString();
 
         console.log(`[v85] Radar de Lembretes: ${targetStart} -> ${targetEnd}`);
 

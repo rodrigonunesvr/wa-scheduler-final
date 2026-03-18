@@ -429,7 +429,7 @@ ${customerName
                                 // Buscamos no histórico RECENTE (últimas 3 mensagens do assistente)
                                 const recentAssistantMessages = history
                                     .filter(m => m.role === 'assistant' && m.content)
-                                    .slice(-3);
+                                    .slice(-5);
 
                                 const hasOfferedUpsell = recentAssistantMessages.some(m => {
                                     const normContent = normalizeString(m.content);
