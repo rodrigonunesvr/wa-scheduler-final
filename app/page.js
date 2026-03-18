@@ -1185,9 +1185,10 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, scheduleRules = []
                 }
             }
 
+            const cleanPhone = form.customer_phone.replace(/\D/g, '');
             const res = await fetch('/api/admin', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ customer_name: form.customer_name, customer_phone: form.customer_phone, service_id: JSON.stringify(form.services), starts_at: startsAt, ends_at: endsAt, notes: form.notes || undefined })
+                body: JSON.stringify({ customer_name: form.customer_name, customer_phone: cleanPhone, service_id: JSON.stringify(form.services), starts_at: startsAt, ends_at: endsAt, notes: form.notes || undefined })
             })
             const data = await res.json()
             if (data.error) throw new Error(data.error)

@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendWhatsAppMessage } from '@/lib/evolution'
+import moment from 'moment-timezone'
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 )
+
+const TIMEZONE = 'America/Sao_Paulo';
 
 // GET: Fetch appointments, customers, blocks, or stats
 export async function GET(request) {
@@ -225,6 +229,15 @@ export async function POST(request) {
             .from('customers')
             .upsert({ phone: customer_phone, name: customer_name }, { onConflict: 'phone' })
 
+        // --- NOTIFICAÇÃO IMEDIATA (v86) ---
+        try {
+            const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
+            const welcomeMsg = `Olá ${customer_name}! Seu agendamento foi registrado com sucesso para o dia ${dateFmt}. ✨\n\nEm breve você receberá um lembrete para confirmação final.`;
+            await sendWhatsAppMessage(customer_phone, welcomeMsg);
+        } catch (msgErr) {
+            console.error('Erro ao enviar notificação inicial:', msgErr);
+        }
+
         return NextResponse.json(data)
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
@@ -282,6 +295,21 @@ export async function PATCH(request) {
             .single()
 
         if (error) throw error
+
+        // --- NOTIFICAÇÃO DE ATUALIZAÇÃO (v86) ---
+        try {
+            if (status === 'CANCELED') {
+                const msg = `Olá ${data.customer_name}, seu agendamento para o dia ${moment(data.starts_at).tz(TIMEZONE).format('DD/MM')} foi CANCELADO conforme solicitado. ❌`;
+                await sendWhatsAppMessage(data.customer_phone, msg);
+            } else if (starts_at) {
+                const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
+                const msg = `Olá ${data.customer_name}, seu agendamento foi REAGENDADO para o dia ${dateFmt}. ✨`;
+                await sendWhatsAppMessage(data.customer_phone, msg);
+            }
+        } catch (msgErr) {
+            console.error('Erro ao enviar notificação de atualização:', msgErr);
+        }
+
         return NextResponse.json(data)
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
