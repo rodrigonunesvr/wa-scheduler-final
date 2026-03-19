@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { sendWhatsAppMessage } from '@/lib/evolution';
+import { sendWhatsAppButtons } from '@/lib/evolution';
 import moment from 'moment-timezone';
 
 const TIMEZONE = 'America/Sao_Paulo';
 
 /**
- * Daily Reminder Cron Endpoint
- * This endpoint should be called once a day (e.g., at 19:00) 
- * to remind customers of their appointments for the next day.
+ * Window-based Reminder Cron Endpoint
+ * This endpoint should be called frequently (e.g., every 30-60 minutes).
+ * It sends reminders for appointments starting in ~24 hours.
  */
 export async function GET(request) {
     try {
@@ -18,71 +18,72 @@ export async function GET(request) {
             return new Response('Unauthorized', { status: 401 });
         }
 
-        // Lógica de Janela Relativa (24h exatas) - v85 (Final Boss)
-        // Busca agendamentos que começam entre 23h e 27h a partir de AGORA
-        // Janela ampliada para 4 horas de margem.
-        const targetStart = moment().tz(TIMEZONE).add(1, 'day').startOf('day').toISOString();
-        const targetEnd = moment().tz(TIMEZONE).add(1, 'day').endOf('day').toISOString();
+        // Window: Appointments starting between 23.5 and 24.6 hours from now
+        // A ~70 minute window with a 60 minute cron ensures coverage even with slight drift
+        const now = moment().tz(TIMEZONE);
+        const windowStart = now.clone().add(23, 'hours').add(25, 'minutes').toISOString();
+        const windowEnd = now.clone().add(24, 'hours').add(35, 'minutes').toISOString();
 
-        console.log(`[v85] Radar de Lembretes: ${targetStart} -> ${targetEnd}`);
+        console.log(`Checking reminders for window: ${windowStart} to ${windowEnd}`);
 
-        // Fetch confirmed appointments for this specific window
-        // Filtro .or garante que pegamos quem nunca teve a coluna (null) ou quem acabou de criar (false)
+        // Fetch confirmed appointments in the window
+        // Note: We use 'PENDING' or 'CONFIRMED' depending on the flow. 
+        // For now, let's target 'CONFIRMED' but filter those who haven't received a reminder yet if possible.
         const { data: appointments, error } = await supabase
             .from('appointments')
             .select('*')
-            .in('status', ['CONFIRMED', 'PENDING'])
-            .or('reminder_sent.is.null,reminder_sent.eq.false')
-            .gte('starts_at', targetStart)
-            .lte('starts_at', targetEnd);
+            .eq('status', 'CONFIRMED')
+            .gte('starts_at', windowStart)
+            .lte('starts_at', windowEnd);
 
-        if (error) {
-            console.error("❌ Erro Crítico no Banco (v85):", error.message);
-            throw error;
-        }
+        if (error) throw error;
 
         if (!appointments || appointments.length === 0) {
-            return NextResponse.json({ status: 'no_appointments', window: { targetStart, targetEnd } });
+            return NextResponse.json({ status: 'no_appointments', windowStart, windowEnd });
         }
 
-        console.log(`[v85] Encontrados ${appointments.length} agendamentos na janela.`);
         const stats = { sent: 0, failed: 0 };
 
         for (const apt of appointments) {
             try {
-                const timeRelative = moment(apt.starts_at).tz(TIMEZONE);
-                const timeStr = timeRelative.format('HH:mm');
-                const dateStr = timeRelative.format('DD/MM');
+                const startTime = moment(apt.starts_at).tz(TIMEZONE);
+                const dateStr = startTime.format('DD/MM');
+                const timeStr = startTime.format('HH:mm');
 
-                let message = '';
-                if (apt.status === 'PENDING') {
-                    message = `Olá ${apt.customer_name}! Passando para confirmar seu agendamento para amanhã, dia ${dateStr}, às ${timeStr}. ✨\n\n*Clique no link abaixo ou responda "Sim" para confirmar:*`;
-                } else {
-                    message = `Olá ${apt.customer_name}! Lembrete do seu agendamento para amanhã, dia ${dateStr}, às ${timeStr}. ✨ Nos vemos em breve!`;
-                }
+                // Format service names (handle JSON if needed)
+                let servicesFormatted = apt.service_id;
+                try {
+                    if (apt.service_id.startsWith('[') || apt.service_id.startsWith('{')) {
+                        const parsed = JSON.parse(apt.service_id);
+                        servicesFormatted = Array.isArray(parsed) ? parsed.join(', ') : parsed;
+                    }
+                } catch (e) { /* Not JSON, use as is */ }
 
-                console.log(`[v84] Sending message to ${apt.customer_phone} (${apt.customer_name})...`);
-                const result = await sendWhatsAppMessage(apt.customer_phone, message);
+                // Construct the highly clear message requested by user
+                const title = `Confirmação de Agendamento`;
+                const description = `Olá ${apt.customer_name}, por favor, confirme seu atendimento no dia ${dateStr} às ${timeStr}, com o serviço de ${servicesFormatted}.\n\nDeseja confirmar seu agendamento?`;
+
+                const buttons = [
+                    { id: `confirm_${apt.id}`, label: 'Sim, Confirmar' },
+                    { id: `cancel_${apt.id}`, label: 'Não, Cancelar' }
+                ];
+
+                const result = await sendWhatsAppButtons(apt.customer_phone, title, description, buttons);
 
                 if (result?.error) {
-                    console.error(`❌ Falha Evolution API (${apt.customer_phone}):`, result.error);
                     stats.failed++;
                 } else {
                     stats.sent++;
-                    // v84: Marca como enviado para evitar duplicados (se a coluna existir)
-                    try {
-                        await supabase.from('appointments').update({ reminder_sent: true }).eq('id', apt.id);
-                    } catch (skip) { }
+                    // Optional: mark appointment as "reminder_sent" or similar
                 }
             } catch (sentErr) {
-                console.error(`❌ Critical error for ${apt.customer_phone}:`, sentErr);
+                console.error(`Failed to send reminder to ${apt.customer_phone}:`, sentErr);
                 stats.failed++;
             }
         }
 
         return NextResponse.json({
             status: 'completed',
-            window: { targetStart, targetEnd },
             total: appointments.length,
             ...stats
         });
