@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendWhatsAppMessage } from '@/lib/evolution'
+import moment from 'moment-timezone'
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 )
+
+const TIMEZONE = 'America/Sao_Paulo';
 
 // GET: Fetch appointments, customers, blocks, or stats
 export async function GET(request) {
@@ -20,6 +24,17 @@ export async function GET(request) {
                 .from('customers')
                 .select('*')
                 .order('name', { ascending: true })
+            if (error) throw error
+            return NextResponse.json(data)
+        }
+
+        // --- Help Requests (Support) ---
+        if (type === 'help_requests') {
+            const { data, error } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('help_requested', true)
+                .order('help_requested_at', { ascending: false })
             if (error) throw error
             return NextResponse.json(data)
         }
@@ -54,12 +69,12 @@ export async function GET(request) {
             return NextResponse.json(data || [])
         }
 
-        // --- FAQs (Bot knowledge) ---
-        if (type === 'faqs') {
+        // --- Schedule rules (Special Periods) ---
+        if (type === 'rules') {
             const { data, error } = await supabase
-                .from('faqs')
+                .from('schedule_rules')
                 .select('*')
-                .order('id', { ascending: false })
+                .order('start_date', { ascending: true })
             if (error) throw error
             return NextResponse.json(data || [])
         }
@@ -130,20 +145,25 @@ export async function POST(request) {
             return NextResponse.json(data)
         }
 
-        // --- Create FAQ ---
-        if (body.type === 'faq') {
-            const { question, answer } = body
-            const { data, error } = await supabase
-                .from('faqs')
-                .insert({ question, answer, active: true })
-                .select()
-                .single()
+        // --- Create/Update Schedule Rule (Special Period) ---
+        if (body.type === 'rule') {
+            const { id, start_date, end_date, open_time, close_time, label } = body
+            const payload = { start_date, end_date, open_time, close_time, label: label || '' }
+
+            let query;
+            if (id) {
+                query = supabase.from('schedule_rules').update(payload).eq('id', id)
+            } else {
+                query = supabase.from('schedule_rules').insert(payload)
+            }
+
+            const { data, error } = await query.select().single()
             if (error) throw error
             return NextResponse.json(data)
         }
 
         // --- Create Appointment (with overlap check) ---
-        const { customer_name, customer_phone, service_id, professional_id, starts_at, ends_at, notes } = body
+        const { customer_name, customer_phone, service_id, starts_at, ends_at, notes } = body
 
         const newStart = new Date(starts_at).getTime()
         const newEnd = new Date(ends_at).getTime()
@@ -151,25 +171,20 @@ export async function POST(request) {
         const dayStart = dayPrefix + 'T00:00:00-03:00'
         const dayEnd = dayPrefix + 'T23:59:59-03:00'
 
-        // Check appointment conflicts
+        // Check appointment conflicts (Strict Overlap Check)
         const { data: existing } = await supabase
             .from('appointments')
-            .select('*')
-            .eq('status', 'CONFIRMED')
-            .gte('starts_at', dayStart)
-            .lte('starts_at', dayEnd)
+            .select('id, customer_name, starts_at, ends_at')
+            .in('status', ['CONFIRMED', 'PENDING'])
+            .lt('starts_at', ends_at)
+            .gt('ends_at', starts_at)
 
-        if (existing) {
-            for (const apt of existing) {
-                const aptStart = new Date(apt.starts_at).getTime()
-                const aptEnd = new Date(apt.ends_at).getTime()
-                if (newStart < aptEnd && newEnd > aptStart) {
-                    const time = new Date(apt.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
-                    return NextResponse.json({
-                        error: `Conflito de horÃƒÂ¡rio! JÃƒÂ¡ existe agendamento de ${apt.customer_name} ÃƒÂ s ${time}.`
-                    }, { status: 409 })
-                }
-            }
+        if (existing && existing.length > 0) {
+            const apt = existing[0]
+            const time = new Date(apt.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+            return NextResponse.json({
+                error: `Conflito de horário! Já existe agendamento de ${apt.customer_name} às ${time}.`
+            }, { status: 409 })
         }
 
         // Check block conflicts
@@ -185,7 +200,7 @@ export async function POST(request) {
                 const bEnd = new Date(block.ends_at).getTime()
                 if (newStart < bEnd && newEnd > bStart) {
                     return NextResponse.json({
-                        error: `Conflito! Esse horÃƒÂ¡rio estÃƒÂ¡ bloqueado (${block.title}).`
+                        error: `Conflito! Esse horário está bloqueado (${block.title}).`
                     }, { status: 409 })
                 }
             }
@@ -197,9 +212,8 @@ export async function POST(request) {
             service_id,
             starts_at,
             ends_at,
-            status: 'CONFIRMED'
+            status: 'PENDING'
         }
-        if (professional_id) insertData.professional_id = professional_id
         if (notes) insertData.notes = notes
 
         const { data, error } = await supabase
@@ -215,6 +229,15 @@ export async function POST(request) {
             .from('customers')
             .upsert({ phone: customer_phone, name: customer_name }, { onConflict: 'phone' })
 
+        // --- NOTIFICAÇÃO IMEDIATA (v86) ---
+        try {
+            const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
+            const welcomeMsg = `Olá ${customer_name}! Seu agendamento foi registrado com sucesso para o dia ${dateFmt}. ✨\n\nEm breve você receberá um lembrete para confirmação final.`;
+            await sendWhatsAppMessage(customer_phone, welcomeMsg);
+        } catch (msgErr) {
+            console.error('Erro ao enviar notificação inicial:', msgErr);
+        }
+
         return NextResponse.json(data)
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
@@ -227,11 +250,42 @@ export async function PATCH(request) {
         const body = await request.json()
         const { id, status, starts_at, ends_at, notes } = body
 
+        // If rescheduling, check for conflicts
+        if (starts_at && ends_at) {
+            const { data: existing } = await supabase
+                .from('appointments')
+                .select('id, customer_name, starts_at')
+                .neq('id', id)
+                .in('status', ['CONFIRMED', 'PENDING'])
+                .lt('starts_at', ends_at)
+                .gt('ends_at', starts_at)
+
+            if (existing && existing.length > 0) {
+                const apt = existing[0]
+                const time = new Date(apt.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+                return NextResponse.json({
+                    error: `Conflito! Esse horário já está ocupado por ${apt.customer_name} (${time}).`
+                }, { status: 409 })
+            }
+        }
+
         const update = {}
         if (status) update.status = status
         if (starts_at) update.starts_at = starts_at
         if (ends_at) update.ends_at = ends_at
         if (notes !== undefined) update.notes = notes
+
+        // Support for updating customer (marking help as resolved)
+        const help_requested = body.help_requested
+        const customer_id = body.customer_id
+        if (customer_id && help_requested !== undefined) {
+            const { error: custError } = await supabase
+                .from('customers')
+                .update({ help_requested: help_requested })
+                .eq('id', customer_id)
+            if (custError) throw custError
+            return NextResponse.json({ status: 'customer updated' })
+        }
 
         const { data, error } = await supabase
             .from('appointments')
@@ -241,6 +295,21 @@ export async function PATCH(request) {
             .single()
 
         if (error) throw error
+
+        // --- NOTIFICAÇÃO DE ATUALIZAÇÃO (v86) ---
+        try {
+            if (status === 'CANCELED') {
+                const msg = `Olá ${data.customer_name}, seu agendamento para o dia ${moment(data.starts_at).tz(TIMEZONE).format('DD/MM')} foi CANCELADO conforme solicitado. ❌`;
+                await sendWhatsAppMessage(data.customer_phone, msg);
+            } else if (starts_at) {
+                const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
+                const msg = `Olá ${data.customer_name}, seu agendamento foi REAGENDADO para o dia ${dateFmt}. ✨`;
+                await sendWhatsAppMessage(data.customer_phone, msg);
+            }
+        } catch (msgErr) {
+            console.error('Erro ao enviar notificação de atualização:', msgErr);
+        }
+
         return NextResponse.json(data)
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
@@ -272,9 +341,9 @@ export async function DELETE(request) {
             return NextResponse.json({ status: 'deleted' })
         }
 
-        if (type === 'faq') {
+        if (type === 'rule') {
             const { error } = await supabase
-                .from('faqs')
+                .from('schedule_rules')
                 .delete()
                 .eq('id', id)
             if (error) throw error

@@ -1,7 +1,7 @@
 {
-    "name": "AgendaÍ — Dashboard Inteligente",
-    "short_name": "AgendaÍ",
-    "description": "Sistema de Agendamento Inteligente para Salões, Barbearias e Clínicas.",
+    "name": "Espaço C.A. — Dashboard",
+    "short_name": "Espaço C.A.",
+    "description": "Dashboard de Agendamentos - Espaço Camille Almeida",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0f172a",
