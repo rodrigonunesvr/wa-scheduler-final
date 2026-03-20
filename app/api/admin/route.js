@@ -317,15 +317,21 @@ export async function PATCH(request) {
 
         if (error) throw error
 
-        // --- NOTIFICAÇÃO DE ATUALIZAÇÃO (v86) ---
+        // --- NOTIFICAÇÃO DE ATUALIZAÇÃO COM BOTÕES (v88) ---
         try {
-            if (status === 'CANCELED') {
+            if (status === 'CANCELED' || status === 'CANCELLED') {
                 const msg = `Olá ${data.customer_name}, seu agendamento para o dia ${moment(data.starts_at).tz(TIMEZONE).format('DD/MM')} foi CANCELADO conforme solicitado. ❌`;
                 await sendWhatsAppMessage(data.customer_phone, msg);
             } else if (starts_at) {
                 const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
-                const msg = `Olá ${data.customer_name}, seu agendamento foi REAGENDADO para o dia ${dateFmt}. ✨`;
-                await sendWhatsAppMessage(data.customer_phone, msg);
+                const title = `Confirmar Reagendamento`;
+                const description = `Olá ${data.customer_name}, seu agendamento foi reagendado para o dia ${dateFmt}. ✨\n\nDeseja confirmar este novo horário?`;
+
+                const buttons = [
+                    { id: `confirm_${data.id}`, label: 'Sim, Confirmar' },
+                    { id: `cancel_${data.id}`, label: 'Não, Cancelar' }
+                ];
+                await sendWhatsAppButtons(data.customer_phone, title, description, buttons);
             }
         } catch (msgErr) {
             console.error('Erro ao enviar notificação de atualização:', msgErr);

@@ -29,9 +29,27 @@ export async function GET(request) {
         const targetStart = now.clone().add(23, 'hours').add(20, 'minutes').toISOString();
         const targetEnd = now.clone().add(24, 'hours').add(30, 'minutes').toISOString();
 
-        console.log(`[V87-FIX] Radar de Lembretes (24h): ${targetStart} -> ${targetEnd}`);
+        console.log(`[V87-DIAG] Radar agora (${now.format('HH:mm')}): ${targetStart} -> ${targetEnd}`);
 
-        // Fetch confirmed/pending appointments for this specific window
+        // DIAGNÓSTICO: Buscar todos de amanhã para avisar no log se eles existem mas estão fora da janela de 24h
+        const startOfTomorrow = now.clone().add(1, 'day').startOf('day').toISOString();
+        const endOfTomorrow = now.clone().add(1, 'day').endOf('day').toISOString();
+        const { data: allTomorrow } = await supabase
+            .from('appointments')
+            .select('customer_name, starts_at, status')
+            .in('status', ['CONFIRMED', 'PENDING'])
+            .gte('starts_at', startOfTomorrow)
+            .lte('starts_at', endOfTomorrow);
+
+        if (allTomorrow && allTomorrow.length > 0) {
+            console.log(`[V87-DIAG] Existem ${allTomorrow.length} agendamentos amanhã, mas o sistema só vai enviar os que estiverem na janela de 24h agora.`);
+            allTomorrow.forEach(a => {
+                const h = moment(a.starts_at).tz(TIMEZONE).format('HH:mm');
+                console.log(` - Agendado: ${a.customer_name} às ${h} (Status: ${a.status})`);
+            });
+        }
+
+        // Busca Real (Apenas na Janela de 24h)
         const { data: appointments, error } = await supabase
             .from('appointments')
             .select('*')
