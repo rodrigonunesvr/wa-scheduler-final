@@ -211,15 +211,6 @@ export async function POST(request) {
             }
         }
 
-        // --- PROTEÇÃO EXTRA: ALMOÇO (v88) ---
-        const lunchStart = mStart.clone().hour(12).minute(0).second(0)
-        const lunchEnd = mStart.clone().hour(13).minute(0).second(0)
-        if (mStart.isBefore(lunchEnd) && mEnd.isAfter(lunchStart)) {
-            return NextResponse.json({
-                error: `Conflito! Horário de almoço (12h às 13h) não disponível.`
-            }, { status: 409 })
-        }
-
         const insertData = {
             customer_name,
             customer_phone,
