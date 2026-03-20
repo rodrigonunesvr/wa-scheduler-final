@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { sendWhatsAppMessage } from '@/lib/evolution';
+import { sendWhatsAppMessage, sendWhatsAppButtons } from '@/lib/evolution';
 import moment from 'moment-timezone';
 
 const TIMEZONE = 'America/Sao_Paulo';

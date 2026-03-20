@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { openai } from '@/lib/openai'
 import { findAvailableSlots, bookAppointment, updateAppointment, getAppointmentsByPhone, cancelAppointment, confirmAppointment, isDayOpen, fetchScheduleOverrides, fetchScheduleRules, calculateTotalPrice, normalizeString } from '@/lib/calendar'
-import { sendWhatsAppMessage } from '@/lib/evolution'
+import { sendWhatsAppMessage, sendWhatsAppButtons } from '@/lib/evolution'
 import { SAAS_CONFIG } from '@/lib/saas_config'
 
 // 2. Main Webhook Handler
