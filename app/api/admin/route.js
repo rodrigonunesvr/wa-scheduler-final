@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { sendWhatsAppMessage } from '@/lib/evolution'
+import { sendWhatsAppMessage, sendWhatsAppButtons } from '@/lib/evolution'
 import moment from 'moment-timezone'
 
 const supabase = createClient(
@@ -165,45 +165,59 @@ export async function POST(request) {
         // --- Create Appointment (with overlap check) ---
         const { customer_name, customer_phone, service_id, starts_at, ends_at, notes } = body
 
-        const newStart = new Date(starts_at).getTime()
-        const newEnd = new Date(ends_at).getTime()
-        const dayPrefix = starts_at.split('T')[0]
-        const dayStart = dayPrefix + 'T00:00:00-03:00'
-        const dayEnd = dayPrefix + 'T23:59:59-03:00'
+        const mStart = moment.tz(starts_at, TIMEZONE)
+        const mEnd = moment.tz(ends_at, TIMEZONE)
+        const dayPrefix = mStart.format('YYYY-MM-DD')
+        const dayIsoStart = mStart.clone().startOf('day').toISOString()
+        const dayIsoEnd = mStart.clone().endOf('day').toISOString()
 
         // Check appointment conflicts (Strict Overlap Check)
         const { data: existing } = await supabase
             .from('appointments')
             .select('id, customer_name, starts_at, ends_at')
             .in('status', ['CONFIRMED', 'PENDING'])
-            .lt('starts_at', ends_at)
-            .gt('ends_at', starts_at)
+            .gte('starts_at', dayIsoStart)
+            .lte('starts_at', dayIsoEnd)
 
-        if (existing && existing.length > 0) {
-            const apt = existing[0]
-            const time = new Date(apt.starts_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
-            return NextResponse.json({
-                error: `Conflito de horário! Já existe agendamento de ${apt.customer_name} às ${time}.`
-            }, { status: 409 })
+        if (existing) {
+            for (const apt of existing) {
+                const aptStart = moment.tz(apt.starts_at, TIMEZONE)
+                const aptEnd = moment.tz(apt.ends_at, TIMEZONE)
+                if (mStart.isBefore(aptEnd) && mEnd.isAfter(aptStart)) {
+                    const time = aptStart.format('HH:mm')
+                    return NextResponse.json({
+                        error: `Conflito de horário! Já existe agendamento de ${apt.customer_name} às ${time}.`
+                    }, { status: 409 })
+                }
+            }
         }
 
         // Check block conflicts
         const { data: existingBlocks } = await supabase
             .from('blocks')
             .select('*')
-            .gte('starts_at', dayStart)
-            .lte('starts_at', dayEnd)
+            .gte('starts_at', dayIsoStart)
+            .lte('starts_at', dayIsoEnd)
 
         if (existingBlocks) {
             for (const block of existingBlocks) {
-                const bStart = new Date(block.starts_at).getTime()
-                const bEnd = new Date(block.ends_at).getTime()
-                if (newStart < bEnd && newEnd > bStart) {
+                const bStart = moment.tz(block.starts_at, TIMEZONE)
+                const bEnd = moment.tz(block.ends_at, TIMEZONE)
+                if (mStart.isBefore(bEnd) && mEnd.isAfter(bStart)) {
                     return NextResponse.json({
-                        error: `Conflito! Esse horário está bloqueado (${block.title}).`
+                        error: `Conflito! Esse horário está bloqueado (${block.title || 'Bloqueio'}).`
                     }, { status: 409 })
                 }
             }
+        }
+
+        // --- PROTEÇÃO EXTRA: ALMOÇO (v88) ---
+        const lunchStart = mStart.clone().hour(12).minute(0).second(0)
+        const lunchEnd = mStart.clone().hour(13).minute(0).second(0)
+        if (mStart.isBefore(lunchEnd) && mEnd.isAfter(lunchStart)) {
+            return NextResponse.json({
+                error: `Conflito! Horário de almoço (12h às 13h) não disponível.`
+            }, { status: 409 })
         }
 
         const insertData = {
@@ -229,13 +243,20 @@ export async function POST(request) {
             .from('customers')
             .upsert({ phone: customer_phone, name: customer_name }, { onConflict: 'phone' })
 
-        // --- NOTIFICAÇÃO IMEDIATA (v86) ---
+        // --- NOTIFICAÇÃO IMEDIATA COM BOTÕES (v88) ---
         try {
             const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
-            const welcomeMsg = `Olá ${customer_name}! Seu agendamento foi registrado com sucesso para o dia ${dateFmt}. ✨\n\nEm breve você receberá um lembrete para confirmação final.`;
-            await sendWhatsAppMessage(customer_phone, welcomeMsg);
+            const title = `Confirmar Agendamento`;
+            const description = `Olá ${customer_name}! Agendamos seu atendimento para o dia ${dateFmt}.\n\nDeseja confirmar agora?`;
+
+            const buttons = [
+                { id: `confirm_${data.id}`, label: 'Sim, Confirmar' },
+                { id: `cancel_${data.id}`, label: 'Não, Cancelar' }
+            ];
+
+            await sendWhatsAppButtons(customer_phone, title, description, buttons);
         } catch (msgErr) {
-            console.error('Erro ao enviar notificação inicial:', msgErr);
+            console.error('Erro ao enviar notificação inicial com botões:', msgErr);
         }
 
         return NextResponse.json(data)

@@ -500,6 +500,20 @@ ${customerName
                                 result = JSON.stringify({ status: "success", appointment })
                                 try {
                                     await supabase.from('customers').upsert({ phone: cleanPhone, name: args.name || customerName }, { onConflict: 'phone' })
+
+                                    // --- NOVO: Enviar Botões de Confirmação Imediata (v88) ---
+                                    const startTime = moment.tz(args.startsAt, TIMEZONE);
+                                    const dateStr = startTime.format('DD/MM');
+                                    const timeStr = startTime.format('HH:mm');
+                                    const titleB = `Confirmar Agendamento`;
+                                    const descB = `Olá ${args.name || customerName}, agendei seu atendimento para ${dateStr} às ${timeStr}.\n\nDeseja confirmar agora?`;
+                                    const buttons = [
+                                        { id: `confirm_${appointment.id}`, label: 'Sim, Confirmar' },
+                                        { id: `cancel_${appointment.id}`, label: 'Não, Cancelar' }
+                                    ];
+                                    const { sendWhatsAppButtons } = await import('@/lib/evolution');
+                                    await sendWhatsAppButtons(cleanPhone, titleB, descB, buttons);
+
                                 } catch (e) { console.error('Customer upsert error:', e) }
                             }
                         }

@@ -12,16 +12,22 @@ const TIMEZONE = 'America/Sao_Paulo';
  */
 export async function GET(request) {
     try {
-        // Simple security: check for a secret header
+        // Robust Security: allow Vercel's internal cron header OR the secret bearer token
+        const cronHeader = request.headers.get('x-vercel-cron');
         const authHeader = request.headers.get('authorization');
-        if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        const isVercelCron = cronHeader === '1';
+        const isAuthorized = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
+        if (process.env.CRON_SECRET && !isVercelCron && !isAuthorized) {
+            console.warn('Unauthorized cron attempt blocked.');
             return new Response('Unauthorized', { status: 401 });
         }
 
         // --- FIX V87: Janela de 24h Exata ---
         const now = moment().tz(TIMEZONE);
-        const targetStart = now.clone().add(23, 'hours').add(25, 'minutes').toISOString();
-        const targetEnd = now.clone().add(24, 'hours').add(35, 'minutes').toISOString();
+        // Janela ampliada para 70 minutos de margem
+        const targetStart = now.clone().add(23, 'hours').add(20, 'minutes').toISOString();
+        const targetEnd = now.clone().add(24, 'hours').add(30, 'minutes').toISOString();
 
         console.log(`[V87-FIX] Radar de Lembretes (24h): ${targetStart} -> ${targetEnd}`);
 
