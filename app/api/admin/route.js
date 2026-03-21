@@ -234,20 +234,13 @@ export async function POST(request) {
             .from('customers')
             .upsert({ phone: customer_phone, name: customer_name }, { onConflict: 'phone' })
 
-        // --- NOTIFICAÇÃO IMEDIATA COM BOTÕES (v88) ---
+        // --- NOTIFICAÇÃO SIMPLES DE NOVO AGENDAMENTO ---
         try {
             const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
-            const title = `Confirmar Agendamento`;
-            const description = `Olá ${customer_name}! Agendamos seu atendimento para o dia ${dateFmt}.\n\nDeseja confirmar agora?`;
-
-            const buttons = [
-                { id: `confirm_${data.id}`, label: 'Sim, Confirmar' },
-                { id: `cancel_${data.id}`, label: 'Não, Cancelar' }
-            ];
-
-            await sendWhatsAppButtons(customer_phone, title, description, buttons);
+            const msg = `Olá ${customer_name}! ✨ Seu atendimento foi agendado para *${dateFmt}* no Espaço C.A.\n\nEm caso de dúvidas, responda esta mensagem.`;
+            await sendWhatsAppMessage(customer_phone, msg);
         } catch (msgErr) {
-            console.error('Erro ao enviar notificação inicial com botões:', msgErr);
+            console.error('Erro ao enviar notificação inicial:', msgErr);
         }
 
         return NextResponse.json(data)
@@ -308,21 +301,15 @@ export async function PATCH(request) {
 
         if (error) throw error
 
-        // --- NOTIFICAÇÃO DE ATUALIZAÇÃO COM BOTÕES (v88) ---
+        // --- NOTIFICAÇÃO DE ATUALIZAÇÃO (v88) ---
         try {
             if (status === 'CANCELED' || status === 'CANCELLED') {
-                const msg = `Olá ${data.customer_name}, seu agendamento para o dia ${moment(data.starts_at).tz(TIMEZONE).format('DD/MM')} foi CANCELADO conforme solicitado. ❌`;
+                const msg = `Olá ${data.customer_name}, seu agendamento para o dia *${moment(data.starts_at).tz(TIMEZONE).format('DD/MM')}* foi cancelado. ❌\n\nSe quiser remarcar, pode nos chamar aqui mesmo!`;
                 await sendWhatsAppMessage(data.customer_phone, msg);
             } else if (starts_at) {
                 const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
-                const title = `Confirmar Reagendamento`;
-                const description = `Olá ${data.customer_name}, seu agendamento foi reagendado para o dia ${dateFmt}. ✨\n\nDeseja confirmar este novo horário?`;
-
-                const buttons = [
-                    { id: `confirm_${data.id}`, label: 'Sim, Confirmar' },
-                    { id: `cancel_${data.id}`, label: 'Não, Cancelar' }
-                ];
-                await sendWhatsAppButtons(data.customer_phone, title, description, buttons);
+                const msg = `Olá ${data.customer_name}! ✨ Seu atendimento foi reagendado para *${dateFmt}* no Espaço C.A. Qualquer dúvida, estamos aqui!`;
+                await sendWhatsAppMessage(data.customer_phone, msg);
             }
         } catch (msgErr) {
             console.error('Erro ao enviar notificação de atualização:', msgErr);

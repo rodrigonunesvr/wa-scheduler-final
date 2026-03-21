@@ -300,30 +300,37 @@ ${customerName
                         ? `--- RECONHECIMENTO DE CLIENTE (LEI) ---\nVocê JÁ SABE que o nome da cliente é **${customerName}**. \nPROIBIDO perguntar o nome dela. Inicie a conversa chamando-a pelo nome.`
                         : `Você ainda não sabe o nome desta cliente. Pergunte o nome completo antes de confirmar o agendamento.`}
 
---- PROTOCOLO DE ADICIONAIS (UPSELL SEQUENCIAL V75) ---
-⚠️ **REGRA DE BLOQUEIO ABSOLUTO**: Se a cliente pedir "Manutenção" ou "Gel", você está terminantemente proibida de agendar sem antes perguntar se ela deseja adicionar Esmaltação ou Francesinha.
+--- PROTOCOLO DE ADICIONAIS (NOVO - SIMPLES E DIRETO) ---
+Sempre que a cliente mencionar UM serviço desejado, você deve:
+1. Confirmar o serviço escolhido brevemente.
+2. Perguntar se ela quer adicionar mais algum serviço NO MESMO HORÁRIO.
+3. Na MESMA mensagem, listar TODOS os serviços disponíveis do catálogo para facilitar a escolha.
+Só prossiga para verificar horários após a cliente responder se quer ou não adicionais.
 
-⚠️ **REGRA DE COMBOS**: Se a cliente pedir mais de um serviço (ex: Gel + Esmaltação), use o parâmetro 'services' como uma LISTA e agende em uma ÚNICA operação.
+Exemplo de resposta ao receber pedido de serviço:
+"Boa escolha! Quer incluir mais algum serviço no mesmo horário? Temos:
+${servicesListText}
+Se não quiser adicionar nada, é só dizer e a gente já busca um horário para você! 😊"
 
-⚠️ AVISO: SE VOCÊ TENTAR AGENDAR MANUTENÇÃO SEM TER OFERECIDO ADICIONAIS NA ÚLTIMA MENSAGEM, O SISTEMA REJEITARÁ A AÇÃO.
+⚠️ **REGRA DE COMBOS**: Se a cliente confirmar mais de um serviço, use 'services' como LISTA no book_appointment.
 
---- PROTOCOLO DE TURNOS (LEI SUPREMA v82) ---
-1. ANTES de listar horários livres, você DEVE perguntar: "Você prefere o turno da MANHÃ ou da TARDE?".
-2. Só use a ferramenta 'check_calendar' com o parâmetro 'period' após a cliente escolher um turno.
-3. Se a cliente não especificar, insista educadamente na escolha do turno para melhor organização.
+--- PROTOCOLO DE TURNOS (LEI SUPREMA) ---
+1. SOMENTE após confirmar os serviços, pergunte: "Você prefere o turno da MANHÃ ou da TARDE?"
+2. Use 'check_calendar' com o parâmetro 'period' após a cliente escolher.
 
---- FLEXIBILIDADE DE HORÁRIOS (v82) ---
-1. O sistema permite agendamentos colados (ex: um termina as 15:00, o outro começa as 15:00).
-2. Se um horário redondo (ex: 15h) estiver ocupado, seja proativa e ofereça os vizinhos de 5 minutos (ex: 14:55 ou 15:05).
+--- FLEXIBILIDADE DE HORÁRIOS ---
+1. O sistema permite agendamentos colados (um termina às 15:00, o outro começa às 15:00).
+2. Se um horário estiver ocupado, ofereça os vizinhos de 5 minutos.
 
---- PROTOCOLO DE CONFIRMAÇÃO (v81) ---
-1. Se o cliente responder "SIM" ou confirmar o agendamento pendente, use IMEDIATAMENTE a ferramenta 'confirm_appointment'.
-2. Se o cliente disser "CANCELAR" ou "NÃO POSSO IR", use 'cancel_appointment'.
-3. Se o cliente disser "REAGENDAR", pergunte qual novo dia e horário ele prefere. Nunca confirme um reagendamento sem antes verificar a disponibilidade.
+--- PROTOCOLO DE CONFIRMAÇÃO ---
+1. Após agendar, informe apenas a data/hora confirmada de forma simples e amigável.
+2. Se a cliente disser "SIM", "CONFIRMAR" ou similar, use 'confirm_appointment'.
+3. Se disser "CANCELAR" ou "NÃO POSSO IR", use 'cancel_appointment'.
+4. Se disser "REAGENDAR", verifique disponibilidade antes de confirmar.
 
 --- FORMATO DO HORÁRIO (CRÍTICO) ---
 Quando usar 'book_appointment', passe EXATAMENTE o campo 'start' (ISO UTC com Z) retornado por 'check_calendar'.
-NUNCA crie um ISO string manualmente. Exemplo CORRETO: startsAt = "2026-03-22T20:15:00.000Z"
+NUNCA crie um ISO string manualmente. Exemplo: startsAt = "2026-03-22T20:15:00.000Z"
 `},
             ...history
         ]
@@ -506,19 +513,6 @@ NUNCA crie um ISO string manualmente. Exemplo CORRETO: startsAt = "2026-03-22T20
                                 result = JSON.stringify({ status: "success", appointment })
                                 try {
                                     await supabase.from('customers').upsert({ phone: cleanPhone, name: args.name || customerName }, { onConflict: 'phone' })
-
-                                    // --- NOVO: Enviar Botões de Confirmação Imediata (v88) ---
-                                    const startTime = moment.tz(args.startsAt, TIMEZONE);
-                                    const dateStr = startTime.format('DD/MM');
-                                    const timeStr = startTime.format('HH:mm');
-                                    const titleB = `Confirmar Agendamento`;
-                                    const descB = `Olá ${args.name || customerName}, agendei seu atendimento para ${dateStr} às ${timeStr}.\n\nDeseja confirmar agora?`;
-                                    const buttons = [
-                                        { id: `confirm_${appointment.id}`, label: 'Sim, Confirmar' },
-                                        { id: `cancel_${appointment.id}`, label: 'Não, Cancelar' }
-                                    ];
-                                    await sendWhatsAppButtons(cleanPhone, titleB, descB, buttons);
-
                                 } catch (e) { console.error('Customer upsert error:', e) }
                             }
                         }
