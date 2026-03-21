@@ -189,10 +189,12 @@ export async function POST(request) {
             }
         }
 
-        const moment = (await import('moment-timezone')).default
+        const momentLib = (await import('moment-timezone')).default
         await import('moment/locale/pt-br')
-        moment.locale('pt-br')
-        const now = moment().tz('America/Sao_Paulo')
+        momentLib.locale('pt-br')
+        const now = momentLib().tz('America/Sao_Paulo')
+        const TIMEZONE = 'America/Sao_Paulo'
+        const moment = momentLib
         const todayLabel = now.format('dddd, DD [de] MMMM [de] YYYY')
         const currentHour = now.hour()
 
@@ -318,6 +320,10 @@ ${customerName
 1. Se o cliente responder "SIM" ou confirmar o agendamento pendente, use IMEDIATAMENTE a ferramenta 'confirm_appointment'.
 2. Se o cliente disser "CANCELAR" ou "NÃO POSSO IR", use 'cancel_appointment'.
 3. Se o cliente disser "REAGENDAR", pergunte qual novo dia e horário ele prefere. Nunca confirme um reagendamento sem antes verificar a disponibilidade.
+
+--- FORMATO DO HORÁRIO (CRÍTICO) ---
+Quando usar 'book_appointment', passe EXATAMENTE o campo 'start' (ISO UTC com Z) retornado por 'check_calendar'.
+NUNCA crie um ISO string manualmente. Exemplo CORRETO: startsAt = "2026-03-22T20:15:00.000Z"
 `},
             ...history
         ]
@@ -511,7 +517,6 @@ ${customerName
                                         { id: `confirm_${appointment.id}`, label: 'Sim, Confirmar' },
                                         { id: `cancel_${appointment.id}`, label: 'Não, Cancelar' }
                                     ];
-                                    const { sendWhatsAppButtons } = await import('@/lib/evolution');
                                     await sendWhatsAppButtons(cleanPhone, titleB, descB, buttons);
 
                                 } catch (e) { console.error('Customer upsert error:', e) }
