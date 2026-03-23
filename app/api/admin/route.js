@@ -234,10 +234,12 @@ export async function POST(request) {
             .from('customers')
             .upsert({ phone: customer_phone, name: customer_name }, { onConflict: 'phone' })
 
-        // --- NOTIFICAÇÃO SIMPLES DE NOVO AGENDAMENTO ---
+        // --- NOTIFICAÇÃO DE NOVO AGENDAMENTO ---
         try {
             const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
-            const msg = `Olá ${customer_name}! ✨ Seu atendimento foi agendado para *${dateFmt}* no Espaço C.A.\n\nEm caso de dúvidas, responda esta mensagem.`;
+            const msg = `Olá ${customer_name}! 🌸💅
+
+Seu agendamento está confirmado!\n\n📅 *Data:* ${dateFmt}\n📍 *Local:* Espaço C.A.\n\nTe esperamos com carinho! ✨💓\n\nQualquer dúvida, é só responder aqui. 😊`;
             await sendWhatsAppMessage(customer_phone, msg);
         } catch (msgErr) {
             console.error('Erro ao enviar notificação inicial:', msgErr);
@@ -301,14 +303,14 @@ export async function PATCH(request) {
 
         if (error) throw error
 
-        // --- NOTIFICAÇÃO DE ATUALIZAÇÃO (v88) ---
+        // --- NOTIFICAÇÃO DE ATUALIZAÇÃO ---
         try {
             if (status === 'CANCELED' || status === 'CANCELLED') {
-                const msg = `Olá ${data.customer_name}, seu agendamento para o dia *${moment(data.starts_at).tz(TIMEZONE).format('DD/MM')}* foi cancelado. ❌\n\nSe quiser remarcar, pode nos chamar aqui mesmo!`;
+                const msg = `Olá ${data.customer_name}! 💜\n\nSeu agendamento do dia *${moment(data.starts_at).tz(TIMEZONE).format('DD/MM')}* foi cancelado.\n\nQuando quiser remarcar, a gente já separa um horário especial para você! 🌸💅\n\nBj, Espaço C.A. ✨`;
                 await sendWhatsAppMessage(data.customer_phone, msg);
             } else if (starts_at) {
                 const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
-                const msg = `Olá ${data.customer_name}! ✨ Seu atendimento foi reagendado para *${dateFmt}* no Espaço C.A. Qualquer dúvida, estamos aqui!`;
+                const msg = `Olá ${data.customer_name}! 🌸✨\n\nSeu agendamento foi remarcado!\n\n📅 *Nova data:* ${dateFmt}\n📍 *Local:* Espaço C.A.\n\nTe esperamos lindinha! 💅💖\n\nQualquer dúvida, estamos aqui!`;
                 await sendWhatsAppMessage(data.customer_phone, msg);
             }
         } catch (msgErr) {

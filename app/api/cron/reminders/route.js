@@ -86,8 +86,8 @@ export async function GET(request) {
                 } catch (e) { }
 
                 // Template solicitado pelo usuário
-                const title = `Confirmação de Agendamento`;
-                const description = `Olá ${apt.customer_name}, por favor, confirme seu atendimento no dia ${dateStr} às ${timeStr}, com o serviço de ${servicesFormatted}.\n\nDeseja confirmar seu agendamento?`;
+                const title = `Lembrete de Agendamento 💅`;
+                const description = `Olá ${apt.customer_name}! 🌸\n\nPassando para lembrar do seu atendimento amanhã:\n\n📅 *Data:* ${dateStr} às ${timeStr}\n💅 *Serviço:* ${servicesFormatted}\n📍 *Local:* Espaço C.A.\n\nTe esperamos lindinha! ✨💖\n\nDeseja confirmar sua presença?`;
 
                 const buttons = [
                     { id: `confirm_${apt.id}`, label: 'Sim, Confirmar' },
