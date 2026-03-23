@@ -180,26 +180,39 @@ export async function POST(request) {
             return NextResponse.json({ status: 'empty-message' })
         }
 
-        // 5. Update History (keep last 30 messages to avoid context overflow)
+        // 5. Update History
         let history = session.context_json || []
 
-        // NUCLEAR PURGE: Remove ALL tool messages and any message mentioning old V75 rules.
-        // This prevents contaminated history from making the AI think upsell is mandatory.
+        // TARGETED PURGE: Remove only 'check_calendar' tool results (stale availability data)
+        // and their paired assistant messages to avoid breaking OpenAI conversation structure.
+        // We KEEP all other tool results (book, cancel, confirm) so the bot remembers what was booked.
+        const checkCalendarToolCallIds = new Set(
+            history
+                .filter(m => m.role === 'tool' && m._fn === 'check_calendar')
+                .map(m => m.tool_call_id)
+        );
+
         history = history.filter(m => {
-            if (m.role === 'tool') return false; // Remove all tool responses
-            if (m.role === 'assistant' && !m.content) return false; // Remove tool_call-only assistant messages
+            // Remove check_calendar tool results
+            if (m.role === 'tool' && m._fn === 'check_calendar') return false;
+            // Remove assistant messages whose tool_calls were ALL check_calendar
+            if (m.role === 'assistant' && m.tool_calls?.length > 0) {
+                const allWereCalendar = m.tool_calls.every(tc => checkCalendarToolCallIds.has(tc.id));
+                if (allWereCalendar) return false;
+            }
+            // Remove V75-contaminated assistant messages
             if (m.role === 'assistant' && m.content && (
                 m.content.includes('V75') ||
-                m.content.includes('esmaltação') && m.content.includes('obrigatório') ||
-                m.content.includes('não pode agendar') && m.content.includes('manutenção')
+                (m.content.includes('n\u00e3o \u00e9 poss\u00edvel agendar') && m.content.includes('manuten\u00e7\u00e3o'))
             )) return false;
             return true;
         });
 
         history.push({ role: 'user', content: userMessage })
 
-        if (history.length > 20) {
-            history = history.slice(-20)
+        if (history.length > 30) {
+            history = history.slice(-30)
+            // Ensure history starts with a user message (never an orphaned tool/assistant)
             while (history.length > 0 && history[0].role !== 'user') {
                 history.shift()
             }
@@ -551,7 +564,8 @@ Confirme o agendamento de forma calorosa e simples.
                     } catch (err) { result = JSON.stringify({ status: "error" }) }
                 }
 
-                const toolResult = { role: "tool", tool_call_id: toolCall.id, content: result }
+                // Save function name in result for future filtering (extra field ignored by OpenAI)
+                const toolResult = { role: "tool", tool_call_id: toolCall.id, content: result, _fn: toolCall.function.name }
                 history.push(toolResult)
             }
 
