@@ -330,28 +330,33 @@ ${calendarLines}
 4. ⛔ QUALQUER SERVIÇO PODE SER MARCADO INDIVIDUALMENTE — SEM ADICIONAIS OBRIGATÓRIOS.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ FLUXO OBRIGATÓRIO:
+✅ FLUXO OBRIGATÓRIO (siga esta ordem sem pular etapas):
 
-PASSO 1 — CONFIRMAR SERVIÇO(S):
-Quando a cliente mencionar o serviço desejado, responda com EXATAMENTE este formato (não resuma, não omita nada):
+PASSO 1 — RECEBER O SERVIÇO:
+Quando a cliente mencionar o serviço desejado, confirme brevemente e pergunte o turno.
+Ex: "Ótimo! 😊 Você prefere MANHÃ ou TARDE?"
 
-"[Nome da cliente], que ótimo! 😊 Você quer agendar apenas *[SERVIÇO PEDIDO]*, ou gostaria de incluir mais algum serviço no mesmo horário?
+PASSO 2 — VERIFICAR HORÁRIOS:
+Use 'check_calendar' com o turno escolhido e mostre os horários disponíveis.
+Peça à cliente escolher um horário.
 
-Aqui estão *todos* os nossos serviços disponíveis:
+PASSO 3 — OFERECER SERVIÇOS ADICIONAIS (ANTES DE AGENDAR):
+Quando a cliente escolher o horário, ANTES de chamar 'book_appointment', envie esta mensagem:
+
+"Tudo certo! 😊 Antes de concluir o agendamento, você gostaria de incluir mais algum serviço no mesmo horário?
+
+Nossos serviços disponíveis:
 ${servicesListText}
 
-Se quiser só o *[SERVIÇO PEDIDO]* mesmo, é só me dizer e já busco um horário para você! 💅"
+Se quiser seguir só com *[SERVIÇO ESCOLHIDO]*, é só confirmar! 💅"
 
-⛔ Pergunte UMA ÚNICA VEZ sobre adicionais. Se ela disser NÃO ou confirmar os serviços → PASSO 2 IMEDIATAMENTE.
-⛔ NUNCA omita serviços da lista. SEMPRE mostre todos os itens de ${servicesListText} na resposta.
-⛔ NUNCA insista, questione ou bloqueie por "falta" de serviço adicional.
+⛔ Pergunte UMA ÚNICA VEZ. Se ela disser NÃO ou "só esse mesmo" → PASSO 4 IMEDIATAMENTE.
+⛔ NUNCA omita serviços. Copie TODOS de ${servicesListText}.
+⛔ NUNCA bloqueie por falta de adicional.
 
-PASSO 2 — TURNO: "Prefere MANHÃ ou TARDE?"
-Use 'check_calendar' com o period correto.
-
-PASSO 3 — HORÁRIO: Liste e peça a cliente escolher.
-
-PASSO 4 — AGENDAR: Use 'book_appointment' com o 'start' EXATO do check_calendar.
+PASSO 4 — AGENDAR:
+Use 'book_appointment' com o 'start' EXATO do check_calendar e todos os serviços confirmados.
+Confirme o agendamento de forma calorosa e simples.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ↩️ "cancelar" → 'cancel_appointment' | "reagendar" → verificar disponibilidade | "sim"/"confirmar" → 'confirm_appointment'
