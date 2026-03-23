@@ -477,58 +477,24 @@ Exemplo correto: startsAt = "2026-03-22T20:15:00.000Z"
                 }
                 else if (toolCall.function.name === 'book_appointment') {
                     try {
-                        const requestedServices = Array.isArray(args.services || args.service) ? (args.services || args.service) : [args.services || args.service];
+                        const requestedServices = Array.isArray(args.services || args.service)
+                            ? (args.services || args.service)
+                            : [args.services || args.service].filter(Boolean);
 
-                        // --- PROTOCOLO DE UPSELL V75 (SEQUENCIAL/RADICAL) ---
-                        const structuralKeywords = ['manutencao', 'gel'];
-                        const isStructural = requestedServices.some(s => {
-                            const norm = normalizeString(s);
-                            return structuralKeywords.some(kw => norm.includes(kw));
-                        });
+                        const appointment = await bookAppointment({
+                            phone: cleanPhone,
+                            name: args.name || customerName,
+                            services: requestedServices,
+                            startsAt: args.startsAt
+                        })
 
-                        if (isStructural) {
-                            const upsellWords = ['esmaltacao', 'francesinha', 'po', 'combo', 'adicional'];
-                            const alreadyHasUpsell = requestedServices.some(s => {
-                                const norm = normalizeString(s);
-                                return upsellWords.some(w => norm.includes(w));
-                            });
-
-                            if (!alreadyHasUpsell) {
-                                // Buscamos no histórico RECENTE (últimas 3 mensagens do assistente)
-                                const recentAssistantMessages = history
-                                    .filter(m => m.role === 'assistant' && m.content)
-                                    .slice(-5);
-
-                                const hasOfferedUpsell = recentAssistantMessages.some(m => {
-                                    const normContent = normalizeString(m.content);
-                                    return upsellWords.some(w => normContent.includes(w));
-                                });
-
-                                if (!hasOfferedUpsell) {
-                                    result = JSON.stringify({
-                                        status: "error",
-                                        message: "ERRO DE PROTOCOLO V75: Você NÃO pode agendar esta manutenção agora. Você esqueceu de oferecer o menu de adicionais (esmaltação básica/premium) na última mensagem. Pare o agendamento, responda a cliente oferecendo os adicionais e espere ela decidir."
-                                    });
-                                }
-                            }
-                        }
-
-                        if (!result) {
-                            const appointment = await bookAppointment({
-                                phone: cleanPhone,
-                                name: args.name || customerName,
-                                services: requestedServices,
-                                startsAt: args.startsAt
-                            })
-
-                            if (appointment?.error) {
-                                result = JSON.stringify({ status: "error", message: appointment.message })
-                            } else {
-                                result = JSON.stringify({ status: "success", appointment })
-                                try {
-                                    await supabase.from('customers').upsert({ phone: cleanPhone, name: args.name || customerName }, { onConflict: 'phone' })
-                                } catch (e) { console.error('Customer upsert error:', e) }
-                            }
+                        if (appointment?.error) {
+                            result = JSON.stringify({ status: "error", message: appointment.message })
+                        } else {
+                            result = JSON.stringify({ status: "success", appointment })
+                            try {
+                                await supabase.from('customers').upsert({ phone: cleanPhone, name: args.name || customerName }, { onConflict: 'phone' })
+                            } catch (e) { console.error('Customer upsert error:', e) }
                         }
                     } catch (err) { result = JSON.stringify({ status: "error", message: err.message }) }
                 }
