@@ -300,6 +300,11 @@ ${customerName
                         ? `--- RECONHECIMENTO DE CLIENTE (LEI) ---\nVocê JÁ SABE que o nome da cliente é **${customerName}**. \nPROIBIDO perguntar o nome dela. Inicie a conversa chamando-a pelo nome.`
                         : `Você ainda não sabe o nome desta cliente. Pergunte o nome completo antes de confirmar o agendamento.`}
 
+--- DISPONIBILIDADE EM TEMPO REAL (LEI SUPREMA) ---
+- A cada nova consulta de horário, SEMPRE chame 'check_calendar' de novo. NUNCA use resultados de pesquisas anteriores.
+- Um horário que estava ocupado pode estar livre agora (cancelamento). SEMPRE consulte o banco.
+- NUNCA diga "aquele horário está ocupado" com base em histórico. Consulte sempre.
+
 --- PROTOCOLO DE ADICIONAIS (NOVO - SIMPLES E DIRETO) ---
 Sempre que a cliente mencionar UM serviço desejado, você deve:
 1. Confirmar o serviço escolhido brevemente.
