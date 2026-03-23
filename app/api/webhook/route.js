@@ -109,9 +109,9 @@ export async function POST(request) {
             const nowMs = new Date().getTime()
             const diffMins = (nowMs - lastUpdate) / (1000 * 60)
 
-            // Session timeout reduzido para 3 minutos (garante dados frescos do calendário)
-            if (diffMins > 3) {
-                console.log('🕒 Sessão expirada (>3min). Resetando histórico para dados frescos.')
+            // Timeout de 1 minuto - garante dados frescos e elimina contaminação de histórico
+            if (diffMins > 1) {
+                console.log('🕒 Sessão expirada (>1min). Resetando histórico.')
                 session.context_json = []
             }
         }
@@ -182,18 +182,24 @@ export async function POST(request) {
         // 5. Update History (keep last 30 messages to avoid context overflow)
         let history = session.context_json || []
 
-        // CRITICAL: Remove tool results from check_calendar to force fresh data every time
-        // This prevents the AI from using stale availability data from previous queries
+        // NUCLEAR PURGE: Remove ALL tool messages and any message mentioning old V75 rules.
+        // This prevents contaminated history from making the AI think upsell is mandatory.
         history = history.filter(m => {
-            if (m.role === 'tool' && m.name === 'check_calendar') return false;
+            if (m.role === 'tool') return false; // Remove all tool responses
+            if (m.role === 'assistant' && !m.content) return false; // Remove tool_call-only assistant messages
+            if (m.role === 'assistant' && m.content && (
+                m.content.includes('V75') ||
+                m.content.includes('esmaltação') && m.content.includes('obrigatório') ||
+                m.content.includes('não pode agendar') && m.content.includes('manutenção')
+            )) return false;
             return true;
         });
 
         history.push({ role: 'user', content: userMessage })
 
-        if (history.length > 30) {
-            history = history.slice(-30)
-            while (history.length > 0 && (history[0].role === 'tool' || (history[0].role === 'assistant' && history[0].tool_calls))) {
+        if (history.length > 20) {
+            history = history.slice(-20)
+            while (history.length > 0 && history[0].role !== 'user') {
                 history.shift()
             }
         }
