@@ -109,8 +109,9 @@ export async function POST(request) {
             const nowMs = new Date().getTime()
             const diffMins = (nowMs - lastUpdate) / (1000 * 60)
 
-            if (diffMins > 10) {
-                console.log('🕒 Sessão expirada (>10min). Resetando histórico.')
+            // Session timeout reduzido para 3 minutos (garante dados frescos do calendário)
+            if (diffMins > 3) {
+                console.log('🕒 Sessão expirada (>3min). Resetando histórico para dados frescos.')
                 session.context_json = []
             }
         }
@@ -178,12 +179,20 @@ export async function POST(request) {
             return NextResponse.json({ status: 'empty-message' })
         }
 
-        // 5. Update History (keep last 40 messages to avoid context overflow)
+        // 5. Update History (keep last 30 messages to avoid context overflow)
         let history = session.context_json || []
+
+        // CRITICAL: Remove tool results from check_calendar to force fresh data every time
+        // This prevents the AI from using stale availability data from previous queries
+        history = history.filter(m => {
+            if (m.role === 'tool' && m.name === 'check_calendar') return false;
+            return true;
+        });
+
         history.push({ role: 'user', content: userMessage })
 
-        if (history.length > 40) {
-            history = history.slice(-40)
+        if (history.length > 30) {
+            history = history.slice(-30)
             while (history.length > 0 && (history[0].role === 'tool' || (history[0].role === 'assistant' && history[0].tool_calls))) {
                 history.shift()
             }
