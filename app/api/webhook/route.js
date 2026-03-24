@@ -296,19 +296,21 @@ export async function POST(request) {
             userMessage = `[SISTEMA: O serviço '${requestedHidden.name}' está OCULTO/DESATIVADO. Rejeite o pedido abaixo imediatamente.] User: ${originalMessage}`
         }
 
-        // --- GERAÇÃO DE CALENDÁRIO (RESTAURADA V79) ---
+        // Calendário dos próximos 60 dias (apenas dias abertos para reduzir tamanho do prompt)
         let calendarLines = ''
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < 60; i++) {
             const day = now.clone().add(i, 'days')
             const dayName = day.format('dddd')
             const dateLabel = day.format('DD/MM/YYYY')
             const isoDate = day.format('YYYY-MM-DD')
             const isOpen = isDayOpen(isoDate, scheduleOverrides, scheduleRules)
+            if (!isOpen) continue // Pular dias fechados para não poluir o prompt
             const isOverride = scheduleOverrides.some(o => o.date === isoDate)
             const specialRule = scheduleRules.find(r => isoDate >= r.start_date && isoDate <= r.end_date)
             const suffix = isOverride ? ' (exceção)' : specialRule ? ` (especial: ${specialRule.open_time.substring(0, 5)}-${specialRule.close_time.substring(0, 5)})` : ''
-            calendarLines += `- ${dayName} ${dateLabel} (${isoDate}) ${isOpen ? '✅ aberto' + suffix : '❌ fechado' + suffix} \n`
+            calendarLines += `- ${dayName} ${dateLabel} (${isoDate})${suffix}\n`
         }
+        if (!calendarLines) calendarLines = '- Nenhum dia aberto nos próximos 60 dias.'
 
         // 7. AI Brain (GPT-4o-mini)
         const messages = [
@@ -341,7 +343,7 @@ ${servicesListText}
 ${hiddenAlert}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📅 DIAS DISPONÍVEIS:
+📅 DIAS ABERTOS (próximos 60 dias):
 ${calendarLines}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
