@@ -1,4 +1,5 @@
-﻿'use client'
+﻿// V35-CONFIRMACAO — 2026-03-24
+'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, ArrowRight, Headset } from 'lucide-react'
@@ -843,6 +844,8 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
     )
 }
 
+// V36-NOVO-PADRAO-LINK
+
 // ─── Appointment Detail Modal ──────────────────────────────
 function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNotes, helpRequests = [], onResolveHelp }) {
     const svcs = parseServices(apt.service_id)
@@ -882,7 +885,17 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                             <div className="text-sm text-slate-500 flex flex-col md:flex-row md:items-center gap-2 mt-2">
                                 <span className="flex items-center justify-center md:justify-start gap-1"><Phone size={12} /> {apt.customer_phone}</span>
                                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                    <a href={whatsappLink(apt.customer_phone, `Oi ${apt.customer_name}! Você tem um agendamento marcado para amanhã, dia ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })} às ${toSPTime(apt.starts_at)}. Serviço: ${getServiceNames(svcs).join(' + ')}. Responda SIM para confirmar. Se não puder comparecer ao agendamento, digite REAGENDAR ou CANCELE o atendimento.`)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
+                                    <a href={whatsappLink(apt.customer_phone,
+                                        `Olá, *${apt.customer_name}*! 💅🌸\n\n` +
+                                        `Temos um agendamento marcado para você no *Espaço C.A.*:\n\n` +
+                                        `📋 *Serviço:* ${getServiceNames(svcs).join(' + ')}\n` +
+                                        `📅 *Data:* ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })}\n` +
+                                        `⏰ *Horário:* ${toSPTime(apt.starts_at)}\n\n` +
+                                        `Você confirma sua presença? 😊\n` +
+                                        `Clique no link abaixo para confirmar agora:\n` +
+                                        `👇 \${typeof window !== 'undefined' ? window.location.origin : ''}/api/confirm/\${apt.id}\n\n` +
+                                        `Se não puder comparecer, entre em contato conosco para podermos reagendar o atendimento. ✨`
+                                    )} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
                                         <MessageCircle size={10} /> Confirmar via WhatsApp
                                     </a>
                                     <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors">
