@@ -200,11 +200,19 @@ export async function POST(request) {
                 const allWereCalendar = m.tool_calls.every(tc => checkCalendarToolCallIds.has(tc.id));
                 if (allWereCalendar) return false;
             }
-            // Remove V75-contaminated assistant messages
-            if (m.role === 'assistant' && m.content && (
-                m.content.includes('V75') ||
-                (m.content.includes('n\u00e3o \u00e9 poss\u00edvel agendar') && m.content.includes('manuten\u00e7\u00e3o'))
-            )) return false;
+            // Remove ALL contaminated assistant messages that block single-service booking
+            if (m.role === 'assistant' && m.content) {
+                const lower = m.content.toLowerCase();
+                const isBlocking = [
+                    'v75', 'esmaltação básica', 'esmaltação premium',
+                    'necessário que você adicione', 'necessário adicionar',
+                    'não é possível agendar', 'não posso agendar',
+                    'sem antes oferecer', 'sem esmalt', 'sem francess',
+                    'obrigatório', 'precisa de esmalt', 'precisa de francess',
+                    'manutenção sem', 'gel sem'
+                ].some(kw => lower.includes(kw));
+                if (isBlocking) return false;
+            }
             return true;
         });
 
