@@ -1,7 +1,7 @@
-﻿// V37-REVISAO-FINAL-DEFINITIVA — 2026-03-24
+﻿// V37.2-DEFINITIVO-BUILD-SAFE — 2026-03-24
 'use client'
 
-const VERSION = "V37.0 — VERÃO" // Marcador interno para depuração
+const VERSION = "V37.2 — MASTER (SAFE)"
 
 const GET_CONFIRM_MSG = (name, services, date, time, url) => {
     return `Olá, *${name}*! 💅🌸\n\n` +
@@ -370,7 +370,7 @@ export default function AdminDashboard() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex overflow-hidden">
-            {/* BANNER DE VERSÃO — SE NÃO APARECER ISSO, O DEPLOY NÃO FUNCIONOU */}
+            {/* TRAVA VISUAL V37.2 - SE NÃO APARECER O BOTÃO NÃO MUDOU */}
             <div className="fixed top-0 left-0 right-0 h-1 bg-red-600 z-[9999]"></div>
             <div className="fixed top-1 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-b-lg z-[9999] shadow-md uppercase tracking-tighter">
                 SISTEMA ATUALIZADO: {VERSION}
