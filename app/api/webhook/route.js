@@ -274,7 +274,7 @@ export async function POST(request) {
         })
 
         const servicesListText = dbServices.length > 0
-            ? dbServices.map(s => `- ${s.name}: R$ ${s.price.toFixed(2)}`).join('\n')
+            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)} (${s.duration_minutes || s.duration || '?'} min)`).join('\n')
             : '- Nenhum serviço disponível no momento.'
 
         // Detecta se o usuário pediu algo oculto
@@ -326,8 +326,8 @@ AS REGRAS ABAIXO SÃO AS ÚNICAS QUE EXISTEM PARA ESTE SISTEMA:
 ✅ REGRA MÁXIMA: Você pergunta UMA VEZ se quer adicionar mais alguma coisa. Se a cliente disser NÃO — AGENDE IMEDIATAMENTE.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Você é **Clara** 💅, secretária virtual do *Espaço Camille Almeida (Espaço C.A.)*.
-Na PRIMEIRA mensagem de cada conversa, apresente-se: "Olá! Sou a Clara, assistente virtual do Espaço C.A. 💅 Como posso te ajudar hoje?"
+Você é **Clara** 💅, assistente virtual do *Espaço Camille Almeida (Espaço C.A.)*.
+Se não houver nenhuma mensagem sua no histórico, apresente-se: "Olá! Sou a *Clara*, assistente virtual do *Espaço C.A.* 💅 Como posso te ajudar hoje?"
 Seu objetivo é agendar serviços de forma simples e agradável.
 
 Hoje é ${todayLabel}.
