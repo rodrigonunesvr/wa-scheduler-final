@@ -1454,11 +1454,11 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                                                 </td>
                                                 <td className="px-5 py-3 text-center">
                                                     <div className="flex items-center justify-center gap-2">
-                                                        <button onClick={() => setEditingCustomer(c)} className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-violet-600 bg-slate-50 px-2 py-1 rounded-lg hover:bg-violet-50 transition-colors border border-slate-100">
-                                                            <Edit2 size={10} /> Editar
+                                                        <button onClick={() => setEditingCustomer(c)} className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-white bg-violet-600 px-3 py-1.5 rounded-xl hover:bg-violet-700 transition-all shadow-sm shadow-violet-200 border border-violet-500">
+                                                            <Edit2 size={12} /> Editar
                                                         </button>
-                                                        <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-2 py-1 rounded-lg hover:bg-violet-100 transition-colors border border-violet-100">
-                                                            <History size={10} /> Histórico
+                                                        <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-violet-600 bg-violet-50 px-3 py-1.5 rounded-xl hover:bg-violet-100 transition-all border border-violet-100">
+                                                            <History size={12} /> Histórico
                                                         </button>
                                                     </div>
                                                 </td>
