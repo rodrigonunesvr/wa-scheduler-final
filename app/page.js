@@ -1,5 +1,19 @@
-﻿// V35-CONFIRMACAO — 2026-03-24
+﻿// V37-REVISAO-FINAL-DEFINITIVA — 2026-03-24
 'use client'
+
+const VERSION = "V37.0 — VERÃO" // Marcador interno para depuração
+
+const GET_CONFIRM_MSG = (name, services, date, time, url) => {
+    return `Olá, *${name}*! 💅🌸\n\n` +
+        `Passando para confirmar seu atendimento no *Espaço C.A.*:\n\n` +
+        `📋 *Serviço:* ${services}\n` +
+        `📅 *Data:* ${date}\n` +
+        `⏰ *Horário:* ${time}\n\n` +
+        `Você confirma sua presença? 😊\n\n` +
+        `Pode clicar no link abaixo para confirmar agora:\n` +
+        `👇 ${url}\n\n` +
+        `Se não puder comparecer, entre em contato conosco para podermos reagendar o atendimento. ✨`
+}
 
 import { useState, useEffect, useCallback } from 'react'
 import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, ArrowRight, Headset } from 'lucide-react'
@@ -356,6 +370,12 @@ export default function AdminDashboard() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex overflow-hidden">
+            {/* BANNER DE VERSÃO — SE NÃO APARECER ISSO, O DEPLOY NÃO FUNCIONOU */}
+            <div className="fixed top-0 left-0 right-0 h-1 bg-red-600 z-[9999]"></div>
+            <div className="fixed top-1 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-b-lg z-[9999] shadow-md uppercase tracking-tighter">
+                SISTEMA ATUALIZADO: {VERSION}
+            </div>
+
             {/* Sidebar Overlay (Mobile) */}
             {isMobile && sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
@@ -886,15 +906,13 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                                 <span className="flex items-center justify-center md:justify-start gap-1"><Phone size={12} /> {apt.customer_phone}</span>
                                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                                     <a href={whatsappLink(apt.customer_phone,
-                                        `Olá, *${apt.customer_name}*! 💅🌸\n\n` +
-                                        `Passando para confirmar seu atendimento no *Espaço C.A.*:\n\n` +
-                                        `📋 *Serviço:* ${getServiceNames(svcs).join(' + ')}\n` +
-                                        `📅 *Data:* ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })}\n` +
-                                        `⏰ *Horário:* ${toSPTime(apt.starts_at)}\n\n` +
-                                        `Você confirma sua presença? 😊\n\n` +
-                                        `Se preferir, pode clicar no link abaixo para confirmar agora:\n` +
-                                        `👇 \${typeof window !== 'undefined' ? window.location.origin : ''}/api/confirm/\${apt.id}\n\n` +
-                                        `Se não puder comparecer, entre em contato conosco para podermos reagendar o atendimento. ✨`
+                                        GET_CONFIRM_MSG(
+                                            apt.customer_name,
+                                            getServiceNames(svcs).join(' + '),
+                                            new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' }),
+                                            toSPTime(apt.starts_at),
+                                            `${typeof window !== 'undefined' ? window.location.origin : ''}/api/confirm/${apt.id}`
+                                        )
                                     )} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
                                         <MessageCircle size={10} /> 📲 ENVIAR MENSAGEM
                                     </a>
