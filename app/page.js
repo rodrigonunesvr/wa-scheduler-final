@@ -843,6 +843,36 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
     )
 }
 
+// ─── Confirm via WhatsApp Button ──────────────────────────
+function ConfirmWhatsAppButton({ aptId }) {
+    const [status, setStatus] = useState('idle') // 'idle' | 'sending' | 'sent' | 'error'
+    const send = async () => {
+        setStatus('sending')
+        try {
+            const res = await fetch('/api/admin/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appointmentId: aptId })
+            })
+            const data = await res.json()
+            if (!res.ok || data.error) throw new Error(data.error || 'Erro')
+            setStatus('sent')
+            setTimeout(() => setStatus('idle'), 4000)
+        } catch {
+            setStatus('error')
+            setTimeout(() => setStatus('idle'), 4000)
+        }
+    }
+    return (
+        <button onClick={send} disabled={status === 'sending'}
+            className={`inline-flex items-center justify-center gap-1 text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm transition-all active:scale-95
+                ${status === 'sent' ? 'bg-green-700 text-white' : status === 'error' ? 'bg-red-500 text-white' : 'bg-[#25D366] text-white hover:scale-105'}`}>
+            <MessageCircle size={10} />
+            {status === 'sending' ? 'Enviando...' : status === 'sent' ? '✓ Enviado!' : status === 'error' ? 'Erro — tentar de novo' : 'Confirmar via WhatsApp'}
+        </button>
+    )
+}
+
 // ─── Appointment Detail Modal ──────────────────────────────
 function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNotes, helpRequests = [], onResolveHelp }) {
     const svcs = parseServices(apt.service_id)
@@ -882,9 +912,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                             <div className="text-sm text-slate-500 flex flex-col md:flex-row md:items-center gap-2 mt-2">
                                 <span className="flex items-center justify-center md:justify-start gap-1"><Phone size={12} /> {apt.customer_phone}</span>
                                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                    <a href={whatsappLink(apt.customer_phone, `Oi ${apt.customer_name}! Você tem um agendamento marcado para amanhã, dia ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })} às ${toSPTime(apt.starts_at)}. Serviço: ${getServiceNames(svcs).join(' + ')}. Responda SIM para confirmar. Se não puder comparecer ao agendamento, digite REAGENDAR ou CANCELE o atendimento.`)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
-                                        <MessageCircle size={10} /> Confirmar via WhatsApp
-                                    </a>
+                                    <ConfirmWhatsAppButton aptId={apt.id} apt={apt} svcs={svcs} />
                                     <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors">
                                         Chat <ExternalLink size={9} />
                                     </a>
