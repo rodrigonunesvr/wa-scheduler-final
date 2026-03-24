@@ -205,10 +205,9 @@ export async function POST(request) {
                 const lower = m.content.toLowerCase();
                 const isBlocking = [
                     'v75', 'esmaltação básica', 'esmaltação premium',
-                    'necessário que você adicione', 'necessário adicionar',
-                    'não é possível agendar', 'não posso agendar',
-                    'sem antes oferecer', 'sem esmalt', 'sem francess',
-                    'obrigatório', 'precisa de esmalt', 'precisa de francess',
+                    'necessário que você adicione', 'sem antes oferecer',
+                    'sem esmalt', 'sem francess',
+                    'precisa de esmalt', 'precisa de francess',
                     'manutenção sem', 'gel sem'
                 ].some(kw => lower.includes(kw));
                 if (isBlocking) return false;
@@ -341,6 +340,7 @@ ${customerName
 📋 CATÁLOGO DE SERVIÇOS ATIVOS (ÚNICA FONTE VÁLIDA):
 ${servicesListText}
 ${hiddenAlert}
+⚠️ AO USAR FERRAMENTAS: envie APENAS o NOME do serviço (ex: "Manutenção"). NUNCA envie preço ou duração nos parâmetros.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📅 DIAS ABERTOS (próximos 60 dias):
