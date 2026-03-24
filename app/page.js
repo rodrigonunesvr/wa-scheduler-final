@@ -1274,9 +1274,10 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, scheduleRules = []
     )
 }
 
-// ─── Edit Customer Modal ──────────────────────────────────
+// ─── Edit Customer Modal ──────────────────────────────────────
 function EditCustomerModal({ customer, onClose, onSave }) {
-    const [form, setForm] = useState({ name: customer.name || '', phone: customer.phone || '' })
+    const [name, setName] = useState(customer.name || '')
+    const [phone, setPhone] = useState(customer.phone || '')
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
 
@@ -1284,14 +1285,15 @@ function EditCustomerModal({ customer, onClose, onSave }) {
         e.preventDefault()
         setSaving(true); setError('')
         try {
+            const cleanPhone = phone.replace(/\D/g, '')
             const res = await fetch('/api/admin', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     type: 'customer',
-                    customer_id: customer.id,
-                    name: form.name,
-                    phone: form.phone
+                    oldPhone: customer.phone,
+                    newName: name,
+                    newPhone: cleanPhone
                 })
             })
             const data = await res.json()
@@ -1302,30 +1304,27 @@ function EditCustomerModal({ customer, onClose, onSave }) {
     }
 
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-600 to-purple-700 text-white">
-                    <h3 className="text-base font-extrabold flex items-center gap-2">Editar Cliente</h3>
-                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="bg-violet-600 text-white px-6 py-4 flex justify-between items-center">
+                    <h3 className="font-bold flex items-center gap-2"><Edit2 size={18} /> Editar Cliente</h3>
+                    <button onClick={onClose} className="p-1 hover:bg-white/20 rounded"><X size={20} /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Nome</label>
-                        <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Nome</label>
+                        <input type="text" required value={name} onChange={e => setName(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none font-semibold text-slate-700" />
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Telefone</label>
-                        <input type="text" required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Telefone</label>
+                        <input type="text" required value={phone} onChange={e => setPhone(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none font-mono text-slate-600" />
                     </div>
-                    {error && <div className="bg-red-50 text-red-600 text-xs font-medium px-4 py-2 rounded-lg border border-red-100">{error}</div>}
-                    <div className="flex gap-3 pt-2">
-                        <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border-2 border-slate-100 text-slate-500 font-bold text-xs hover:bg-slate-50 transition-all">Cancelar</button>
-                        <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-violet-600 text-white font-bold text-xs hover:bg-violet-700 transition-all shadow-lg shadow-violet-200">
-                            {saving ? 'Salvando...' : 'Salvar Alterações'}
-                        </button>
-                    </div>
+                    {error && <p className="text-red-500 text-xs font-bold bg-red-50 p-3 rounded-lg border border-red-100">{error}</p>}
+                    <button type="submit" disabled={saving} className="w-full py-3 bg-violet-600 text-white font-black rounded-xl hover:bg-violet-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-200">
+                        {saving ? 'SALVANDO...' : <><Save size={18} /> SALVAR ALTERAÇÕES</>}
+                    </button>
                 </form>
             </div>
         </div>
@@ -1338,10 +1337,10 @@ function ClientsPage({ isMobile, onOpenMenu }) {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [appointments, setAppointments] = useState([])
-    const [historyPhone, setHistoryPhone] = useState(null)
+    const [historyPhone, setHistoryPhone] = useState(null) // phone to show history for
     const [editingCustomer, setEditingCustomer] = useState(null)
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true)
         try {
             const [custRes, aptRes] = await Promise.all([
@@ -1354,11 +1353,9 @@ function ClientsPage({ isMobile, onOpenMenu }) {
             setAppointments(Array.isArray(aptData) ? aptData : [])
         } catch (e) { console.error(e) }
         setLoading(false)
-    }
-
-    useEffect(() => {
-        loadData()
     }, [])
+
+    useEffect(() => { loadData() }, [loadData])
 
     const getStats = (phone) => {
         const myApts = appointments.filter(a => a.customer_phone === phone && a.status === 'CONFIRMED')

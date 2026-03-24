@@ -282,47 +282,39 @@ export async function PATCH(request) {
         if (ends_at) update.ends_at = ends_at
         if (notes !== undefined) update.notes = notes
 
-        // Support for updating customer (marking help as resolved or editing info)
+        // Support for updating customer (name and phone)
+        if (body.type === 'customer') {
+            const { oldPhone, newName, newPhone } = body
+
+            // 1. Update customer record
+            const { error: custError } = await supabase
+                .from('customers')
+                .update({ name: newName, phone: newPhone })
+                .eq('phone', oldPhone)
+            if (custError) throw custError
+
+            // 2. Cascade phone change to appointments
+            if (oldPhone !== newPhone) {
+                const { error: aptUpdateError } = await supabase
+                    .from('appointments')
+                    .update({ customer_phone: newPhone, customer_name: newName }) // Optional: update name too for consistency
+                    .eq('customer_phone', oldPhone)
+                if (aptUpdateError) throw aptUpdateError
+            }
+
+            return NextResponse.json({ status: 'customer updated' })
+        }
+
+        // Support for updating customer (marking help as resolved - legacy)
         const help_requested = body.help_requested
         const customer_id = body.customer_id
-        if (customer_id && (help_requested !== undefined || body.type === 'customer')) {
-            const { name, phone } = body
-
-            // Se for apenas resolver ajuda
-            if (help_requested !== undefined && body.type !== 'customer') {
-                const { error: custError } = await supabase
-                    .from('customers')
-                    .update({ help_requested: help_requested })
-                    .eq('id', customer_id)
-                if (custError) throw custError
-                return NextResponse.json({ status: 'customer updated' })
-            }
-
-            // Se for edição completa (Nome/Telefone)
-            if (body.type === 'customer') {
-                // 1. Pegar telefone antigo para atualizar agendamentos
-                const { data: oldData } = await supabase.from('customers').select('phone').eq('id', customer_id).single()
-                const oldPhone = oldData?.phone
-
-                // 2. Atualizar cliente
-                const { data: updatedCust, error: custErr } = await supabase
-                    .from('customers')
-                    .update({ name, phone })
-                    .eq('id', customer_id)
-                    .select()
-                    .single()
-                if (custErr) throw custErr
-
-                // 3. Se o telefone mudou, atualizar todos os agendamentos vinculados
-                if (oldPhone && phone && oldPhone !== phone) {
-                    await supabase
-                        .from('appointments')
-                        .update({ customer_phone: phone, customer_name: name })
-                        .eq('customer_phone', oldPhone)
-                }
-
-                return NextResponse.json(updatedCust)
-            }
+        if (customer_id && help_requested !== undefined) {
+            const { error: custError } = await supabase
+                .from('customers')
+                .update({ help_requested: help_requested })
+                .eq('id', customer_id)
+            if (custError) throw custError
+            return NextResponse.json({ status: 'customer updated' })
         }
 
         const { data, error } = await supabase
