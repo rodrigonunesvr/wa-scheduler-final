@@ -237,12 +237,9 @@ export async function POST(request) {
         // --- NOTIFICAÇÃO DE NOVO AGENDAMENTO ---
         try {
             const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
-            const msg = `Olá ${customer_name}! 🌸💅\n\n` +
-                `Seu agendamento no *Espaço C.A.* foi pré-reservado:\n\n` +
-                `📅 *Data:* ${dateFmt}\n\n` +
-                `Você confirma sua presença? 😊\n` +
-                `*Responda SIM para confirmar seu horário.*\n\n` +
-                `Te esperamos com carinho! ✨💓`;
+            const msg = `Olá ${customer_name}! 🌸💅
+
+Seu agendamento está confirmado!\n\n📅 *Data:* ${dateFmt}\n📍 *Local:* Espaço C.A.\n\nTe esperamos com carinho! ✨💓\n\nQualquer dúvida, é só responder aqui. 😊`;
             await sendWhatsAppMessage(customer_phone, msg);
         } catch (msgErr) {
             console.error('Erro ao enviar notificação inicial:', msgErr);
@@ -285,16 +282,47 @@ export async function PATCH(request) {
         if (ends_at) update.ends_at = ends_at
         if (notes !== undefined) update.notes = notes
 
-        // Support for updating customer (marking help as resolved)
+        // Support for updating customer (marking help as resolved or editing info)
         const help_requested = body.help_requested
         const customer_id = body.customer_id
-        if (customer_id && help_requested !== undefined) {
-            const { error: custError } = await supabase
-                .from('customers')
-                .update({ help_requested: help_requested })
-                .eq('id', customer_id)
-            if (custError) throw custError
-            return NextResponse.json({ status: 'customer updated' })
+        if (customer_id && (help_requested !== undefined || body.type === 'customer')) {
+            const { name, phone } = body
+
+            // Se for apenas resolver ajuda
+            if (help_requested !== undefined && body.type !== 'customer') {
+                const { error: custError } = await supabase
+                    .from('customers')
+                    .update({ help_requested: help_requested })
+                    .eq('id', customer_id)
+                if (custError) throw custError
+                return NextResponse.json({ status: 'customer updated' })
+            }
+
+            // Se for edição completa (Nome/Telefone)
+            if (body.type === 'customer') {
+                // 1. Pegar telefone antigo para atualizar agendamentos
+                const { data: oldData } = await supabase.from('customers').select('phone').eq('id', customer_id).single()
+                const oldPhone = oldData?.phone
+
+                // 2. Atualizar cliente
+                const { data: updatedCust, error: custErr } = await supabase
+                    .from('customers')
+                    .update({ name, phone })
+                    .eq('id', customer_id)
+                    .select()
+                    .single()
+                if (custErr) throw custErr
+
+                // 3. Se o telefone mudou, atualizar todos os agendamentos vinculados
+                if (oldPhone && phone && oldPhone !== phone) {
+                    await supabase
+                        .from('appointments')
+                        .update({ customer_phone: phone, customer_name: name })
+                        .eq('customer_phone', oldPhone)
+                }
+
+                return NextResponse.json(updatedCust)
+            }
         }
 
         const { data, error } = await supabase

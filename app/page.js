@@ -1,18 +1,4 @@
-﻿// V37.2-DEFINITIVO-BUILD-SAFE — 2026-03-24
-'use client'
-
-const VERSION = "V37.2 — MASTER (SAFE)"
-
-const GET_CONFIRM_MSG = (name, services, date, time) => {
-    return `Olá, *${name}*! 💅🌸\n\n` +
-        `Passando para confirmar seu atendimento no *Espaço C.A.*:\n\n` +
-        `📋 *Serviço:* ${services}\n` +
-        `📅 *Data:* ${date}\n` +
-        `⏰ *Horário:* ${time}\n\n` +
-        `Você confirma sua presença? 😊\n\n` +
-        `*Responda SIM para confirmar seu horário.*\n\n` +
-        `Se não puder comparecer, por favor entre em contato conosco o mais breve possível para reagendamento. ✨`
-}
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, ArrowRight, Headset } from 'lucide-react'
@@ -369,12 +355,6 @@ export default function AdminDashboard() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex overflow-hidden">
-            {/* TRAVA VISUAL V37.2 - SE NÃO APARECER O BOTÃO NÃO MUDOU */}
-            <div className="fixed top-0 left-0 right-0 h-1 bg-red-600 z-[9999]"></div>
-            <div className="fixed top-1 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-b-lg z-[9999] shadow-md uppercase tracking-tighter">
-                SISTEMA ATUALIZADO: {VERSION}
-            </div>
-
             {/* Sidebar Overlay (Mobile) */}
             {isMobile && sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
@@ -863,8 +843,6 @@ function DayView({ selectedDate, appointments, blocks = [], onAction, dayRevenue
     )
 }
 
-// V36-NOVO-PADRAO-LINK
-
 // ─── Appointment Detail Modal ──────────────────────────────
 function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNotes, helpRequests = [], onResolveHelp }) {
     const svcs = parseServices(apt.service_id)
@@ -887,7 +865,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                 {/* Header */}
                 <div className="bg-gradient-to-r from-violet-600 to-purple-700 text-white px-6 py-5">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-extrabold">Detalhes do Agendamento <span className="text-[10px] font-normal opacity-50">v36.1</span></h3>
+                        <h3 className="text-lg font-extrabold">Detalhes do Agendamento</h3>
                         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
                     </div>
                     <p className="text-white/80 text-sm">{toSPFull(apt.starts_at)}</p>
@@ -904,15 +882,8 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                             <div className="text-sm text-slate-500 flex flex-col md:flex-row md:items-center gap-2 mt-2">
                                 <span className="flex items-center justify-center md:justify-start gap-1"><Phone size={12} /> {apt.customer_phone}</span>
                                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                    <a href={whatsappLink(apt.customer_phone,
-                                        GET_CONFIRM_MSG(
-                                            apt.customer_name,
-                                            getServiceNames(svcs).join(' + '),
-                                            new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' }),
-                                            toSPTime(apt.starts_at)
-                                        )
-                                    )} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
-                                        <MessageCircle size={10} /> 📲 ENVIAR MENSAGEM
+                                    <a href={whatsappLink(apt.customer_phone, `Oi ${apt.customer_name}! Você tem um agendamento marcado para amanhã, dia ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })} às ${toSPTime(apt.starts_at)}. Serviço: ${getServiceNames(svcs).join(' + ')}. Responda SIM para confirmar. Se não puder comparecer ao agendamento, digite REAGENDAR ou CANCELE o atendimento.`)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
+                                        <MessageCircle size={10} /> Confirmar via WhatsApp
                                     </a>
                                     <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors">
                                         Chat <ExternalLink size={9} />
@@ -1303,30 +1274,90 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, scheduleRules = []
     )
 }
 
+// ─── Edit Customer Modal ──────────────────────────────────
+function EditCustomerModal({ customer, onClose, onSave }) {
+    const [form, setForm] = useState({ name: customer.name || '', phone: customer.phone || '' })
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState('')
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        setSaving(true); setError('')
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'customer',
+                    customer_id: customer.id,
+                    name: form.name,
+                    phone: form.phone
+                })
+            })
+            const data = await res.json()
+            if (data.error) throw new Error(data.error)
+            onSave()
+        } catch (e) { setError(e.message) }
+        setSaving(false)
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-violet-600 to-purple-700 text-white">
+                    <h3 className="text-base font-extrabold flex items-center gap-2">Editar Cliente</h3>
+                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Nome</label>
+                        <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Telefone</label>
+                        <input type="text" required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-medium" />
+                    </div>
+                    {error && <div className="bg-red-50 text-red-600 text-xs font-medium px-4 py-2 rounded-lg border border-red-100">{error}</div>}
+                    <div className="flex gap-3 pt-2">
+                        <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border-2 border-slate-100 text-slate-500 font-bold text-xs hover:bg-slate-50 transition-all">Cancelar</button>
+                        <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-violet-600 text-white font-bold text-xs hover:bg-violet-700 transition-all shadow-lg shadow-violet-200">
+                            {saving ? 'Salvando...' : 'Salvar Alterações'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}
+
 // ─── Clients Page ──────────────────────────────────────────
 function ClientsPage({ isMobile, onOpenMenu }) {
     const [customers, setCustomers] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [appointments, setAppointments] = useState([])
-    const [historyPhone, setHistoryPhone] = useState(null) // phone to show history for
+    const [historyPhone, setHistoryPhone] = useState(null)
+    const [editingCustomer, setEditingCustomer] = useState(null)
+
+    const loadData = async () => {
+        setLoading(true)
+        try {
+            const [custRes, aptRes] = await Promise.all([
+                fetch('/api/admin?type=customers'),
+                fetch('/api/admin?start=2020-01-01&end=2030-12-31')
+            ])
+            const custData = await custRes.json()
+            const aptData = await aptRes.json()
+            setCustomers(Array.isArray(custData) ? custData : [])
+            setAppointments(Array.isArray(aptData) ? aptData : [])
+        } catch (e) { console.error(e) }
+        setLoading(false)
+    }
 
     useEffect(() => {
-        async function load() {
-            setLoading(true)
-            try {
-                const [custRes, aptRes] = await Promise.all([
-                    fetch('/api/admin?type=customers'),
-                    fetch('/api/admin?start=2020-01-01&end=2030-12-31')
-                ])
-                const custData = await custRes.json()
-                const aptData = await aptRes.json()
-                setCustomers(Array.isArray(custData) ? custData : [])
-                setAppointments(Array.isArray(aptData) ? aptData : [])
-            } catch (e) { console.error(e) }
-            setLoading(false)
-        }
-        load()
+        loadData()
     }, [])
 
     const getStats = (phone) => {
@@ -1422,9 +1453,14 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                                                     {stats.lastVisit ? toSPDate(stats.lastVisit.starts_at).split('-').reverse().join('/') : '—'}
                                                 </td>
                                                 <td className="px-5 py-3 text-center">
-                                                    <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1 text-xs font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-2.5 py-1 rounded-lg hover:bg-violet-100 transition-colors">
-                                                        <History size={12} /> Histórico
-                                                    </button>
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button onClick={() => setEditingCustomer(c)} className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-violet-600 bg-slate-50 px-2 py-1 rounded-lg hover:bg-violet-50 transition-colors border border-slate-100">
+                                                            <Edit2 size={10} /> Editar
+                                                        </button>
+                                                        <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-2 py-1 rounded-lg hover:bg-violet-100 transition-colors border border-violet-100">
+                                                            <History size={10} /> Histórico
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         )
@@ -1477,6 +1513,14 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {editingCustomer && (
+                <EditCustomerModal
+                    customer={editingCustomer}
+                    onClose={() => setEditingCustomer(null)}
+                    onSave={() => { setEditingCustomer(null); loadData() }}
+                />
             )}
         </>
     )
