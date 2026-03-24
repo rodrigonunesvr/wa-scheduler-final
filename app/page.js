@@ -3,16 +3,15 @@
 
 const VERSION = "V37.2 — MASTER (SAFE)"
 
-const GET_CONFIRM_MSG = (name, services, date, time, url) => {
+const GET_CONFIRM_MSG = (name, services, date, time) => {
     return `Olá, *${name}*! 💅🌸\n\n` +
         `Passando para confirmar seu atendimento no *Espaço C.A.*:\n\n` +
         `📋 *Serviço:* ${services}\n` +
         `📅 *Data:* ${date}\n` +
         `⏰ *Horário:* ${time}\n\n` +
         `Você confirma sua presença? 😊\n\n` +
-        `Pode clicar no link abaixo para confirmar agora:\n` +
-        `👇 ${url}\n\n` +
-        `Se não puder comparecer, entre em contato conosco para podermos reagendar o atendimento. ✨`
+        `*Responda SIM para confirmar seu horário.*\n\n` +
+        `Se não puder comparecer, por favor entre em contato conosco o mais breve possível para reagendamento. ✨`
 }
 
 import { useState, useEffect, useCallback } from 'react'
@@ -910,8 +909,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                                             apt.customer_name,
                                             getServiceNames(svcs).join(' + '),
                                             new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' }),
-                                            toSPTime(apt.starts_at),
-                                            `${typeof window !== 'undefined' ? window.location.origin : ''}/api/confirm/${apt.id}`
+                                            toSPTime(apt.starts_at)
                                         )
                                     )} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
                                         <MessageCircle size={10} /> 📲 ENVIAR MENSAGEM

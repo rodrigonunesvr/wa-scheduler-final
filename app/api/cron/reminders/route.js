@@ -86,16 +86,18 @@ export async function GET(request) {
                 } catch (e) { }
 
                 // Template solicitado pelo usuário
-                const title = `Lembrete de Agendamento 💅`;
-                const description = `Olá ${apt.customer_name}! 🌸\n\nPassando para lembrar do seu atendimento amanhã:\n\n📅 *Data:* ${dateStr} às ${timeStr}\n💅 *Serviço:* ${servicesFormatted}\n📍 *Local:* Espaço C.A.\n\nTe esperamos lindinha! ✨💖\n\nDeseja confirmar sua presença?`;
+                // Template solicitado pelo usuário (Modo Texto - Sem Botões)
+                const message = `Lembrete de Agendamento 💅\n\n` +
+                    `Olá, ${apt.customer_name}! 🌸\n\n` +
+                    `Passando para lembrar do seu atendimento amanhã no *Espaço C.A.*:\n\n` +
+                    `📋 *Serviço:* ${servicesFormatted}\n` +
+                    `📅 *Data:* ${dateStr} às ${timeStr}\n\n` +
+                    `Você confirma sua presença? 😊\n` +
+                    `*Responda SIM para confirmar seu horário.*\n\n` +
+                    `Caso não possa comparecer, por favor nos avise o quanto antes. ✨💖`;
 
-                const buttons = [
-                    { id: `confirm_${apt.id}`, label: 'Sim, Confirmar' },
-                    { id: `cancel_${apt.id}`, label: 'Não, Cancelar' }
-                ];
-
-                console.log(`[V87-FIX] Enviando botões para ${apt.customer_phone}...`);
-                const result = await sendWhatsAppButtons(apt.customer_phone, title, description, buttons);
+                console.log(`[V87-FIX] Enviando lembrete de texto para ${apt.customer_phone}...`);
+                const result = await sendWhatsAppMessage(apt.customer_phone, message);
 
                 if (result?.error) {
                     console.error(`❌ Falha Evolution API (${apt.customer_phone}):`, result.error);

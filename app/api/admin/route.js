@@ -237,9 +237,12 @@ export async function POST(request) {
         // --- NOTIFICAÇÃO DE NOVO AGENDAMENTO ---
         try {
             const dateFmt = moment(starts_at).tz(TIMEZONE).format('DD/MM [às] HH:mm');
-            const msg = `Olá ${customer_name}! 🌸💅
-
-Seu agendamento está confirmado!\n\n📅 *Data:* ${dateFmt}\n📍 *Local:* Espaço C.A.\n\nTe esperamos com carinho! ✨💓\n\nQualquer dúvida, é só responder aqui. 😊`;
+            const msg = `Olá ${customer_name}! 🌸💅\n\n` +
+                `Seu agendamento no *Espaço C.A.* foi pré-reservado:\n\n` +
+                `📅 *Data:* ${dateFmt}\n\n` +
+                `Você confirma sua presença? 😊\n` +
+                `*Responda SIM para confirmar seu horário.*\n\n` +
+                `Te esperamos com carinho! ✨💓`;
             await sendWhatsAppMessage(customer_phone, msg);
         } catch (msgErr) {
             console.error('Erro ao enviar notificação inicial:', msgErr);
