@@ -868,7 +868,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                 {/* Header */}
                 <div className="bg-gradient-to-r from-violet-600 to-purple-700 text-white px-6 py-5">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-extrabold">Detalhes do Agendamento</h3>
+                        <h3 className="text-lg font-extrabold">Detalhes do Agendamento <span className="text-[10px] font-normal opacity-50">v36.1</span></h3>
                         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/20 transition"><X size={18} /></button>
                     </div>
                     <p className="text-white/80 text-sm">{toSPFull(apt.starts_at)}</p>
@@ -887,16 +887,16 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onSaveNo
                                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                                     <a href={whatsappLink(apt.customer_phone,
                                         `Olá, *${apt.customer_name}*! 💅🌸\n\n` +
-                                        `Temos um agendamento marcado para você no *Espaço C.A.*:\n\n` +
+                                        `Passando para confirmar seu atendimento no *Espaço C.A.*:\n\n` +
                                         `📋 *Serviço:* ${getServiceNames(svcs).join(' + ')}\n` +
                                         `📅 *Data:* ${new Date(apt.starts_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })}\n` +
                                         `⏰ *Horário:* ${toSPTime(apt.starts_at)}\n\n` +
-                                        `Você confirma sua presença? 😊\n` +
-                                        `Clique no link abaixo para confirmar agora:\n` +
+                                        `Você confirma sua presença? 😊\n\n` +
+                                        `Se preferir, pode clicar no link abaixo para confirmar agora:\n` +
                                         `👇 \${typeof window !== 'undefined' ? window.location.origin : ''}/api/confirm/\${apt.id}\n\n` +
                                         `Se não puder comparecer, entre em contato conosco para podermos reagendar o atendimento. ✨`
                                     )} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-white bg-[#25D366] px-3 py-1.5 rounded-full shadow-sm hover:scale-105 transition-all">
-                                        <MessageCircle size={10} /> Confirmar via WhatsApp
+                                        <MessageCircle size={10} /> 📲 ENVIAR MENSAGEM
                                     </a>
                                     <a href={whatsappLink(apt.customer_phone)} target="_blank" rel="noopener" className="inline-flex items-center justify-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors">
                                         Chat <ExternalLink size={9} />
