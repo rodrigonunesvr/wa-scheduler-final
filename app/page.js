@@ -1,4 +1,5 @@
-﻿'use client'
+﻿// V35-CONFIRMACAO — 2026-03-24
+'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { Calendar, Clock, Plus, X, ChevronLeft, ChevronRight, Phone, CheckCircle2, XCircle, RefreshCw, LayoutGrid, Users, Scissors, AlertTriangle, CalendarClock, MoreVertical, Search, Edit2, Trash2, DollarSign, Save, Lock, BarChart3, TrendingUp, FileText, Ban, Download, Eye, EyeOff, ExternalLink, History, PieChart, Target, Crown, ArrowUpRight, Award, MessageCircle, ArrowRight, Headset } from 'lucide-react'
