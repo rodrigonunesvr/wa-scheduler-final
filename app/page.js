@@ -163,6 +163,7 @@ export default function AdminDashboard() {
 
     // Detecção de Mobile e Dark Mode inicial
     useEffect(() => {
+        console.log("🚀 AGENDAY V93-READY")
         const checkMobile = () => setIsMobile(window.innerWidth < 768)
         checkMobile()
         window.addEventListener('resize', checkMobile)
