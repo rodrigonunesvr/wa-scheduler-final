@@ -2100,7 +2100,8 @@ function ReportsPage({ isMobile, onOpenMenu }) {
     const serviceCounts = {};
     filteredApts.forEach(a => {
         const svcs = parseServices(a.service_id);
-        svcs.forEach(s => { serviceCounts[s] = (serviceCounts[s] || 0) + 1; });
+        const names = getServiceNames(svcs);
+        names.forEach(name => { serviceCounts[name] = (serviceCounts[name] || 0) + 1; });
     });
     const topServicesData = Object.entries(serviceCounts)
         .map(([label, value]) => ({ label, value }))
