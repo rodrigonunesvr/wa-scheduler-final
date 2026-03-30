@@ -273,7 +273,7 @@ export async function POST(request) {
         })
 
         const servicesListText = dbServices.length > 0
-            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)} (${s.duration || s.duration_minutes || '?'} min)`).join('\n')
+            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)}`).join('\n')
             : '- Nenhum serviço disponível no momento.'
 
         // Detecta se o usuário pediu algo oculto
@@ -364,8 +364,22 @@ ${calendarLines}
 2. NUNCA memorize horários. Sempre chame 'check_calendar' para dados atuais.
 3. Um horário cancelado PODE estar livre. Sempre consulte o banco.
 4. ⛔ QUALQUER SERVIÇO PODE SER MARCADO INDIVIDUALMENTE — SEM ADICIONAIS OBRIGATÓRIOS.
-5. 📆 DATAS RELATIVAS: Quando a cliente disser "próxima sexta", "sábado", "amanhã", etc., CALCULE a data exata no formato YYYY-MM-DD usando a data de hoje (${todayLabel}) como referência. Hoje é ${now.format('YYYY-MM-DD')} (${now.format('dddd')}). Use a lista de DIAS ABERTOS acima para encontrar a data correta.
-6. AO CHAMAR check_calendar, o parâmetro 'date' é OBRIGATÓRIO e deve ser YYYY-MM-DD.
+5. AO CHAMAR check_calendar, o parâmetro 'date' é OBRIGATÓRIO e deve ser YYYY-MM-DD.
+
+📆 REGRA DE DATAS — IMPORTANTÍSSIMO:
+Hoje é ${now.format('dddd')}, ${now.format('YYYY-MM-DD')}.
+Você DEVE converter QUALQUER referência de data da cliente para o formato YYYY-MM-DD.
+Use a REFERÊNCIA RÁPIDA acima para mapear dias da semana para datas.
+Exemplos de como converter:
+- "quinta" ou "quinta-feira" → procure a próxima quinta-feira na REFERÊNCIA RÁPIDA
+- "próxima sexta" → procure a próxima sexta-feira
+- "semana que vem" → some 7 dias à data de hoje e ofereça os dias abertos daquela semana
+- "daqui a 15 dias" → some 15 dias: ${now.clone().add(15, 'days').format('YYYY-MM-DD')} (${now.clone().add(15, 'days').format('dddd')})
+- "amanhã" → ${now.clone().add(1, 'days').format('YYYY-MM-DD')}
+- "hoje" → ${now.format('YYYY-MM-DD')}
+- "sábado" → procure o próximo sábado na lista
+DEPOIS de converter, verifique se o dia está ABERTO na lista acima. Se estiver FECHADO, informe a cliente e sugira o dia aberto mais próximo.
+NUNCA peça à cliente para "informar a data". Você TEM a informação, CALCULE e use.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ FLUXO OBRIGATÓRIO:
@@ -384,14 +398,19 @@ Se quiser só o *[SERVIÇO]* mesmo, é só me dizer que já busco um horário! �
 ⛔ NUNCA omita serviços. SEMPRE mostre todos de ${servicesListText}.
 ✅ Se confirmar serviços (1 ou mais) → PASSO 2 diretamente.
 
-PASSO 2 — TURNO:
+PASSO 2 — DATA:
+Se a cliente JÁ mencionou um dia (ex: "quinta", "semana que vem", "daqui a 10 dias"), CONVERTA para YYYY-MM-DD e vá direto ao PASSO 3.
+Se NÃO mencionou, pergunte: "Para qual dia você gostaria? Pode ser o nome do dia (ex: quinta), ou uma data específica."
+Use 'check_calendar' com a data convertida.
+
+PASSO 3 — TURNO:
 Pergunte: "Você prefere MANHÃ ou TARDE?"
 Use 'check_calendar' com o period correto após a resposta.
 
-PASSO 3 — HORÁRIO:
+PASSO 4 — HORÁRIO:
 Mostre os horários disponíveis. Peça à cliente escolher.
 
-PASSO 4 — AGENDAR:
+PASSO 5 — AGENDAR:
 Confirme brevemente e chame 'book_appointment' com o 'start' EXATO do check_calendar.
 Mensagem de confirmação: calorosa e simples. 🌸
 
