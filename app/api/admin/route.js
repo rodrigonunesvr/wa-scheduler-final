@@ -305,24 +305,7 @@ export async function PATCH(request) {
 
         // --- NOTIFICAÇÃO DE ATUALIZAÇÃO ---
         try {
-            let serviceNames = data.service_id || '';
-            try { const arr = JSON.parse(data.service_id); if (Array.isArray(arr)) serviceNames = arr.join(' + ') } catch { }
-
-            if (status === 'CONFIRMED') {
-                const dateFmt = moment(data.starts_at).tz(TIMEZONE).format('DD/MM/YYYY [às] HH:mm');
-                const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
-                const protocol = host.includes('localhost') ? 'http' : 'https';
-                const confirmUrl = `${protocol}://${host}/api/confirm/${data.id}`;
-                const msg =
-                    `Olá, *${data.customer_name}*! 💅🌸\n\n` +
-                    `Seu agendamento no *Espaço C.A.* foi confirmado! 🎉\n\n` +
-                    `📋 *Serviço:* ${serviceNames}\n` +
-                    `📅 *Data:* ${dateFmt}\n\n` +
-                    `Toque no link para salvar sua confirmação:\n` +
-                    `👇 ${confirmUrl}\n\n` +
-                    `Te esperamos! ✨💖`;
-                await sendWhatsAppMessage(data.customer_phone, msg);
-            } else if (status === 'CANCELED' || status === 'CANCELLED') {
+            if (status === 'CANCELED' || status === 'CANCELLED') {
                 const msg = `Olá ${data.customer_name}! 💜\n\nSeu agendamento do dia *${moment(data.starts_at).tz(TIMEZONE).format('DD/MM')}* foi cancelado.\n\nQuando quiser remarcar, a gente já separa um horário especial para você! 🌸💅\n\nBj, Espaço C.A. ✨`;
                 await sendWhatsAppMessage(data.customer_phone, msg);
             } else if (starts_at) {
