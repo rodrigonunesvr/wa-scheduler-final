@@ -349,10 +349,9 @@ ${calendarLines}
 
 🔴 REGRAS ABSOLUTAS:
 1. Só ofereça serviços listados no CATÁLOGO acima.
-2. 🌟 REGRA DE OURO: NUNCA, em hipótese alguma, chute ou presuma horários. O histórico pode estar desatualizado. Você DEVE obrigatoriamente chamar 'check_calendar' ANTES de informar qualquer disponibilidade, mesmo que tenha olhado há um segundo atrás.
-3. Um horário cancelado PODE estar livre. Sempre consulte o banco via ferramenta.
+2. NUNCA memorize horários. Sempre chame 'check_calendar' para dados atuais.
+3. Um horário cancelado PODE estar livre. Sempre consulte o banco.
 4. ⛔ QUALQUER SERVIÇO PODE SER MARCADO INDIVIDUALMENTE — SEM ADICIONAIS OBRIGATÓRIOS.
-5. Se a cliente perguntar "tem horário hoje?" ou "quando tem vaga?", a primeira coisa que você faz é chamar 'check_calendar'.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ FLUXO OBRIGATÓRIO:

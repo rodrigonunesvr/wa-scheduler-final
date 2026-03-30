@@ -282,30 +282,7 @@ export async function PATCH(request) {
         if (ends_at) update.ends_at = ends_at
         if (notes !== undefined) update.notes = notes
 
-        // Support for updating customer (name and phone)
-        if (body.type === 'customer') {
-            const { oldPhone, newName, newPhone } = body
-
-            // 1. Update customer record
-            const { error: custError } = await supabase
-                .from('customers')
-                .update({ name: newName, phone: newPhone })
-                .eq('phone', oldPhone)
-            if (custError) throw custError
-
-            // 2. Cascade phone change to appointments
-            if (oldPhone !== newPhone) {
-                const { error: aptUpdateError } = await supabase
-                    .from('appointments')
-                    .update({ customer_phone: newPhone, customer_name: newName }) // Optional: update name too for consistency
-                    .eq('customer_phone', oldPhone)
-                if (aptUpdateError) throw aptUpdateError
-            }
-
-            return NextResponse.json({ status: 'customer updated' })
-        }
-
-        // Support for updating customer (marking help as resolved - legacy)
+        // Support for updating customer (marking help as resolved)
         const help_requested = body.help_requested
         const customer_id = body.customer_id
         if (customer_id && help_requested !== undefined) {

@@ -163,7 +163,6 @@ export default function AdminDashboard() {
 
     // Detecção de Mobile e Dark Mode inicial
     useEffect(() => {
-        console.log("🚀 AGENDAY V95-READY")
         const checkMobile = () => setIsMobile(window.innerWidth < 768)
         checkMobile()
         window.addEventListener('resize', checkMobile)
@@ -1275,63 +1274,6 @@ function NewAppointmentModal({ selectedDate, onClose, onSave, scheduleRules = []
     )
 }
 
-// ─── Edit Customer Modal ──────────────────────────────────────
-function EditCustomerModal({ customer, onClose, onSave }) {
-    const [name, setName] = useState(customer.name || '')
-    const [phone, setPhone] = useState(customer.phone || '')
-    const [saving, setSaving] = useState(false)
-    const [error, setError] = useState('')
-
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        setSaving(true); setError('')
-        try {
-            const cleanPhone = phone.replace(/\D/g, '')
-            const res = await fetch('/api/admin', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'customer',
-                    oldPhone: customer.phone,
-                    newName: name,
-                    newPhone: cleanPhone
-                })
-            })
-            const data = await res.json()
-            if (data.error) throw new Error(data.error)
-            onSave()
-        } catch (e) { setError(e.message) }
-        setSaving(false)
-    }
-
-    return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
-                <div className="bg-violet-600 text-white px-6 py-4 flex justify-between items-center">
-                    <h3 className="font-bold flex items-center gap-2"><Edit2 size={18} /> Editar Cliente</h3>
-                    <button onClick={onClose} className="p-1 hover:bg-white/20 rounded"><X size={20} /></button>
-                </div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Nome</label>
-                        <input type="text" required value={name} onChange={e => setName(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none font-semibold text-slate-700" />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Telefone</label>
-                        <input type="text" required value={phone} onChange={e => setPhone(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none font-mono text-slate-600" />
-                    </div>
-                    {error && <p className="text-red-500 text-xs font-bold bg-red-50 p-3 rounded-lg border border-red-100">{error}</p>}
-                    <button type="submit" disabled={saving} className="w-full py-3 bg-violet-600 text-white font-black rounded-xl hover:bg-violet-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-200">
-                        {saving ? 'SALVANDO...' : <><Save size={18} /> SALVAR ALTERAÇÕES</>}
-                    </button>
-                </form>
-            </div>
-        </div>
-    )
-}
-
 // ─── Clients Page ──────────────────────────────────────────
 function ClientsPage({ isMobile, onOpenMenu }) {
     const [customers, setCustomers] = useState([])
@@ -1339,24 +1281,24 @@ function ClientsPage({ isMobile, onOpenMenu }) {
     const [searchTerm, setSearchTerm] = useState('')
     const [appointments, setAppointments] = useState([])
     const [historyPhone, setHistoryPhone] = useState(null) // phone to show history for
-    const [editingCustomer, setEditingCustomer] = useState(null)
 
-    const loadData = useCallback(async () => {
-        setLoading(true)
-        try {
-            const [custRes, aptRes] = await Promise.all([
-                fetch('/api/admin?type=customers'),
-                fetch('/api/admin?start=2020-01-01&end=2030-12-31')
-            ])
-            const custData = await custRes.json()
-            const aptData = await aptRes.json()
-            setCustomers(Array.isArray(custData) ? custData : [])
-            setAppointments(Array.isArray(aptData) ? aptData : [])
-        } catch (e) { console.error(e) }
-        setLoading(false)
+    useEffect(() => {
+        async function load() {
+            setLoading(true)
+            try {
+                const [custRes, aptRes] = await Promise.all([
+                    fetch('/api/admin?type=customers'),
+                    fetch('/api/admin?start=2020-01-01&end=2030-12-31')
+                ])
+                const custData = await custRes.json()
+                const aptData = await aptRes.json()
+                setCustomers(Array.isArray(custData) ? custData : [])
+                setAppointments(Array.isArray(aptData) ? aptData : [])
+            } catch (e) { console.error(e) }
+            setLoading(false)
+        }
+        load()
     }, [])
-
-    useEffect(() => { loadData() }, [loadData])
 
     const getStats = (phone) => {
         const myApts = appointments.filter(a => a.customer_phone === phone && a.status === 'CONFIRMED')
@@ -1451,14 +1393,9 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                                                     {stats.lastVisit ? toSPDate(stats.lastVisit.starts_at).split('-').reverse().join('/') : '—'}
                                                 </td>
                                                 <td className="px-5 py-3 text-center">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <button onClick={() => setEditingCustomer(c)} className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-white bg-violet-600 px-3 py-1.5 rounded-xl hover:bg-violet-700 transition-all shadow-sm shadow-violet-200 border border-violet-500">
-                                                            <Edit2 size={12} /> Editar
-                                                        </button>
-                                                        <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-violet-600 bg-violet-50 px-3 py-1.5 rounded-xl hover:bg-violet-100 transition-all border border-violet-100">
-                                                            <History size={12} /> Histórico
-                                                        </button>
-                                                    </div>
+                                                    <button onClick={() => setHistoryPhone(c.phone)} className="inline-flex items-center gap-1 text-xs font-bold text-violet-600 hover:text-violet-700 bg-violet-50 px-2.5 py-1 rounded-lg hover:bg-violet-100 transition-colors">
+                                                        <History size={12} /> Histórico
+                                                    </button>
                                                 </td>
                                             </tr>
                                         )
@@ -1511,14 +1448,6 @@ function ClientsPage({ isMobile, onOpenMenu }) {
                         </div>
                     </div>
                 </div>
-            )}
-
-            {editingCustomer && (
-                <EditCustomerModal
-                    customer={editingCustomer}
-                    onClose={() => setEditingCustomer(null)}
-                    onSave={() => { setEditingCustomer(null); loadData() }}
-                />
             )}
         </>
     )
@@ -2100,8 +2029,7 @@ function ReportsPage({ isMobile, onOpenMenu }) {
     const serviceCounts = {};
     filteredApts.forEach(a => {
         const svcs = parseServices(a.service_id);
-        const names = getServiceNames(svcs);
-        names.forEach(name => { serviceCounts[name] = (serviceCounts[name] || 0) + 1; });
+        svcs.forEach(s => { serviceCounts[s] = (serviceCounts[s] || 0) + 1; });
     });
     const topServicesData = Object.entries(serviceCounts)
         .map(([label, value]) => ({ label, value }))
