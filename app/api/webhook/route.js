@@ -256,8 +256,9 @@ export async function POST(request) {
             fetchScheduleRules()
         ])
 
-        // --- RADAR DE SERVIÇOS OCULTOS (V78) ---
-        const { data: allServices, error: allSvcError } = await supabase.from('services').select('*').eq('active', true)
+        // --- RADAR DE SERVIÇOS OCULTOS (V91+FIX) ---
+        // Busca TODOS os serviços para evitar a inconsistência do campo 'active'
+        const { data: allServices, error: allSvcError } = await supabase.from('services').select('*')
         const hiddenServices = (allServices || []).filter(s => s.is_hidden)
         const activeServices = (allServices || []).filter(s => !s.is_hidden)
 
@@ -273,7 +274,7 @@ export async function POST(request) {
         })
 
         const servicesListText = dbServices.length > 0
-            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)} (${s.duration_minutes || s.duration || '?'} min)`).join('\n')
+            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)}`).join('\n')
             : '- Nenhum serviço disponível no momento.'
 
         // Detecta se o usuário pediu algo oculto
@@ -293,6 +294,16 @@ export async function POST(request) {
 
             // INJEÇÃO CEREBRAL: Modifica a mensagem do usuário para forçar a IA a ver o erro
             userMessage = `[SISTEMA: O serviço '${requestedHidden.name}' está OCULTO/DESATIVADO. Rejeite o pedido abaixo imediatamente.] User: ${originalMessage}`
+        }
+
+        // Mapa dos próximos 7 dias para referência rápida da IA
+        let next7DaysMap = '📌 REFERÊNCIA RÁPIDA — PRÓXIMOS 7 DIAS:\n'
+        for (let i = 0; i < 7; i++) {
+            const day = now.clone().add(i, 'days')
+            const dayName = day.format('dddd')
+            const isoDate = day.format('YYYY-MM-DD')
+            const isOpen = isDayOpen(isoDate, scheduleOverrides, scheduleRules)
+            next7DaysMap += `- ${dayName} = ${isoDate} (${isOpen ? 'ABERTO' : 'FECHADO'})\n`
         }
 
         // Calendário dos próximos 60 dias (apenas dias abertos para reduzir tamanho do prompt)
@@ -346,39 +357,53 @@ ${hiddenAlert}
 📅 DIAS ABERTOS (próximos 60 dias):
 ${calendarLines}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${next7DaysMap}
+📅 DIAS ABERTOS (próximos 60 dias):
+${calendarLines}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🔴 REGRAS ABSOLUTAS:
 1. Só ofereça serviços listados no CATÁLOGO acima.
 2. REGRA DE OURO: Antes de responder sobre QUALQUER horário ou disponibilidade, você DEVE SEMPRE chamar a ferramenta 'check_calendar'.
-3. PROIBIDO ADIVINHAR: Nunca use o histórico da conversa ou sua memória para dizer se um horário está livre. Consulte o banco de dados SEMPRE.
-4. Um horário cancelado PODE estar livre. Sempre consulte o banco via ferramenta.
-5. ⛔ QUALQUER SERVIÇO PODE SER MARCADO INDIVIDUALMENTE — SEM ADICIONAIS OBRIGATÓRIOS.
+3. PROIBIDO ADIVINHAR: Sempre consulte o banco via ferramenta.
+4. Um horário cancelado PODE estar livre.
+5. ⛔ SE A CLIENTE ESCOLHER APENAS UM SERVIÇO, SIGA DIRETO PARA O PASSO 2 (DATA). NUNCA MOSTRE O MENU DE SERVIÇOS NOVAMENTE SE ELA JÁ ESCOLHEU.
+6. AO CHAMAR check_calendar, o parâmetro 'date' é OBRIGATÓRIO e deve ser YYYY-MM-DD.
+
+📆 REGRA DE DATAS — IMPORTANTÍSSIMO:
+Hoje é ${now.format('dddd')}, ${now.format('YYYY-MM-DD')}.
+Você DEVE converter QUALQUER referência de data da cliente para o formato YYYY-MM-DD.
+Use a REFERÊNCIA RÁPIDA acima para mapear dias da semana para datas.
+Exemplos de como converter:
+- "quinta" ou "quinta-feira" → procure a próxima quinta-feira na REFERÊNCIA RÁPIDA
+- "próxima sexta" → procure a próxima sexta-feira
+- "semana que vem" → some 7 dias à data de hoje e ofereça os dias abertos daquela semana
+- "daqui a 15 dias" → some 15 dias: ${now.clone().add(15, 'days').format('YYYY-MM-DD')} (${now.clone().add(15, 'days').format('dddd')})
+- "amanhã" → ${now.clone().add(1, 'days').format('YYYY-MM-DD')}
+DEPOIS de converter, verifique se o dia está ABERTO na lista acima.
+NUNCA peça à cliente para "informar a data". Você TEM a informação, CALCULE e use.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ FLUXO OBRIGATÓRIO:
 
 PASSO 1 — SERVIÇO + UPSELL (UMA ÚNICA VEZ):
-Quando a cliente mencionar o serviço desejado, responda com EXATAMENTE este formato:
+Quando a cliente mencionar o serviço desejado, ofereça upsell UMA VEZ.
+Se a cliente disser "só esse", "apenas isso", "não precisa", ou já tiver escolhido, NÃO REPITA A PERGUNTA. VÁ IMEDIATAMENTE PARA O PASSO 2.
+⛔ NUNCA fique repetindo o catálogo de serviços se a cliente já escolheu.
 
-"[Nome], que ótimo! 😊 Você quer agendar apenas *[SERVIÇO]*, ou gostaria de incluir mais algum serviço no mesmo horário?
+PASSO 2 — DATA:
+Se a cliente JÁ mencionou um dia (ex: "quinta", "semana que vem", "daqui a 10 dias"), CONVERTA a data para YYYY-MM-DD de acordo com a REGRA DE DATAS e vá direto ao PASSO 3.
+Se NÃO mencionou, pergunte: "Para qual dia você gostaria? Pode ser o nome do dia (ex: quinta), ou uma data específica."
+NUNCA mostre o calendário inteiro, apenas pergunte o dia.
 
-Nossos serviços disponíveis:
-${servicesListText}
-
-Se quiser só o *[SERVIÇO]* mesmo, é só me dizer que já busco um horário! 💅"
-
-⛔ Pergunte UMA ÚNICA VEZ. Se a cliente disser NÃO, "só esse", "pode", "confirmar" ou qualquer variação → PASSO 2 IMEDIATAMENTE. NUNCA repita esta pergunta.
-⛔ NUNCA omita serviços. SEMPRE mostre todos de ${servicesListText}.
-✅ Se confirmar serviços (1 ou mais) → PASSO 2 diretamente.
-
-PASSO 2 — TURNO:
+PASSO 3 — TURNO:
 Pergunte: "Você prefere MANHÃ ou TARDE?"
-Use 'check_calendar' com o period correto após a resposta.
+Use 'check_calendar' com a data (convertida) e o período após a resposta.
 
-PASSO 3 — HORÁRIO:
+PASSO 4 — HORÁRIO:
 Mostre os horários disponíveis. Peça à cliente escolher.
 
-PASSO 4 — AGENDAR:
+PASSO 5 — AGENDAR:
 Confirme brevemente e chame 'book_appointment' com o 'start' EXATO do check_calendar.
 Mensagem de confirmação: calorosa e simples. 🌸
 
@@ -399,10 +424,11 @@ Mensagem de confirmação: calorosa e simples. 🌸
                     parameters: {
                         type: "object",
                         properties: {
-                            date: { type: "string" },
-                            services: { type: "array", items: { type: "string" }, description: "Lista de serviços para calcular a duração total do combo." },
+                            date: { type: "string", description: "Data no formato YYYY-MM-DD. OBRIGATÓRIO." },
+                            services: { type: "array", items: { type: "string" }, description: "Lista de nomes de serviços." },
                             period: { type: "string", enum: ["manha", "tarde"] }
-                        }
+                        },
+                        required: ["date"]
                     }
                 }
             },
