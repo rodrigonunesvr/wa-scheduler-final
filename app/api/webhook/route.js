@@ -352,6 +352,8 @@ ${calendarLines}
 2. NUNCA memorize horários. Sempre chame 'check_calendar' para dados atuais.
 3. Um horário cancelado PODE estar livre. Sempre consulte o banco.
 4. ⛔ QUALQUER SERVIÇO PODE SER MARCADO INDIVIDUALMENTE — SEM ADICIONAIS OBRIGATÓRIOS.
+5. 📆 DATAS RELATIVAS: Quando a cliente disser "próxima sexta", "sábado", "amanhã", etc., CALCULE a data exata no formato YYYY-MM-DD usando a data de hoje (${todayLabel}) como referência. Hoje é ${now.format('YYYY-MM-DD')} (${now.format('dddd')}). Use a lista de DIAS ABERTOS acima para encontrar a data correta.
+6. AO CHAMAR check_calendar, o parâmetro 'date' é OBRIGATÓRIO e deve ser YYYY-MM-DD.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ FLUXO OBRIGATÓRIO:
@@ -394,14 +396,15 @@ Mensagem de confirmação: calorosa e simples. 🌸
                 type: "function",
                 function: {
                     name: "check_calendar",
-                    description: "Verifica horários livres. Se houver mais de um serviço, use o parâmetro 'services'.",
+                    description: "Verifica horários livres para uma data específica. O parâmetro 'date' DEVE ser no formato YYYY-MM-DD. Exemplo: se hoje é 2026-03-30 e a cliente pede 'próxima sexta', calcule a data da próxima sexta-feira e envie '2026-04-03'. Se houver mais de um serviço, use o parâmetro 'services'.",
                     parameters: {
                         type: "object",
                         properties: {
-                            date: { type: "string" },
-                            services: { type: "array", items: { type: "string" }, description: "Lista de serviços para calcular a duração total do combo." },
-                            period: { type: "string", enum: ["manha", "tarde"] }
-                        }
+                            date: { type: "string", description: "Data no formato YYYY-MM-DD. OBRIGATÓRIO. Converta datas relativas (ex: 'próxima sexta', 'amanhã', 'sábado') para este formato." },
+                            services: { type: "array", items: { type: "string" }, description: "Lista de nomes de serviços para calcular a duração total do combo." },
+                            period: { type: "string", enum: ["manha", "tarde"], description: "Turno desejado: manhã ou tarde." }
+                        },
+                        required: ["date"]
                     }
                 }
             },
