@@ -256,9 +256,8 @@ export async function POST(request) {
             fetchScheduleRules()
         ])
 
-        // --- RADAR DE SERVIÇOS (V31-FIX) ---
-        // Busca TODOS os serviços. O filtro real é is_hidden (não 'active', que está inconsistente no banco).
-        const { data: allServices, error: allSvcError } = await supabase.from('services').select('*')
+        // --- RADAR DE SERVIÇOS OCULTOS (V78) ---
+        const { data: allServices, error: allSvcError } = await supabase.from('services').select('*').eq('active', true)
         const hiddenServices = (allServices || []).filter(s => s.is_hidden)
         const activeServices = (allServices || []).filter(s => !s.is_hidden)
 
@@ -274,7 +273,7 @@ export async function POST(request) {
         })
 
         const servicesListText = dbServices.length > 0
-            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)}`).join('\n')
+            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)} (${s.duration_minutes || s.duration || '?'} min)`).join('\n')
             : '- Nenhum serviço disponível no momento.'
 
         // Detecta se o usuário pediu algo oculto
@@ -294,16 +293,6 @@ export async function POST(request) {
 
             // INJEÇÃO CEREBRAL: Modifica a mensagem do usuário para forçar a IA a ver o erro
             userMessage = `[SISTEMA: O serviço '${requestedHidden.name}' está OCULTO/DESATIVADO. Rejeite o pedido abaixo imediatamente.] User: ${originalMessage}`
-        }
-
-        // Mapa dos próximos 7 dias para referência rápida da IA
-        let next7DaysMap = '📌 REFERÊNCIA RÁPIDA — PRÓXIMOS 7 DIAS:\n'
-        for (let i = 0; i < 7; i++) {
-            const day = now.clone().add(i, 'days')
-            const dayName = day.format('dddd')
-            const isoDate = day.format('YYYY-MM-DD')
-            const isOpen = isDayOpen(isoDate, scheduleOverrides, scheduleRules)
-            next7DaysMap += `- ${dayName} = ${isoDate} (${isOpen ? 'ABERTO' : 'FECHADO'})\n`
         }
 
         // Calendário dos próximos 60 dias (apenas dias abertos para reduzir tamanho do prompt)
@@ -354,33 +343,16 @@ ${hiddenAlert}
 ⚠️ AO USAR FERRAMENTAS: envie APENAS o NOME do serviço (ex: "Manutenção"). NUNCA envie preço ou duração nos parâmetros.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${next7DaysMap}
-
 📅 DIAS ABERTOS (próximos 60 dias):
 ${calendarLines}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🔴 REGRAS ABSOLUTAS:
 1. Só ofereça serviços listados no CATÁLOGO acima.
-2. NUNCA memorize horários. Sempre chame 'check_calendar' para dados atuais.
-3. Um horário cancelado PODE estar livre. Sempre consulte o banco.
-4. ⛔ QUALQUER SERVIÇO PODE SER MARCADO INDIVIDUALMENTE — SEM ADICIONAIS OBRIGATÓRIOS.
-5. AO CHAMAR check_calendar, o parâmetro 'date' é OBRIGATÓRIO e deve ser YYYY-MM-DD.
-
-📆 REGRA DE DATAS — IMPORTANTÍSSIMO:
-Hoje é ${now.format('dddd')}, ${now.format('YYYY-MM-DD')}.
-Você DEVE converter QUALQUER referência de data da cliente para o formato YYYY-MM-DD.
-Use a REFERÊNCIA RÁPIDA acima para mapear dias da semana para datas.
-Exemplos de como converter:
-- "quinta" ou "quinta-feira" → procure a próxima quinta-feira na REFERÊNCIA RÁPIDA
-- "próxima sexta" → procure a próxima sexta-feira
-- "semana que vem" → some 7 dias à data de hoje e ofereça os dias abertos daquela semana
-- "daqui a 15 dias" → some 15 dias: ${now.clone().add(15, 'days').format('YYYY-MM-DD')} (${now.clone().add(15, 'days').format('dddd')})
-- "amanhã" → ${now.clone().add(1, 'days').format('YYYY-MM-DD')}
-- "hoje" → ${now.format('YYYY-MM-DD')}
-- "sábado" → procure o próximo sábado na lista
-DEPOIS de converter, verifique se o dia está ABERTO na lista acima. Se estiver FECHADO, informe a cliente e sugira o dia aberto mais próximo.
-NUNCA peça à cliente para "informar a data". Você TEM a informação, CALCULE e use.
+2. REGRA DE OURO: Antes de responder sobre QUALQUER horário ou disponibilidade, você DEVE SEMPRE chamar a ferramenta 'check_calendar'.
+3. PROIBIDO ADIVINHAR: Nunca use o histórico da conversa ou sua memória para dizer se um horário está livre. Consulte o banco de dados SEMPRE.
+4. Um horário cancelado PODE estar livre. Sempre consulte o banco via ferramenta.
+5. ⛔ QUALQUER SERVIÇO PODE SER MARCADO INDIVIDUALMENTE — SEM ADICIONAIS OBRIGATÓRIOS.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ FLUXO OBRIGATÓRIO:
@@ -399,19 +371,14 @@ Se quiser só o *[SERVIÇO]* mesmo, é só me dizer que já busco um horário! �
 ⛔ NUNCA omita serviços. SEMPRE mostre todos de ${servicesListText}.
 ✅ Se confirmar serviços (1 ou mais) → PASSO 2 diretamente.
 
-PASSO 2 — DATA:
-Se a cliente JÁ mencionou um dia (ex: "quinta", "semana que vem", "daqui a 10 dias"), CONVERTA para YYYY-MM-DD e vá direto ao PASSO 3.
-Se NÃO mencionou, pergunte: "Para qual dia você gostaria? Pode ser o nome do dia (ex: quinta), ou uma data específica."
-Use 'check_calendar' com a data convertida.
-
-PASSO 3 — TURNO:
+PASSO 2 — TURNO:
 Pergunte: "Você prefere MANHÃ ou TARDE?"
 Use 'check_calendar' com o period correto após a resposta.
 
-PASSO 4 — HORÁRIO:
+PASSO 3 — HORÁRIO:
 Mostre os horários disponíveis. Peça à cliente escolher.
 
-PASSO 5 — AGENDAR:
+PASSO 4 — AGENDAR:
 Confirme brevemente e chame 'book_appointment' com o 'start' EXATO do check_calendar.
 Mensagem de confirmação: calorosa e simples. 🌸
 
@@ -428,15 +395,14 @@ Mensagem de confirmação: calorosa e simples. 🌸
                 type: "function",
                 function: {
                     name: "check_calendar",
-                    description: "Verifica horários livres para uma data específica. O parâmetro 'date' DEVE ser no formato YYYY-MM-DD. Exemplo: se hoje é 2026-03-30 e a cliente pede 'próxima sexta', calcule a data da próxima sexta-feira e envie '2026-04-03'. Se houver mais de um serviço, use o parâmetro 'services'.",
+                    description: "Verifica horários livres. Se houver mais de um serviço, use o parâmetro 'services'.",
                     parameters: {
                         type: "object",
                         properties: {
-                            date: { type: "string", description: "Data no formato YYYY-MM-DD. OBRIGATÓRIO. Converta datas relativas (ex: 'próxima sexta', 'amanhã', 'sábado') para este formato." },
-                            services: { type: "array", items: { type: "string" }, description: "Lista de nomes de serviços para calcular a duração total do combo." },
-                            period: { type: "string", enum: ["manha", "tarde"], description: "Turno desejado: manhã ou tarde." }
-                        },
-                        required: ["date"]
+                            date: { type: "string" },
+                            services: { type: "array", items: { type: "string" }, description: "Lista de serviços para calcular a duração total do combo." },
+                            period: { type: "string", enum: ["manha", "tarde"] }
+                        }
                     }
                 }
             },
