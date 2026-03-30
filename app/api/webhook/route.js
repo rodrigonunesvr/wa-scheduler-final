@@ -200,18 +200,7 @@ export async function POST(request) {
                 const allWereCalendar = m.tool_calls.every(tc => checkCalendarToolCallIds.has(tc.id));
                 if (allWereCalendar) return false;
             }
-            // Remove ALL contaminated assistant messages that block single-service booking
-            if (m.role === 'assistant' && m.content) {
-                const lower = m.content.toLowerCase();
-                const isBlocking = [
-                    'v75', 'esmaltação básica', 'esmaltação premium',
-                    'necessário que você adicione', 'sem antes oferecer',
-                    'sem esmalt', 'sem francess',
-                    'precisa de esmalt', 'precisa de francess',
-                    'manutenção sem', 'gel sem'
-                ].some(kw => lower.includes(kw));
-                if (isBlocking) return false;
-            }
+
             return true;
         });
 
@@ -384,32 +373,18 @@ DEPOIS de converter, verifique se o dia está ABERTO na lista acima.
 NUNCA peça à cliente para "informar a data". Você TEM a informação, CALCULE e use.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ FLUXO OBRIGATÓRIO:
+REGRAS DE COMPORTAMENTO:
+1. PRIORIDADE DE AÇÃO: Se a cliente mencionar um serviço e uma data/dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
+2. FLUXO DE AGENDAMENTO SIMPLIFICADO:
+   - Se a cliente já escolheu o serviço, NÃO oferte adicionais. Apenas pergunte: "Para qual dia você gostaria?" (se ela ainda não falou o dia).
+   - ⛔ NUNCA fique insistindo se ela quer adicionar mais nada.
+   - Se a cliente sugerir um dia: Use 'check_calendar' com a data e, se necessário, pergunte se prefere manhã ou tarde.
+   - Mostre os horários e espere a cliente escolher.
+3. Se a cliente escolher um horário e você tiver o NOME dela: Use 'book_appointment' IMEDIATAMENTE.
+4. Se não tiver o nome (cliente nova), peça o NOME antes de confirmar o 'book_appointment'.
+5. PÓS-AÇÃO: Após concluir um agendamento ou cancelamento, envie uma mensagem final sendo gentil.
 
-PASSO 1 — SERVIÇO + UPSELL (UMA ÚNICA VEZ):
-Quando a cliente mencionar o serviço desejado, ofereça upsell UMA VEZ.
-Se a cliente disser "só esse", "apenas isso", "não precisa", ou já tiver escolhido, NÃO REPITA A PERGUNTA. VÁ IMEDIATAMENTE PARA O PASSO 2.
-⛔ NUNCA fique repetindo o catálogo de serviços se a cliente já escolheu.
-
-PASSO 2 — DATA:
-Se a cliente JÁ mencionou um dia (ex: "quinta", "semana que vem", "daqui a 10 dias"), CONVERTA a data para YYYY-MM-DD de acordo com a REGRA DE DATAS e vá direto ao PASSO 3.
-Se NÃO mencionou, pergunte: "Para qual dia você gostaria? Pode ser o nome do dia (ex: quinta), ou uma data específica."
-NUNCA mostre o calendário inteiro, apenas pergunte o dia.
-
-PASSO 3 — TURNO:
-Pergunte: "Você prefere MANHÃ ou TARDE?"
-Use 'check_calendar' com a data (convertida) e o período após a resposta.
-
-PASSO 4 — HORÁRIO:
-Mostre os horários disponíveis. Peça à cliente escolher.
-
-PASSO 5 — AGENDAR:
-Confirme brevemente e chame 'book_appointment' com o 'start' EXATO do check_calendar.
-Mensagem de confirmação: calorosa e simples. 🌸
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-↩️ "cancelar" → 'cancel_appointment' | "reagendar" → verificar horários | "sim"/"confirmar" → 'confirm_appointment'
-
+↩️ "cancelar" → 'cancel_appointment' | "reagendar" → verificar horários
 ⚠️ startsAt = campo 'start' EXATO do check_calendar. NUNCA invente um ISO string.
 `},
             ...history
