@@ -273,7 +273,7 @@ export async function POST(request) {
         })
 
         const servicesListText = dbServices.length > 0
-            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)} (${s.duration_minutes || s.duration || '?'} min)`).join('\n')
+            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)} (${s.duration || s.duration_minutes || '?'} min)`).join('\n')
             : '- Nenhum serviço disponível no momento.'
 
         // Detecta se o usuário pediu algo oculto
@@ -293,6 +293,16 @@ export async function POST(request) {
 
             // INJEÇÃO CEREBRAL: Modifica a mensagem do usuário para forçar a IA a ver o erro
             userMessage = `[SISTEMA: O serviço '${requestedHidden.name}' está OCULTO/DESATIVADO. Rejeite o pedido abaixo imediatamente.] User: ${originalMessage}`
+        }
+
+        // Mapa dos próximos 7 dias para referência rápida da IA
+        let next7DaysMap = '📌 REFERÊNCIA RÁPIDA — PRÓXIMOS 7 DIAS:\n'
+        for (let i = 0; i < 7; i++) {
+            const day = now.clone().add(i, 'days')
+            const dayName = day.format('dddd')
+            const isoDate = day.format('YYYY-MM-DD')
+            const isOpen = isDayOpen(isoDate, scheduleOverrides, scheduleRules)
+            next7DaysMap += `- ${dayName} = ${isoDate} (${isOpen ? 'ABERTO' : 'FECHADO'})\n`
         }
 
         // Calendário dos próximos 60 dias (apenas dias abertos para reduzir tamanho do prompt)
@@ -342,6 +352,8 @@ ${servicesListText}
 ${hiddenAlert}
 ⚠️ AO USAR FERRAMENTAS: envie APENAS o NOME do serviço (ex: "Manutenção"). NUNCA envie preço ou duração nos parâmetros.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${next7DaysMap}
 
 📅 DIAS ABERTOS (próximos 60 dias):
 ${calendarLines}
