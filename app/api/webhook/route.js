@@ -256,8 +256,9 @@ export async function POST(request) {
             fetchScheduleRules()
         ])
 
-        // --- RADAR DE SERVIÇOS OCULTOS (V78) ---
-        const { data: allServices, error: allSvcError } = await supabase.from('services').select('*').eq('active', true)
+        // --- RADAR DE SERVIÇOS (V31-FIX) ---
+        // Busca TODOS os serviços. O filtro real é is_hidden (não 'active', que está inconsistente no banco).
+        const { data: allServices, error: allSvcError } = await supabase.from('services').select('*')
         const hiddenServices = (allServices || []).filter(s => s.is_hidden)
         const activeServices = (allServices || []).filter(s => !s.is_hidden)
 
