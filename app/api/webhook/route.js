@@ -200,18 +200,7 @@ export async function POST(request) {
                 const allWereCalendar = m.tool_calls.every(tc => checkCalendarToolCallIds.has(tc.id));
                 if (allWereCalendar) return false;
             }
-            // Remove ALL contaminated assistant messages that block single-service booking
-            if (m.role === 'assistant' && m.content) {
-                const lower = m.content.toLowerCase();
-                const isBlocking = [
-                    'v75', 'esmaltação básica', 'esmaltação premium',
-                    'necessário que você adicione', 'sem antes oferecer',
-                    'sem esmalt', 'sem francess',
-                    'precisa de esmalt', 'precisa de francess',
-                    'manutenção sem', 'gel sem'
-                ].some(kw => lower.includes(kw));
-                if (isBlocking) return false;
-            }
+
             return true;
         });
 
@@ -256,8 +245,9 @@ export async function POST(request) {
             fetchScheduleRules()
         ])
 
-        // --- RADAR DE SERVIÇOS OCULTOS (V78) ---
-        const { data: allServices, error: allSvcError } = await supabase.from('services').select('*').eq('active', true)
+        // --- RADAR DE SERVIÇOS OCULTOS (V91+FIX) ---
+        // Busca TODOS os serviços para evitar a inconsistência do campo 'active'
+        const { data: allServices, error: allSvcError } = await supabase.from('services').select('*')
         const hiddenServices = (allServices || []).filter(s => s.is_hidden)
         const activeServices = (allServices || []).filter(s => !s.is_hidden)
 
@@ -273,7 +263,7 @@ export async function POST(request) {
         })
 
         const servicesListText = dbServices.length > 0
-            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)} (${s.duration_minutes || s.duration || '?'} min)`).join('\n')
+            ? dbServices.map(s => `- ${s.name}: R$ ${Number(s.price).toFixed(2)}`).join('\n')
             : '- Nenhum serviço disponível no momento.'
 
         // Detecta se o usuário pediu algo oculto
@@ -293,6 +283,16 @@ export async function POST(request) {
 
             // INJEÇÃO CEREBRAL: Modifica a mensagem do usuário para forçar a IA a ver o erro
             userMessage = `[SISTEMA: O serviço '${requestedHidden.name}' está OCULTO/DESATIVADO. Rejeite o pedido abaixo imediatamente.] User: ${originalMessage}`
+        }
+
+        // Mapa dos próximos 7 dias para referência rápida da IA
+        let next7DaysMap = '📌 REFERÊNCIA RÁPIDA — PRÓXIMOS 7 DIAS:\n'
+        for (let i = 0; i < 7; i++) {
+            const day = now.clone().add(i, 'days')
+            const dayName = day.format('dddd')
+            const isoDate = day.format('YYYY-MM-DD')
+            const isOpen = isDayOpen(isoDate, scheduleOverrides, scheduleRules)
+            next7DaysMap += `- ${dayName} = ${isoDate} (${isOpen ? 'ABERTO' : 'FECHADO'})\n`
         }
 
         // Calendário dos próximos 60 dias (apenas dias abertos para reduzir tamanho do prompt)
@@ -321,12 +321,14 @@ AS REGRAS ABAIXO SÃO AS ÚNICAS QUE EXISTEM PARA ESTE SISTEMA:
 ❌ PROIBIDO ABSOLUTO: Exigir esmaltação, francesinha ou qualquer serviço adicional antes de agendar manutenção.
 ❌ PROIBIDO ABSOLUTO: Bloquear agendamento por "falta" de serviço adicional.
 ❌ PROIBIDO ABSOLUTO: Dizer "não é possível agendar manutenção sem [qualquer coisa]".
+❌ PROIBIDO ABSOLUTO: NUNCA mostre a duração (minutos) dos serviços para a cliente. Mostre apenas os preços.
 ✅ REGRA MÁXIMA: QUALQUER serviço do catálogo pode ser agendado SOZINHO, sem adicionais.
-✅ REGRA MÁXIMA: Você pergunta UMA VEZ se quer adicionar mais alguma coisa. Se a cliente disser NÃO — AGENDE IMEDIATAMENTE.
+✅ REGRA MÁXIMA: Se a cliente disser "apenas [serviço]" ou "somente [serviço]", PARE imediatamente de oferecer outros serviços e siga para a escolha de data/hora.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Você é **Clara** 💅, assistente virtual do *Espaço Camille Almeida (Espaço C.A.)*.
-Se não houver nenhuma mensagem sua no histórico, apresente-se: "Olá! Sou a *Clara*, assistente virtual do *Espaço C.A.* 💅 Como posso te ajudar hoje?"
+Se não houver nenhuma mensagem sua no histórico, apresente-se usando a saudação apropriada ("${greeting}"). Ex: "${greeting}! Sou a *Clara*, assistente virtual do *Espaço C.A.* 💅 Como posso te ajudar hoje?"
+Se a cliente te cumprimentar, retribua sempre com "${greeting}".
 Seu objetivo é agendar serviços de forma simples e agradável.
 
 Hoje é ${todayLabel}.
@@ -346,45 +348,45 @@ ${hiddenAlert}
 📅 DIAS ABERTOS (próximos 60 dias):
 ${calendarLines}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${next7DaysMap}
+📅 DIAS ABERTOS (próximos 60 dias):
+${calendarLines}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🔴 REGRAS ABSOLUTAS:
 1. Só ofereça serviços listados no CATÁLOGO acima.
 2. REGRA DE OURO: Antes de responder sobre QUALQUER horário ou disponibilidade, você DEVE SEMPRE chamar a ferramenta 'check_calendar'.
-3. PROIBIDO ADIVINHAR: Nunca use o histórico da conversa ou sua memória para dizer se um horário está livre. Consulte o banco de dados SEMPRE.
-4. Um horário cancelado PODE estar livre. Sempre consulte o banco via ferramenta.
-5. ⛔ QUALQUER SERVIÇO PODE SER MARCADO INDIVIDUALMENTE — SEM ADICIONAIS OBRIGATÓRIOS.
+3. PROIBIDO ADIVINHAR: Sempre consulte o banco via ferramenta.
+4. Um horário cancelado PODE estar livre.
+5. ⛔ SE A CLIENTE ESCOLHER APENAS UM SERVIÇO, NÃO OFEREÇA NADA MAIS. SIGA DIRETO PARA A DATA/HORÁRIO. NÃO MOSTRE O MENU DE SERVIÇOS NOVAMENTE.
+6. AO CHAMAR check_calendar, o parâmetro 'date' é OBRIGATÓRIO e deve ser YYYY-MM-DD.
+
+📆 REGRA DE DATAS — IMPORTANTÍSSIMO:
+Hoje é ${now.format('dddd')}, ${now.format('YYYY-MM-DD')}.
+Você DEVE converter QUALQUER referência de data da cliente para o formato YYYY-MM-DD.
+Use a REFERÊNCIA RÁPIDA acima para mapear dias da semana para datas.
+Exemplos de como converter:
+- "quinta" ou "quinta-feira" → procure a próxima quinta-feira na REFERÊNCIA RÁPIDA
+- "próxima sexta" → procure a próxima sexta-feira
+- "semana que vem" → some 7 dias à data de hoje e ofereça os dias abertos daquela semana
+- "daqui a 15 dias" → some 15 dias: ${now.clone().add(15, 'days').format('YYYY-MM-DD')} (${now.clone().add(15, 'days').format('dddd')})
+- "amanhã" → ${now.clone().add(1, 'days').format('YYYY-MM-DD')}
+DEPOIS de converter, verifique se o dia está ABERTO na lista acima.
+NUNCA peça à cliente para "informar a data". Você TEM a informação, CALCULE e use.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ FLUXO OBRIGATÓRIO:
+REGRAS DE COMPORTAMENTO:
+1. PRIORIDADE DE AÇÃO: Se a cliente mencionar um serviço e uma data/dia, use 'check_calendar' ou 'book_appointment' IMEDIATAMENTE.
+2. FLUXO DE AGENDAMENTO SIMPLIFICADO:
+   - Se a cliente já escolheu o serviço, NÃO oferte adicionais. Apenas pergunte: "Para qual dia você gostaria?" (se ela ainda não falou o dia).
+   - ⛔ NUNCA fique insistindo se ela quer adicionar mais nada se ela já disse que quer apenas um serviço.
+   - Se a cliente sugerir um dia: Use 'check_calendar' com a data e, se necessário, pergunte se prefere manhã ou tarde.
+   - Mostre os horários e espere a cliente escolher.
+3. Se a cliente escolher um horário e você tiver o NOME dela: Use 'book_appointment' IMEDIATAMENTE.
+4. Se não tiver o nome (cliente nova), peça o NOME antes de confirmar o 'book_appointment'.
+5. PÓS-AÇÃO: Após concluir um agendamento ou cancelamento, envie uma mensagem final sendo gentil.
 
-PASSO 1 — SERVIÇO + UPSELL (UMA ÚNICA VEZ):
-Quando a cliente mencionar o serviço desejado, responda com EXATAMENTE este formato:
-
-"[Nome], que ótimo! 😊 Você quer agendar apenas *[SERVIÇO]*, ou gostaria de incluir mais algum serviço no mesmo horário?
-
-Nossos serviços disponíveis:
-${servicesListText}
-
-Se quiser só o *[SERVIÇO]* mesmo, é só me dizer que já busco um horário! 💅"
-
-⛔ Pergunte UMA ÚNICA VEZ. Se a cliente disser NÃO, "só esse", "pode", "confirmar" ou qualquer variação → PASSO 2 IMEDIATAMENTE. NUNCA repita esta pergunta.
-⛔ NUNCA omita serviços. SEMPRE mostre todos de ${servicesListText}.
-✅ Se confirmar serviços (1 ou mais) → PASSO 2 diretamente.
-
-PASSO 2 — TURNO:
-Pergunte: "Você prefere MANHÃ ou TARDE?"
-Use 'check_calendar' com o period correto após a resposta.
-
-PASSO 3 — HORÁRIO:
-Mostre os horários disponíveis. Peça à cliente escolher.
-
-PASSO 4 — AGENDAR:
-Confirme brevemente e chame 'book_appointment' com o 'start' EXATO do check_calendar.
-Mensagem de confirmação: calorosa e simples. 🌸
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-↩️ "cancelar" → 'cancel_appointment' | "reagendar" → verificar horários | "sim"/"confirmar" → 'confirm_appointment'
-
+↩️ "cancelar" → 'cancel_appointment' | "reagendar" → verificar horários
 ⚠️ startsAt = campo 'start' EXATO do check_calendar. NUNCA invente um ISO string.
 `},
             ...history
@@ -399,10 +401,11 @@ Mensagem de confirmação: calorosa e simples. 🌸
                     parameters: {
                         type: "object",
                         properties: {
-                            date: { type: "string" },
-                            services: { type: "array", items: { type: "string" }, description: "Lista de serviços para calcular a duração total do combo." },
+                            date: { type: "string", description: "Data no formato YYYY-MM-DD. OBRIGATÓRIO." },
+                            services: { type: "array", items: { type: "string" }, description: "Lista de nomes de serviços." },
                             period: { type: "string", enum: ["manha", "tarde"] }
-                        }
+                        },
+                        required: ["date"]
                     }
                 }
             },
