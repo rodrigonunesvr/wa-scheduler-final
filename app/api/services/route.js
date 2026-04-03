@@ -4,9 +4,13 @@ import { supabase } from '@/lib/supabase'
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url)
+        const includeHidden = searchParams.get('include_hidden') === 'true'
         const activeOnly = searchParams.get('active_only') === 'true'
 
         let query = supabase.from('services').select('*').order('name', { ascending: true })
+        if (!includeHidden) {
+            query = query.eq('is_hidden', false)
+        }
         if (activeOnly) {
             query = query.eq('active', true)
         }
@@ -14,7 +18,27 @@ export async function GET(request) {
         const { data, error } = await query
 
         if (error) throw error
-        return NextResponse.json(data)
+
+        // --- DEDUPLICAÇÃO NUCLEAR (V71) ---
+        // Se houver registros duplicados por nome, priorizamos o mais recente e ativo.
+        const uniqueServices = []
+        const seenNames = new Set()
+
+        // Ordenamos para que os ativos e mais recentes venham primeiro na nossa lógica de filtro manual
+        const sortedData = [...data].sort((a, b) => {
+            if (a.active !== b.active) return a.active ? -1 : 1
+            return new Date(b.created_at || 0) - new Date(a.created_at || 0)
+        })
+
+        for (const svc of sortedData) {
+            const normName = svc.name.trim().toLowerCase()
+            if (!seenNames.has(normName)) {
+                uniqueServices.push(svc)
+                seenNames.add(normName)
+            }
+        }
+
+        return NextResponse.json(uniqueServices)
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
@@ -26,12 +50,18 @@ export async function POST(request) {
         const { name, price, duration, active } = body
 
         if (!name || isNaN(price) || isNaN(duration)) {
-            return NextResponse.json({ error: 'Campos invÃƒÂ¡lidos.' }, { status: 400 })
+            return NextResponse.json({ error: 'Campos inválidos.' }, { status: 400 })
         }
 
         const { data, error } = await supabase
             .from('services')
-            .insert({ name, price: Number(price), duration: Number(duration), active: active ?? true })
+            .insert({
+                name,
+                price: Number(price),
+                duration: Number(duration),
+                active: body.active ?? true,
+                is_hidden: body.is_hidden ?? false
+            })
             .select()
             .single()
 
@@ -50,10 +80,11 @@ export async function PATCH(request) {
         if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
         const updates = {}
-        if (name !== undefined) updates.name = name
-        if (price !== undefined) updates.price = Number(price)
-        if (duration !== undefined) updates.duration = Number(duration)
-        if (active !== undefined) updates.active = active
+        if (body.name !== undefined) updates.name = body.name
+        if (body.price !== undefined) updates.price = Number(body.price)
+        if (body.duration !== undefined) updates.duration = Number(body.duration)
+        if (body.active !== undefined) updates.active = body.active
+        if (body.is_hidden !== undefined) updates.is_hidden = body.is_hidden
 
         const { data, error } = await supabase
             .from('services')
@@ -76,10 +107,32 @@ export async function DELETE(request) {
 
         if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
-        const { error } = await supabase.from('services').delete().eq('id', id)
-        if (error) throw error
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-        return NextResponse.json({ success: true })
+        if (isUUID) {
+            const { data: svc } = await supabase.from('services').select('name').eq('id', id).single();
+            const protectedNames = [
+                'Fibra ou Molde F1', 'Banho de Gel', 'Manutenção',
+                'Manutenção (outra prof.)', 'Remoção', 'Esmaltação Básica',
+                'Esmaltação Premium', 'Esm. ou Pó + Francesinha', 'Esm. + Francesinha + Pó'
+            ];
+
+            if (svc && protectedNames.includes(svc.name)) {
+                // Oculta todas as instâncias com esse nome para garantir extermínio
+                await supabase.from('services').update({ is_hidden: true, active: false }).eq('name', svc.name);
+                return NextResponse.json({ success: true, message: 'Item padrão ocultado em todas as instâncias' })
+            } else {
+                const { error } = await supabase.from('services').delete().eq('id', id)
+                if (error) throw error
+                return NextResponse.json({ success: true, message: 'Item personalizado deletado' })
+            }
+        } else {
+            // Se veio apenas o nome, oculta todas as instâncias com esse nome
+            await supabase.from('services').update({ is_hidden: true, active: false }).eq('name', id);
+            // Também tenta inserir um registro de "bloqueio" caso ainda não exista
+            await supabase.from('services').upsert({ name: id, is_hidden: true, active: false }, { onConflict: 'name' });
+            return NextResponse.json({ success: true, message: 'Item padrão puro ocultado' })
+        }
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }

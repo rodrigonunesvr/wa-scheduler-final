@@ -1,14 +1,14 @@
 import './globals.css'
 
 export const metadata = {
-    title: 'AgendaÍ — Inteligência em Agendamentos',
-    description: 'Sistema de Agendamento Inteligente para Salões, Barbearias e Clínicas.',
+    title: 'Espaço C.A. — Dashboard',
+    description: 'Dashboard de Agendamentos - Espaço Camille Almeida',
     manifest: '/manifest.json',
     themeColor: '#7c3aed',
     appleWebApp: {
         capable: true,
         statusBarStyle: 'black-translucent',
-        title: 'AgendaÍ',
+        title: 'Espaço C.A.',
     },
     viewport: {
         width: 'device-width',
